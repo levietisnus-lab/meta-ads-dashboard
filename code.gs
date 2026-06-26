@@ -160,7 +160,8 @@ function syncPage() {
   const until = Math.floor(new Date().getTime() / 1000).toString();
   const COLS  = ["page_views_total","page_post_engagements","page_total_actions",
                  "page_video_views","page_daily_follows","page_daily_unfollows",
-                 "page_messages_new_conversations_unique"];
+                 "page_messages_new_conversations_unique",
+                 "page_messages_active_threads_unique"];
   const headers = ["date", "page_name", ...COLS];
   const allRows = [];
 
@@ -205,6 +206,12 @@ function syncPage() {
         ...base, metric: "page_messages_new_conversations_unique",
       }));
     } catch(e) { Logger.log(`⚠️ ${pname} new_conv: ${e.message}`); }
+
+    try {
+      merge(apiGet(`${BASE_URL}/${pid}/insights`, {
+        ...base, metric: "page_messages_active_threads_unique",
+      }));
+    } catch(e) { Logger.log(`⚠️ ${pname} active_threads: ${e.message}`); }
 
     const pageRows = Object.values(byDate)
       .sort((a, b) => a.date.localeCompare(b.date))

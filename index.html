@@ -1794,24 +1794,26 @@ function renderMessages() {
   // ── Filter by date first ───────────────────────────────
   const filtRows = allRows.filter(inPeriod);
 
-  // ── Khách mới: đọc từ Page Insights (page_messages_new_conversations_unique) ──
-  const pageNewConvMap = {};
+  // ── Khách mới + Tổng người liên hệ: đọc từ Page Insights ──
+  const pageNewConvMap      = {}; // page_messages_new_conversations_unique → Khách mới
+  const pageActiveThreadMap = {}; // page_messages_active_threads_unique   → Trong kỳ
   {
     const pgH = (G.page||{}).headers || [];
     const pgR = (G.page||{}).rows    || [];
     const _pgn = pgH.indexOf('page_name');
     const _pdt = pgH.indexOf('date');
     const _pnc = pgH.indexOf('page_messages_new_conversations_unique');
-    if (_pnc >= 0) {
-      pgR.forEach(pr => {
-        const d = String(pr[_pdt]||'');
-        if (!inPeriodDate(d)) return;
-        const pn = String(pr[_pgn]||'');
-        pageNewConvMap[pn] = (pageNewConvMap[pn]||0) + (Number(pr[_pnc])||0);
-      });
-    }
+    const _pat = pgH.indexOf('page_messages_active_threads_unique');
+    pgR.forEach(pr => {
+      const d = String(pr[_pdt]||'');
+      if (!inPeriodDate(d)) return;
+      const pn = String(pr[_pgn]||'');
+      if (_pnc >= 0) pageNewConvMap[pn]      = (pageNewConvMap[pn]     ||0) + (Number(pr[_pnc])||0);
+      if (_pat >= 0) pageActiveThreadMap[pn]  = (pageActiveThreadMap[pn]||0) + (Number(pr[_pat])||0);
+    });
   }
-  const _usePageInsight = Object.keys(pageNewConvMap).length > 0;
+  const _usePageInsight    = Object.keys(pageNewConvMap).length > 0;
+  const _useActiveThreads  = Object.keys(pageActiveThreadMap).length > 0;
 
   // ── Chi phí / tin nhắn: tổng spend từ Ads Data theo cùng kỳ ──
   const pageSpendMap = {};
@@ -1874,6 +1876,10 @@ function renderMessages() {
   // Gán Khách mới từ Page Insights nếu metric đã được sync
   if (_usePageInsight) {
     Object.keys(byPage).forEach(pn => { byPage[pn].newConvs = pageNewConvMap[pn] || 0; });
+  }
+  // Gán Tổng người liên hệ (Trong kỳ) từ Page Insights — khớp với Meta Business Suite
+  if (_useActiveThreads) {
+    Object.keys(byPage).forEach(pn => { byPage[pn].inPeriod = pageActiveThreadMap[pn] || 0; });
   }
 
   const tbody = document.getElementById('msg-summary-body');

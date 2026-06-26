@@ -222,7 +222,7 @@ function syncMessages() {
         if (needLcd && !doRt && !doPhone) lcdCount++;
         try {
           const msgs = apiGet(`${BASE_URL}/${c.id}/messages`, {
-            access_token: pt, fields: "from,created_time,message", limit: "20",
+            access_token: pt, fields: "from,created_time,message", limit: "50",
           });
           const msgArr = msgs.data || [];
           if (!hasPhone && msgArr.some(m => checkPhone(m.message))) hasPhone = 1;
