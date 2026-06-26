@@ -1,0 +1,2442 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meta Ads Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --primary:   #1e3a5f;
+  --blue:      #2563eb;
+  --gold:      #f59e0b;
+  --green:     #10b981;
+  --red:       #ef4444;
+  --purple:    #8b5cf6;
+  --bg:        #f1f5f9;
+  --card:      #ffffff;
+  --text:      #1e293b;
+  --muted:     #64748b;
+  --border:    #e2e8f0;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+/* ── HEADER ───────────────────────────────────────────── */
+.header {
+  background: var(--primary);
+  color: #fff;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  box-shadow: 0 2px 10px rgba(0,0,0,.25);
+}
+.header h1 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.header-right { display: flex; align-items: center; gap: 14px; }
+.sync-info { font-size: 11px; opacity: .7; }
+.btn { padding: 7px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.btn-sync { background: var(--gold); color: #fff; }
+.btn-sync:hover { background: #d97706; }
+.btn-sync:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── NAV ──────────────────────────────────────────────── */
+.nav {
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nav::-webkit-scrollbar { display: none; }
+.nav-tab {
+  padding: 12px 18px;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all .15s;
+  user-select: none;
+}
+.nav-tab:hover { color: var(--primary); }
+.nav-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 700; }
+
+/* ── LAYOUT ───────────────────────────────────────────── */
+.main { padding: 22px; max-width: 1440px; margin: 0 auto; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+@media (max-width: 900px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+/* ── KPI CARDS ────────────────────────────────────────── */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.kpi-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 18px 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.07);
+  border-left: 4px solid var(--primary);
+}
+.kpi-card.gold   { border-left-color: var(--gold); }
+.kpi-card.green  { border-left-color: var(--green); }
+.kpi-card.red    { border-left-color: var(--red); }
+.kpi-card.purple { border-left-color: var(--purple); }
+.kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 8px; }
+.kpi-value { font-size: 26px; font-weight: 800; color: var(--text); line-height: 1; }
+.kpi-sub { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+/* ── CARD ─────────────────────────────────────────────── */
+.card { background: #fff; border-radius: 10px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,.07); margin-bottom: 18px; }
+.card-title { font-size: 14px; font-weight: 700; color: var(--primary); margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.badge-pill { font-size: 11px; color: var(--muted); background: #f1f5f9; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
+.date-btn { padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px; background: #fff; cursor: pointer; font-size: 12px; font-weight: 500; color: var(--muted); transition: all .15s; white-space: nowrap; }
+.date-btn:hover { border-color: var(--blue); color: var(--blue); }
+.date-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* ── CHARTS ───────────────────────────────────────────── */
+.chart-box { position: relative; height: 270px; }
+
+/* ── TABLE ────────────────────────────────────────────── */
+.tbl-wrap { overflow-x: auto; border-radius: 6px; border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+th { background: var(--primary); color: #fff; padding: 9px 11px; text-align: left; font-weight: 600; white-space: nowrap; cursor: pointer; user-select: none; }
+th:hover { background: #2a4f7c; }
+td { padding: 8px 11px; border-bottom: 1px solid var(--border); white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+tr:hover td { background: #f8fafc; }
+tr:last-child td { border-bottom: none; }
+
+/* ── SEARCH ROW ───────────────────────────────────────── */
+.search-row { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+.search-row input, .search-row select {
+  padding: 7px 11px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  color: var(--text);
+}
+.search-row input:focus, .search-row select:focus { border-color: var(--blue); }
+.search-row input { flex: 1; min-width: 180px; }
+
+/* ── STATUS BADGES ────────────────────────────────────── */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+.s-active   { background: #d1fae5; color: #065f46; }
+.s-paused   { background: #fef3c7; color: #92400e; }
+.s-archived { background: #fee2e2; color: #991b1b; }
+
+/* ── MESSAGES ─────────────────────────────────────────── */
+.msg-list { display: flex; flex-direction: column; gap: 10px; }
+.msg-item { border: 1px solid var(--border); border-radius: 8px; padding: 13px 16px; transition: border-color .15s; }
+.msg-item:hover { border-color: var(--blue); background: #fafcff; }
+.msg-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; gap: 8px; }
+.msg-from { font-weight: 700; font-size: 13px; }
+.msg-meta { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.msg-snippet { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.unread-dot { background: var(--blue); color: #fff; border-radius: 10px; padding: 1px 7px; font-size: 11px; font-weight: 700; }
+.msg-item { cursor: pointer; }
+
+/* ── CONV MODAL ───────────────────────────────────────── */
+#conv-modal { display:none; position:fixed; inset:0; z-index:1000; }
+#conv-modal.open { display:flex; }
+#conv-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.45); }
+#conv-panel { position:relative; margin-left:auto; width:440px; max-width:100vw; height:100vh;
+  background:#fff; display:flex; flex-direction:column;
+  box-shadow:-6px 0 30px rgba(0,0,0,.18);
+  animation: slideIn .2s ease; }
+@keyframes slideIn { from { transform:translateX(100%); } to { transform:translateX(0); } }
+#conv-header { padding:14px 16px; border-bottom:1px solid #e2e8f0;
+  display:flex; align-items:center; gap:10px;
+  background:#1e3a5f; color:#fff; flex-shrink:0; }
+#conv-header button { background:rgba(255,255,255,.15); border:none; color:#fff;
+  width:32px; height:32px; border-radius:50%; font-size:16px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+#conv-header button:hover { background:rgba(255,255,255,.3); }
+#conv-body { flex:1; overflow-y:auto; padding:16px;
+  display:flex; flex-direction:column; gap:10px; background:#f8fafc; }
+.chat-bubble { display:flex; flex-direction:column; }
+.chat-bubble.page { align-items:flex-end; }
+.chat-bubble.user { align-items:flex-start; }
+.chat-text { max-width:78%; padding:10px 14px; font-size:13px; line-height:1.5;
+  word-break:break-word; white-space:pre-wrap; }
+.chat-bubble.page .chat-text { background:#2563eb; color:#fff;
+  border-radius:18px 18px 4px 18px; }
+.chat-bubble.user .chat-text { background:#fff; color:#1e293b;
+  border-radius:18px 18px 18px 4px;
+  border:1px solid #e2e8f0; }
+.chat-time { font-size:11px; color:#94a3b8; margin-top:3px; }
+#conv-input-row { padding:12px 14px; border-top:1px solid #e2e8f0;
+  display:flex; gap:8px; background:#fff; flex-shrink:0; }
+#conv-reply { flex:1; resize:none; border:1px solid #e2e8f0; border-radius:10px;
+  padding:9px 12px; font-size:13px; font-family:inherit; height:72px;
+  outline:none; transition:border-color .15s; }
+#conv-reply:focus { border-color:var(--blue); }
+#conv-send-btn { padding:0 18px; background:#2563eb; color:#fff; border:none;
+  border-radius:10px; font-size:13px; font-weight:700; cursor:pointer;
+  transition:background .15s; white-space:nowrap; }
+#conv-send-btn:hover { background:#1d4ed8; }
+#conv-send-btn:disabled { background:#94a3b8; cursor:not-allowed; }
+
+/* ── CREATIVES ────────────────────────────────────────── */
+.cr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.cr-card { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #fff; transition: box-shadow .15s; }
+.cr-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+.cr-img { width: 100%; height: 170px; object-fit: cover; display: block; }
+.cr-img-placeholder { width: 100%; height: 170px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 36px; color: var(--muted); }
+.cr-body { padding: 13px 14px; }
+.cr-camp { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.cr-name { font-weight: 700; font-size: 13px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cr-title { font-size: 14px; font-weight: 700; margin-bottom: 5px; color: var(--text); }
+.cr-text { font-size: 12.5px; color: #475569; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.cr-cta { margin-top: 10px; display: inline-block; background: var(--blue); color: #fff; padding: 5px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+
+/* ── LOADING / EMPTY ──────────────────────────────────── */
+.loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 250px; color: var(--muted); gap: 14px; }
+.spinner { width: 38px; height: 38px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .75s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty { text-align: center; padding: 48px 24px; color: var(--muted); }
+.empty p { margin-top: 8px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ─────────────────────────────────────────── -->
+<header class="header">
+  <h1>📊 Meta Ads Dashboard</h1>
+  <div class="header-right">
+    <span class="sync-info" id="sync-time">Đang tải...</span>
+    <button class="btn btn-sync" id="btn-sync" onclick="triggerSync()">⟳ Đồng bộ ngay</button>
+  </div>
+</header>
+
+<!-- ── TABS ───────────────────────────────────────────── -->
+<nav class="nav">
+  <div class="nav-tab active"  data-tab="overview"   onclick="switchTab(this)">📈 Tổng quan</div>
+  <div class="nav-tab"         data-tab="ads"         onclick="switchTab(this)">💰 Quảng cáo</div>
+  <div class="nav-tab"         data-tab="page"        onclick="switchTab(this)">📄 Trang</div>
+  <div class="nav-tab"         data-tab="posts"       onclick="switchTab(this)">📝 Bài đăng</div>
+  <div class="nav-tab"         data-tab="messages"    onclick="switchTab(this)">💬 Tin nhắn</div>
+  <div class="nav-tab"         data-tab="creatives"   onclick="switchTab(this)">🎨 Nội dung QC</div>
+</nav>
+
+<!-- ── MAIN ───────────────────────────────────────────── -->
+<main class="main">
+
+<!-- Loading overlay -->
+<div id="app-loading" class="loading">
+  <div class="spinner"></div>
+  <div>Đang tải dữ liệu từ Google Sheets...</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     1. TỔNG QUAN
+════════════════════════════════════════════════════════ -->
+<div id="tab-overview" class="tab-panel">
+
+  <!-- Date Range Filter -->
+  <div style="background:#fff;border-radius:10px;padding:13px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap">Khoảng thời gian:</span>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="date-btn" onclick="setPreset(this,7)">7 ngày</button>
+      <button class="date-btn" onclick="setPreset(this,14)">14 ngày</button>
+      <button class="date-btn" onclick="setPreset(this,30)">30 ngày</button>
+      <button class="date-btn" onclick="setPreset(this,'thisMonth')">Tháng này</button>
+      <button class="date-btn" onclick="setPreset(this,'lastMonth')">Tháng trước</button>
+      <button class="date-btn active" onclick="setPreset(this,'all')">Tất cả</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <input type="date" id="date-from" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text);outline:none">
+      <span style="color:var(--muted);font-size:12px">→</span>
+      <input type="date" id="date-to" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text);outline:none">
+      <button onclick="applyCustomDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
+    </div>
+    <span id="date-range-info" class="badge-pill"></span>
+  </div>
+
+  <!-- Account Filter (ẩn nếu chỉ có 1 tài khoản) -->
+  <div id="account-filter-row" style="background:#fff;border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:10px;display:none;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap">Tài khoản:</span>
+    <div id="account-filter-btns" style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="date-btn active" onclick="setAccountFilter(this,-1)">Tất cả</button>
+    </div>
+  </div>
+
+  <!-- Page Filter -->
+  <div style="background:#fff;border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap">Trang:</span>
+    <div id="page-filter-btns" style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="date-btn active" onclick="setPageFilter(this,-1)">Tất cả</button>
+    </div>
+  </div>
+
+  <div class="kpi-grid" id="kpi-grid"></div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Chi phí theo ngày <span class="badge-pill">30 ngày</span></div>
+      <div class="chart-box"><canvas id="chart-spend"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Lượt xem & Tương tác trang <span class="badge-pill" id="badge-organic-impr">Page Insights</span></div>
+      <div class="chart-box"><canvas id="chart-organic-impr"></canvas></div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Tiếp cận & Hiển thị (Ads) <span class="badge-pill">30 ngày</span></div>
+      <div class="chart-box"><canvas id="chart-reach"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Theo dõi & Hành động trang <span class="badge-pill" id="badge-page-engage">Page Insights</span></div>
+      <div class="chart-box"><canvas id="chart-page-engage"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Chi tiêu theo Campaign -->
+  <div class="card">
+    <div class="card-title">
+      Chi tiêu theo Campaign
+      <span class="badge-pill" id="camp-count"></span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="min-width:200px">Campaign</th>
+            <th style="min-width:260px">Chi phí &amp; tỷ trọng</th>
+            <th style="text-align:right">Tiếp cận</th>
+            <th style="text-align:right">Hiển thị</th>
+            <th style="text-align:right">ROAS</th>
+            <th style="text-align:right">CTR</th>
+            <th style="text-align:right">Kết quả</th>
+            <th style="text-align:right">CP/Kết quả</th>
+            <th style="text-align:right">Link Clicks</th>
+            <th style="text-align:right">CPC</th>
+          </tr>
+        </thead>
+        <tbody id="camp-breakdown"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════ PHÂN TÍCH THEO PAGE ════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">
+      Phân tích theo Page
+      <span class="badge-pill" id="page-bd-count"></span>
+    </div>
+
+    <!-- Row 1: Donut + Bar chi phí -->
+    <div class="grid-2" style="margin-bottom:18px">
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px">Tỷ trọng Chi phí</div>
+        <div style="position:relative;height:240px"><canvas id="chart-page-donut"></canvas></div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px">Chi phí theo Page</div>
+        <div style="position:relative;height:240px"><canvas id="chart-page-spend-bar"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Row 2: ROAS / CTR / CPC -->
+    <div class="grid-3" style="margin-bottom:18px">
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px">ROAS theo Page</div>
+        <div style="position:relative;height:180px"><canvas id="chart-page-roas"></canvas></div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px">CTR% theo Page</div>
+        <div style="position:relative;height:180px"><canvas id="chart-page-ctr"></canvas></div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px">CPC theo Page</div>
+        <div style="position:relative;height:180px"><canvas id="chart-page-cpc"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Bảng tổng hợp -->
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="min-width:130px">Page</th>
+            <th style="min-width:260px">Chi phí &amp; Tỷ trọng</th>
+            <th style="text-align:right">Tiếp cận</th>
+            <th style="text-align:right">Hiển thị</th>
+            <th style="text-align:right">ROAS</th>
+            <th style="text-align:right">CTR</th>
+            <th style="text-align:right">Kết quả</th>
+            <th style="text-align:right">CP/Kết quả</th>
+            <th style="text-align:right">Link Clicks</th>
+            <th style="text-align:right">CPC</th>
+          </tr>
+        </thead>
+        <tbody id="page-bd-body"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--muted)">
+      * Tên Page lấy trực tiếp từ Facebook Graph API qua <code>page_id</code> của từng ad creative.
+      Nếu hiển thị "Chưa xác định": chạy <strong>Đồng bộ ngay</strong> sau khi đã cập nhật <code>meta.gs</code> mới.
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     2. QUẢNG CÁO
+════════════════════════════════════════════════════════ -->
+<div id="tab-ads" class="tab-panel">
+  <div class="card">
+    <div class="card-title">Chi tiết Quảng cáo theo ngày</div>
+    <div class="search-row">
+      <input  id="ads-q"    type="text"   placeholder="Tìm campaign, adset..." oninput="filterAds()">
+      <select id="ads-camp"               onchange="filterAds()"><option value="">Tất cả Campaign</option></select>
+      <select id="ads-adset"              onchange="filterAds()"><option value="">Tất cả Ad Set</option></select>
+      <span   id="ads-count" class="badge-pill"></span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr id="ads-head"></tr></thead>
+        <tbody id="ads-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     3. TRANG (PAGE INSIGHTS)
+════════════════════════════════════════════════════════ -->
+<div id="tab-page" class="tab-panel">
+  <!-- Page filter -->
+  <div style="background:#fff;border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap">Trang:</span>
+    <div id="page-tab-filter-btns" style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="date-btn active" onclick="setTrangPage(this,-1)">Tất cả</button>
+    </div>
+  </div>
+
+  <!-- Section: Organic -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <div style="width:4px;height:22px;background:#10b981;border-radius:2px"></div>
+    <span style="font-size:15px;font-weight:700;color:var(--primary)">Organic (Page Insights)</span>
+  </div>
+  <div class="kpi-grid" id="page-kpi-grid" style="margin-bottom:18px"></div>
+
+  <div class="grid-2" style="margin-bottom:18px">
+    <div class="card">
+      <div class="card-title">Tăng / Giảm Follow <span class="badge-pill">30 ngày</span></div>
+      <div class="chart-box"><canvas id="chart-fans"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Lượt xem & Tương tác bài viết <span class="badge-pill">30 ngày</span></div>
+      <div class="chart-box"><canvas id="chart-page-eng"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Section: Paid -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <div style="width:4px;height:22px;background:#2563eb;border-radius:2px"></div>
+    <span style="font-size:15px;font-weight:700;color:var(--primary)">Paid Ads</span>
+    <span class="badge-pill" id="page-paid-page-badge" style="display:none"></span>
+  </div>
+  <div class="kpi-grid" id="page-paid-kpi" style="margin-bottom:18px"></div>
+
+  <div class="grid-2" style="margin-bottom:18px">
+    <div class="card">
+      <div class="card-title">Chi phí & Tiếp cận <span class="badge-pill" style="background:#2563eb22;color:#2563eb">Paid</span></div>
+      <div class="chart-box"><canvas id="chart-page-spend"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Kết quả Paid <span class="badge-pill" style="background:#2563eb22;color:#2563eb">Paid</span></div>
+      <div class="chart-box"><canvas id="chart-page-results"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Section: So sánh -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <div style="width:4px;height:22px;background:#8b5cf6;border-radius:2px"></div>
+    <span style="font-size:15px;font-weight:700;color:var(--primary)">So sánh Paid vs Organic</span>
+  </div>
+  <div class="grid-2" style="margin-bottom:18px">
+    <div class="card">
+      <div class="card-title">Tiếp cận Paid vs Lượt xem trang</div>
+      <div class="chart-box"><canvas id="chart-page-reach"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Kết quả Paid vs Tương tác Organic</div>
+      <div class="chart-box"><canvas id="chart-page-msg"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Organic data table -->
+  <div class="card">
+    <div class="card-title">Dữ liệu Organic chi tiết <span class="badge-pill" id="page-row-count"></span></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr id="page-head"></tr></thead>
+        <tbody id="page-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     4. BÀI ĐĂNG
+════════════════════════════════════════════════════════ -->
+<div id="tab-posts" class="tab-panel">
+  <div class="card">
+    <div class="card-title">Bài đăng gần đây</div>
+    <div class="search-row">
+      <input  id="posts-q"    type="text"  placeholder="Tìm nội dung bài đăng..." oninput="filterPosts()">
+      <select id="posts-type"              onchange="filterPosts()"><option value="">Tất cả loại</option></select>
+      <span   id="posts-count" class="badge-pill"></span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr id="posts-head"></tr></thead>
+        <tbody id="posts-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     5. TIN NHẮN
+════════════════════════════════════════════════════════ -->
+<div id="tab-messages" class="tab-panel">
+
+  <!-- Date filter -->
+  <div style="background:#fff;border-radius:10px;padding:12px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap">Khoảng:</span>
+    <div id="msg-date-btns" style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="date-btn" onclick="setMsgRange(this,7)">7 ngày</button>
+      <button class="date-btn active" onclick="setMsgRange(this,30)">30 ngày</button>
+      <button class="date-btn" onclick="setMsgRange(this,90)">90 ngày</button>
+    </div>
+    <input type="date" id="msg-from" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+    <span style="color:var(--muted)">→</span>
+    <input type="date" id="msg-to" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+    <button onclick="applyMsgDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
+    <button onclick="openTokenConfig()" style="margin-left:auto;padding:5px 12px;background:#f8fafc;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;color:#374151;font-weight:500">
+      ⚙️ Token nhắn tin
+    </button>
+  </div>
+
+  <!-- Summary table -->
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-title">
+      Tổng hợp theo Trang
+      <span class="badge-pill" id="msg-period-badge"></span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr style="background:#f8fafc">
+          <th style="text-align:left">Trang</th>
+          <th>Tổng HT</th>
+          <th>Trong kỳ</th>
+          <th>Chưa phản hồi</th>
+          <th>Tỉ lệ PH</th>
+          <th>TG phản hồi TB</th>
+          <th>Khách mới</th>
+          <th>≥3 tin nhắn</th>
+          <th>Để lại SĐT</th>
+          <th>Tỷ lệ SĐT</th>
+          <th>Chi phí/tin</th>
+        </tr></thead>
+        <tbody id="msg-summary-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Chart: conversations by day -->
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-title">Hội thoại theo ngày <span class="badge-pill" id="msg-chart-badge"></span></div>
+    <div class="chart-box"><canvas id="chart-msg-daily"></canvas></div>
+  </div>
+
+  <!-- Conversation list -->
+  <div class="card">
+    <div class="card-title">
+      Danh sách hội thoại
+      <span id="msg-count" class="badge-pill"></span>
+    </div>
+    <div class="search-row">
+      <input id="msg-q" type="text" placeholder="Tìm tên người dùng hoặc nội dung..." oninput="filterMsg()">
+      <select id="msg-page-sel" onchange="filterMsg()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+        <option value="">Tất cả trang</option>
+      </select>
+      <button id="msg-phone-btn" onclick="toggleMsgPhoneFilter(this)"
+        style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:#fff;cursor:pointer;white-space:nowrap">
+        📞 Có SĐT
+      </button>
+    </div>
+    <div id="msg-list" class="msg-list"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     6. NỘI DUNG QUẢNG CÁO (CREATIVES)
+════════════════════════════════════════════════════════ -->
+<div id="tab-creatives" class="tab-panel">
+  <div class="card">
+    <div class="card-title">
+      Nội dung Quảng cáo
+      <span id="cr-count" class="badge-pill"></span>
+    </div>
+    <div class="search-row">
+      <input  id="cr-q"       type="text"  placeholder="Tìm tiêu đề, nội dung, campaign..." oninput="filterCr()">
+      <select id="cr-status"               onchange="filterCr()">
+        <option value="">Tất cả trạng thái</option>
+        <option value="ACTIVE">Active</option>
+        <option value="PAUSED">Paused</option>
+        <option value="ARCHIVED">Archived</option>
+      </select>
+      <select id="cr-camp"                 onchange="filterCr()"><option value="">Tất cả Campaign</option></select>
+    </div>
+    <div id="cr-grid" class="cr-grid"></div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// GITHUB PAGES MODE — thay google.script.run bằng fetch()
+// Điền GAS_URL sau khi deploy GAS Web App
+// ══════════════════════════════════════════════════════════
+;(function() {
+  const IS_GAS = (typeof google !== 'undefined') && google.script && google.script.run;
+  if (IS_GAS) return; // chạy trong GAS — dùng google.script.run gốc
+
+  const GAS_URL = 'https://script.google.com/macros/s/PASTE_DEPLOYMENT_ID_HERE/exec';
+
+  function gasPost(payload) {
+    return fetch(GAS_URL, {
+      method: 'POST',
+      // text/plain = simple request → không cần CORS preflight
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'text/plain' },
+    })
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(d => { if (d && d._error) throw new Error(d._error); return d; });
+  }
+
+  class GasRunner {
+    constructor() { this._s = null; this._f = null; }
+    withSuccessHandler(cb) { this._s = cb; return this; }
+    withFailureHandler(cb) { this._f = cb; return this; }
+    _run(payload) {
+      const s = this._s, f = this._f;
+      gasPost(payload)
+        .then(d => s && s(d))
+        .catch(e => f && f({ message: e.message }));
+    }
+    getDashboardData()              { this._run({ action: 'getData' }); }
+    syncAllFull()                   { this._run({ action: 'syncNow' }); }
+    getConvMessages(convId, pageId) { this._run({ action: 'getConv', convId, pageId }); }
+    sendReply(pageId, rid, text)    { this._run({ action: 'sendReply', pageId, recipientId: rid, text }); }
+    getMsgTokenStatus()             { this._run({ action: 'getTokens' }); }
+    saveMsgToken(pageId, token)     { this._run({ action: 'saveToken', pageId, token }); }
+    deleteMsgToken(pageId)          { this._run({ action: 'deleteToken', pageId }); }
+  }
+
+  // Proxy: mọi property access trên google.script.run đều tạo GasRunner mới
+  window.google = { script: { run: new Proxy({}, { get: () => new GasRunner() }) } };
+})();
+
+// ══════════════════════════════════════════════════════════
+// STATE & INIT
+// ══════════════════════════════════════════════════════════
+let G = {};
+let _charts = {};
+let G_DATE = { from: '', to: '' };
+let G_PAGE = '';
+let G_ACCOUNT = '';
+let _ACCOUNT_LIST = [];
+let G_TRANG_PAGE = '';
+let _TRANG_PAGE_LIST = [];
+
+window.addEventListener('DOMContentLoaded', fetchData);
+
+function fetchData() {
+  // Hiển thị loading overlay
+  const el = document.getElementById('app-loading');
+  el.style.display = 'flex';
+  el.innerHTML = '<div class="spinner"></div><div>Đang tải dữ liệu từ Google Sheets...</div>';
+  google.script.run
+    .withSuccessHandler(onLoad)
+    .withFailureHandler(onErr)
+    .getDashboardData();
+}
+
+function onLoad(data) {
+  if (!data) {
+    onErr({message: 'getDashboardData() trả về null — kiểm tra meta.gs đã lưu và deploy lại web app.'});
+    return;
+  }
+  G = data;
+  // Xây dựng map page_name → page_id từ Ad Creatives
+  const crH = G.creatives?.headers || [];
+  const crRows = G.creatives?.rows || [];
+  const _cPidI = crH.indexOf('page_id'), _cPnI = crH.indexOf('page_name');
+  if (_cPidI >= 0 && _cPnI >= 0) {
+    crRows.forEach(r => {
+      const pid = String(r[_cPidI]||'').trim(), pn = String(r[_cPnI]||'').trim();
+      if (pid && pn && !_PAGE_ID_MAP[pn]) _PAGE_ID_MAP[pn] = pid;
+    });
+  }
+  document.getElementById('app-loading').style.display = 'none';
+  document.getElementById('sync-time').textContent = 'Cập nhật: ' + (G.synced || '');
+  document.getElementById('tab-overview').classList.add('active');
+
+  // Kiểm tra có data không
+  const totalRows = (G.ads?.rows?.length  || 0)
+                  + (G.page?.rows?.length  || 0)
+                  + (G.posts?.rows?.length || 0);
+
+  if (totalRows === 0) {
+    // Chưa có data — hướng dẫn sync lần đầu
+    document.getElementById('kpi-grid').innerHTML = `
+      <div style="grid-column:1/-1;background:#fff;border-radius:12px;padding:48px 24px;
+                  text-align:center;border:2px dashed #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+        <div style="font-size:56px;margin-bottom:20px">⚡</div>
+        <div style="font-size:20px;font-weight:700;color:#1e3a5f;margin-bottom:10px">
+          Chưa có dữ liệu
+        </div>
+        <div style="font-size:14px;color:#64748b;margin-bottom:28px;line-height:1.7;max-width:460px;margin-left:auto;margin-right:auto">
+          Các sheet chưa có dữ liệu.<br>
+          Bạn cần chạy <strong>Đồng bộ</strong> để kéo dữ liệu từ Facebook API.<br>
+          <span style="font-size:12px;color:#94a3b8">Lần đầu mất khoảng 30–60 giây.</span>
+        </div>
+        <button onclick="triggerSync()" style="padding:13px 36px;background:#f59e0b;color:#fff;
+          border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">
+          ⟳ Đồng bộ ngay
+        </button>
+        <div style="margin-top:24px;font-size:12px;color:#94a3b8">
+          Hoặc chạy <code>syncAllFull()</code> trong Google Apps Script Editor
+        </div>
+      </div>`;
+    return; // Dừng — không render gì thêm khi không có data
+  }
+
+  initDateFilter();
+  initAccountFilter();
+  initPageFilter();
+  initTrangPageFilter();
+  initMsgDate();
+  renderOverview();
+  renderAds();
+  renderPage();
+  renderPosts();
+  renderMessages();
+  renderCreatives();
+}
+
+function onErr(e) {
+  // Hiển thị lỗi rõ ràng, không phụ thuộc vào app-loading
+  const msg = e.message || String(e) || 'Lỗi không xác định';
+  document.getElementById('app-loading').style.display = 'flex';
+  document.getElementById('app-loading').innerHTML = `
+    <div style="text-align:center;max-width:500px">
+      <div style="font-size:48px;margin-bottom:16px">⚠️</div>
+      <div style="font-size:17px;font-weight:700;color:#ef4444;margin-bottom:10px">
+        Lỗi tải dữ liệu
+      </div>
+      <div style="font-size:13px;color:#64748b;background:#fee2e2;border-radius:8px;
+                  padding:12px 16px;margin-bottom:20px;word-break:break-all;text-align:left">
+        ${msg}
+      </div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:16px">
+        Kiểm tra: token còn hiệu lực, file meta.gs đã được lưu, web app đã deploy lại.
+      </div>
+      <button onclick="fetchData()" style="padding:10px 24px;border-radius:6px;border:none;
+        background:#1e3a5f;color:#fff;font-size:13px;cursor:pointer;font-weight:600">
+        ↩ Thử lại
+      </button>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ══════════════════════════════════════════════════════════
+function switchTab(el) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-' + el.dataset.tab).classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════════
+// SYNC BUTTON
+// ══════════════════════════════════════════════════════════
+function triggerSync() {
+  const btn = document.getElementById('btn-sync');
+  btn.disabled = true;
+  btn.textContent = '⟳ Đang đồng bộ...';
+  google.script.run
+    .withSuccessHandler(() => { btn.disabled = false; btn.textContent = '⟳ Đồng bộ ngay'; fetchData(); })
+    .withFailureHandler(e  => { btn.disabled = false; btn.textContent = '⟳ Đồng bộ ngay'; alert('Lỗi: ' + e.message); })
+    .syncAllFull();
+}
+
+// ══════════════════════════════════════════════════════════
+// DATE FILTER
+// ══════════════════════════════════════════════════════════
+function initDateFilter() {
+  const { headers: h, rows } = G.ads || { headers: [], rows: [] };
+  if (!rows.length) return;
+  const ci = h.indexOf('date');
+  if (ci < 0) return;
+  const dates = rows.map(r => r[ci]).filter(Boolean).sort();
+  if (!dates.length) return;
+  G_DATE.from = dates[0];
+  G_DATE.to   = dates[dates.length - 1];
+  document.getElementById('date-from').value = G_DATE.from;
+  document.getElementById('date-to').value   = G_DATE.to;
+  updateDateInfo(rows.length);
+}
+
+function getFilteredAdsRows() {
+  const { headers: h, rows } = G.ads || { headers: [], rows: [] };
+  if (!rows.length) return { headers: h, rows };
+  const ci = h.indexOf('date');
+  if (ci < 0 || (!G_DATE.from && !G_DATE.to)) return { headers: h, rows };
+  const filtered = rows.filter(r => {
+    const d = String(r[ci] || '');
+    if (G_DATE.from && d < G_DATE.from) return false;
+    if (G_DATE.to   && d > G_DATE.to)   return false;
+    return true;
+  });
+  updateDateInfo(filtered.length);
+  return { headers: h, rows: filtered };
+}
+
+function setPreset(btn, val) {
+  document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const today = new Date();
+  if (val === 'all') {
+    initDateFilter();
+    renderOverview();
+    return;
+  } else if (val === 'thisMonth') {
+    G_DATE.from = fmtD(new Date(today.getFullYear(), today.getMonth(), 1));
+    G_DATE.to   = fmtD(today);
+  } else if (val === 'lastMonth') {
+    G_DATE.from = fmtD(new Date(today.getFullYear(), today.getMonth() - 1, 1));
+    G_DATE.to   = fmtD(new Date(today.getFullYear(), today.getMonth(), 0));
+  } else {
+    const from = new Date(today);
+    from.setDate(today.getDate() - val + 1);
+    G_DATE.from = fmtD(from);
+    G_DATE.to   = fmtD(today);
+  }
+  document.getElementById('date-from').value = G_DATE.from;
+  document.getElementById('date-to').value   = G_DATE.to;
+  renderOverview();
+}
+
+function applyCustomDate() {
+  document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+  G_DATE.from = document.getElementById('date-from').value;
+  G_DATE.to   = document.getElementById('date-to').value;
+  renderOverview();
+}
+
+function updateDateInfo(count) {
+  const el = document.getElementById('date-range-info');
+  if (el) el.textContent = count + ' bản ghi';
+}
+
+function fmtD(d) {
+  // Dùng local date (không phải UTC) để tránh lệch ngày cho người dùng múi giờ VN
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+// ══════════════════════════════════════════════════════════
+// ACCOUNT FILTER
+// ══════════════════════════════════════════════════════════
+function initAccountFilter() {
+  const { headers: h, rows } = G.ads || { headers: [], rows: [] };
+  const row = document.getElementById('account-filter-row');
+  const container = document.getElementById('account-filter-btns');
+  if (!rows.length || !row || !container) return;
+  const ci = n => h.indexOf(n);
+  if (ci('account') < 0) { row.style.display = 'none'; return; }
+  const accounts = new Set(rows.map(r => r[ci('account')]).filter(Boolean));
+  if (accounts.size <= 1) { row.style.display = 'none'; return; }
+  row.style.display = 'flex';
+  _ACCOUNT_LIST = [...accounts].sort();
+  const activeIdx = _ACCOUNT_LIST.indexOf(G_ACCOUNT);
+  container.innerHTML =
+    `<button class="date-btn ${G_ACCOUNT===''?'active':''}" onclick="setAccountFilter(this,-1)">Tất cả</button>` +
+    _ACCOUNT_LIST.map((a, i) =>
+      `<button class="date-btn ${i===activeIdx?'active':''}" onclick="setAccountFilter(this,${i})">${a}</button>`
+    ).join('');
+}
+
+function setAccountFilter(btn, idx) {
+  document.querySelectorAll('#account-filter-btns .date-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  G_ACCOUNT = idx < 0 ? '' : (_ACCOUNT_LIST[idx] || '');
+  G_PAGE = ''; // reset page filter khi đổi account
+  initPageFilter();
+  renderOverview();
+}
+
+// ══════════════════════════════════════════════════════════
+// TRANG TAB — page filter (độc lập với Overview page filter)
+// ══════════════════════════════════════════════════════════
+function initTrangPageFilter() {
+  const container = document.getElementById('page-tab-filter-btns');
+  if (!container) return;
+  // Reuse _PAGE_LIST (populated by initPageFilter)
+  if (!_PAGE_LIST.length) {
+    // build from creatives if available
+    const map = buildCampPageMap();
+    const { headers: h, rows } = G.ads || { headers: [], rows: [] };
+    const ci = n => h.indexOf(n);
+    const pages = new Set();
+    rows.forEach(r => {
+      const p = getPageFromCamp(map, r[ci('campaign')] || '', r[ci('adset')] || '');
+      if (p && p !== 'Chưa xác định' && !/^\d+$/.test(p)) pages.add(p);
+    });
+    _TRANG_PAGE_LIST = [...pages].sort();
+  } else {
+    _TRANG_PAGE_LIST = [..._PAGE_LIST];
+  }
+  if (!_TRANG_PAGE_LIST.length) return;
+  const activeIdx = _TRANG_PAGE_LIST.indexOf(G_TRANG_PAGE);
+  container.innerHTML =
+    `<button class="date-btn ${G_TRANG_PAGE===''?'active':''}" onclick="setTrangPage(this,-1)">Tất cả</button>` +
+    _TRANG_PAGE_LIST.map((p, i) =>
+      `<button class="date-btn ${i===activeIdx?'active':''}" onclick="setTrangPage(this,${i})">${p}</button>`
+    ).join('');
+}
+
+function setTrangPage(btn, idx) {
+  document.querySelectorAll('#page-tab-filter-btns .date-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  G_TRANG_PAGE = idx < 0 ? '' : (_TRANG_PAGE_LIST[idx] || '');
+  renderPage();
+}
+
+// ══════════════════════════════════════════════════════════
+// PAGE FILTER
+// ══════════════════════════════════════════════════════════
+let _PAGE_LIST = []; // lookup để tránh lỗi quote trong onclick
+
+function initPageFilter() {
+  const map = buildCampPageMap();
+  const { headers: h, rows: allRows } = G.ads || { headers: [], rows: [] };
+  if (!allRows.length) return;
+  const ci = n => h.indexOf(n);
+  // chỉ lấy rows của account đang chọn (nếu có)
+  const rows = G_ACCOUNT && ci('account') >= 0
+    ? allRows.filter(r => r[ci('account')] === G_ACCOUNT)
+    : allRows;
+  const pages = new Set();
+  rows.forEach(r => {
+    const p = getPageFromCamp(map, r[ci('campaign')] || '', r[ci('adset')] || '');
+    if (p && p !== 'Không xác định' && !/^\d+$/.test(p)) pages.add(p);
+  });
+  const container = document.getElementById('page-filter-btns');
+  if (!container || pages.size === 0) return;
+  _PAGE_LIST = [...pages].sort();
+  const activeIdx = _PAGE_LIST.indexOf(G_PAGE);
+  container.innerHTML =
+    `<button class="date-btn ${G_PAGE===''?'active':''}" onclick="setPageFilter(this,-1)">Tất cả</button>` +
+    _PAGE_LIST.map((p, i) =>
+      `<button class="date-btn ${i===activeIdx?'active':''}" onclick="setPageFilter(this,${i})">${p}</button>`
+    ).join('');
+}
+
+function setPageFilter(btn, idx) {
+  document.querySelectorAll('#page-filter-btns .date-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  G_PAGE = idx < 0 ? '' : (_PAGE_LIST[idx] || '');
+  renderOverview();
+}
+
+function getFilteredRows() {
+  const { headers: h, rows } = getFilteredAdsRows();
+  const ci = n => h.indexOf(n);
+  let filtered = rows;
+
+  if (G_ACCOUNT && ci('account') >= 0) {
+    filtered = filtered.filter(r => r[ci('account')] === G_ACCOUNT);
+  }
+
+  if (G_PAGE) {
+    const map = buildCampPageMap();
+    filtered = filtered.filter(r =>
+      getPageFromCamp(map, r[ci('campaign')] || '', r[ci('adset')] || '') === G_PAGE
+    );
+  }
+
+  return { headers: h, rows: filtered };
+}
+
+// ══════════════════════════════════════════════════════════
+// 1. OVERVIEW
+// ══════════════════════════════════════════════════════════
+function renderOverview() {
+  const { headers: h, rows } = getFilteredRows();
+  if (!rows.length) return;
+  const dayLabel = G_DATE.from === G_DATE.to
+    ? G_DATE.from
+    : (G_DATE.from + ' → ' + G_DATE.to);
+
+  const ci = name => h.indexOf(name);
+  let spend=0, reach=0, impr=0, purch=0, cart=0, lclicks=0, roasArr=[], ctrArr=[];
+  const byDate = {};
+
+  rows.forEach(r => {
+    const s   = +r[ci('spend')]       || 0;
+    const rc  = +r[ci('reach')]       || 0;
+    const im  = +r[ci('impressions')] || 0;
+    const pu  = +r[ci('purchases')]   || 0;
+    const ca  = +r[ci('add_to_cart')] || 0;
+    const lc  = +r[ci('link_clicks')] || 0;
+    const ro  = +r[ci('roas')]        || 0;
+    const ct  = +r[ci('ctr')]         || 0;
+    const dt  = r[ci('date')];
+    spend += s; reach += rc; impr += im; purch += pu; cart += ca; lclicks += lc;
+    if (ro > 0) roasArr.push(ro);
+    if (ct > 0) ctrArr.push(ct);
+    const msg = +r[ci('messaging_reply')]   || 0;
+    const plk = +r[ci('page_like')]         || 0;
+    const lpv = +r[ci('landing_page_view')] || 0;
+    if (dt) {
+      if (!byDate[dt]) byDate[dt] = { spend:0, reach:0, impr:0, purch:0, cart:0, lclicks:0, messaging:0, page_like:0, landing_pv:0, roas:[], ctr:[] };
+      byDate[dt].spend      += s;  byDate[dt].reach  += rc; byDate[dt].impr  += im;
+      byDate[dt].purch      += pu; byDate[dt].cart   += ca; byDate[dt].lclicks   += lc;
+      byDate[dt].messaging  += msg; byDate[dt].page_like += plk; byDate[dt].landing_pv += lpv;
+      if (ro > 0) byDate[dt].roas.push(ro);
+      if (ct > 0) byDate[dt].ctr.push(ct);
+    }
+  });
+
+  const avgROAS = mean(roasArr);
+  const avgCTR  = mean(ctrArr);
+
+  // KPI cards
+  document.getElementById('kpi-grid').innerHTML = [
+    { l:'Tổng chi phí',      v: fmtNum(spend),            s: dayLabel,           c:'' },
+    { l:'ROAS trung bình',   v: avgROAS.toFixed(2)+'x',   s:'Doanh thu/Chi phí', c:'green' },
+    { l:'Tổng tiếp cận',     v: fmtNum(reach),            s:'Unique users',      c:'purple' },
+    { l:'Tổng hiển thị',     v: fmtNum(impr),             s:'Impressions',       c:'' },
+    { l:'Mua hàng',          v: fmtNum(purch),            s:'Purchases',         c:'gold' },
+    { l:'Thêm giỏ hàng',     v: fmtNum(cart),             s:'Add to Cart',       c:'gold' },
+    { l:'Link Clicks',       v: fmtNum(lclicks),          s:'Lượt click link',   c:'' },
+    { l:'CTR trung bình',    v: avgCTR.toFixed(2)+'%',    s:'Click-through rate',c: avgCTR>=1?'green':'red' },
+  ].map(k => `
+    <div class="kpi-card ${k.c}">
+      <div class="kpi-label">${k.l}</div>
+      <div class="kpi-value">${k.v}</div>
+      <div class="kpi-sub">${k.s}</div>
+    </div>`).join('');
+
+  // Charts — Ads Data
+  const dates = Object.keys(byDate).sort();
+  mkLine('chart-spend', dates, [{ label:'Chi phí', data: dates.map(d=>byDate[d].spend), color:'#2563eb' }]);
+  mkLine('chart-reach', dates, [
+    { label:'Tiếp cận', data: dates.map(d=>byDate[d].reach), color:'#8b5cf6' },
+    { label:'Hiển thị', data: dates.map(d=>byDate[d].impr),  color:'#f59e0b' },
+  ]);
+
+  // Charts — Page Insights (organic)
+  const { headers: ph, rows: prows } = G.page || { headers: [], rows: [] };
+  const pci = n => ph.indexOf(n);
+  const byPageDate = {};
+  if (prows.length && pci('date') >= 0) {
+    prows.forEach(pr => {
+      const dt = pr[pci('date')];
+      if (!dt) return;
+      if (G_DATE.from && dt < G_DATE.from) return;
+      if (G_DATE.to   && dt > G_DATE.to)   return;
+      byPageDate[dt] = {
+        views:   +pr[pci('page_views_total')]       || 0,
+        engage:  +pr[pci('page_post_engagements')]  || 0,
+        actions: +pr[pci('page_total_actions')]      || 0,
+        follows: +pr[pci('page_daily_follows')]      || 0,
+      };
+    });
+  }
+  const pdates = Object.keys(byPageDate).sort();
+
+  // Cập nhật badge của 2 card bên phải
+  const b1 = document.getElementById('badge-organic-impr');
+  const b2 = document.getElementById('badge-page-engage');
+
+  if (G_PAGE) {
+    // Khi chọn page cụ thể → hiển thị Kết quả & CTR/ROAS từ ads data
+    if (b1) b1.textContent = 'Ads';
+    if (b2) b2.textContent = 'Ads';
+
+    mkLine('chart-organic-impr', dates, [
+      { label:'Kết quả', data: dates.map(d => {
+          const r = byDate[d];
+          return r.messaging > 0 ? r.messaging
+               : r.page_like  > 0 ? r.page_like
+               : r.purch       > 0 ? r.purch
+               : r.landing_pv  > 0 ? r.landing_pv
+               : r.lclicks;
+        }), color:'#10b981' },
+      { label:'Chi phí', data: dates.map(d => byDate[d].spend), color:'#2563eb' },
+    ]);
+    mkLine('chart-page-engage', dates, [
+      { label:'CTR%', data: dates.map(d => mean(byDate[d].ctr)),  color:'#8b5cf6' },
+      { label:'ROAS', data: dates.map(d => mean(byDate[d].roas)), color:'#f59e0b' },
+    ]);
+  } else {
+    // Khi "Tất cả" → hiển thị Page Insights
+    if (b1) b1.textContent = 'Page Insights';
+    if (b2) b2.textContent = 'Page Insights';
+
+    mkLine('chart-organic-impr', pdates, [
+      { label:'Lượt xem trang',    data: pdates.map(d => byPageDate[d].views),   color:'#10b981' },
+      { label:'Tương tác bài viết',data: pdates.map(d => byPageDate[d].engage),  color:'#2563eb' },
+    ]);
+    mkLine('chart-page-engage', pdates, [
+      { label:'Người theo dõi mới',data: pdates.map(d => byPageDate[d].follows), color:'#8b5cf6' },
+      { label:'Hành động trang',   data: pdates.map(d => byPageDate[d].actions), color:'#f59e0b' },
+    ]);
+  }
+
+  renderCampBreakdown(rows, h);
+  renderPageBreakdown(rows, h);
+}
+
+// ══════════════════════════════════════════════════════════
+// 1b. CAMPAIGN BREAKDOWN
+// ══════════════════════════════════════════════════════════
+function renderCampBreakdown(rows, h) {
+  const ci = n => h.indexOf(n);
+  const byCamp = {};
+
+  rows.forEach(r => {
+    const camp = r[ci('campaign')] || '(Không tên)';
+    if (!byCamp[camp]) byCamp[camp] = { spend:0, reach:0, impr:0, purch:0, cart:0, lclicks:0, clicks:0, landing_pv:0, messaging:0, page_like:0, roas:[], ctr:[], cpc:[] };
+    const d = byCamp[camp];
+    d.spend      += +r[ci('spend')]              || 0;
+    d.reach      += +r[ci('reach')]              || 0;
+    d.impr       += +r[ci('impressions')]        || 0;
+    d.purch      += +r[ci('purchases')]          || 0;
+    d.cart       += +r[ci('add_to_cart')]        || 0;
+    d.lclicks    += +r[ci('link_clicks')]        || 0;
+    d.clicks     += +r[ci('clicks')]             || 0;
+    d.landing_pv += +r[ci('landing_page_view')]  || 0;
+    d.messaging  += +r[ci('messaging_reply')]    || 0;
+    d.page_like  += +r[ci('page_like')]          || 0;
+    const ro = +r[ci('roas')] || 0;
+    const ct = +r[ci('ctr')]  || 0;
+    const cp = +r[ci('cpc')]  || 0;
+    if (ro > 0) d.roas.push(ro);
+    if (ct > 0) d.ctr.push(ct);
+    if (cp > 0) d.cpc.push(cp);
+  });
+
+  const camps = Object.entries(byCamp).sort((a, b) => b[1].spend - a[1].spend);
+  const totalSpend = camps.reduce((s, [, d]) => s + d.spend, 0);
+
+  document.getElementById('camp-count').textContent = camps.length + ' campaigns';
+  document.getElementById('camp-breakdown').innerHTML = camps.map(([name, d], idx) => {
+    const pct     = totalSpend > 0 ? (d.spend / totalSpend * 100) : 0;
+    const avgROAS = mean(d.roas);
+    const avgCTR  = mean(d.ctr);
+    const avgCPC  = mean(d.cpc);
+    const roasColor = avgROAS >= 2 ? '#10b981' : avgROAS >= 1 ? '#f59e0b' : '#ef4444';
+    const rankColors = ['#f59e0b','#94a3b8','#cd7f32'];
+    const rankBg = idx < 3 ? rankColors[idx] : 'transparent';
+    const results = d.messaging  > 0 ? d.messaging
+                  : d.page_like  > 0 ? d.page_like
+                  : d.purch      > 0 ? d.purch
+                  : d.landing_pv > 0 ? d.landing_pv
+                  : d.lclicks;
+    const cpr     = results > 0 ? d.spend / results : 0;
+    return `
+    <tr>
+      <td style="max-width:260px;white-space:normal;line-height:1.4">
+        <div style="display:flex;align-items:center;gap:8px">
+          ${idx < 3 ? `<span style="background:${rankBg};color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${idx+1}</span>` : `<span style="width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#94a3b8;flex-shrink:0">${idx+1}</span>`}
+          <span style="font-weight:600">${name}</span>
+        </div>
+      </td>
+      <td style="min-width:240px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;background:#e2e8f0;border-radius:4px;height:8px;min-width:80px">
+            <div style="width:${Math.min(pct,100).toFixed(1)}%;background:#2563eb;height:8px;border-radius:4px"></div>
+          </div>
+          <span style="font-weight:700;min-width:72px;text-align:right">${fmtNum(d.spend)}</span>
+          <span style="font-size:11px;color:#64748b;min-width:40px;text-align:right">${pct.toFixed(1)}%</span>
+        </div>
+      </td>
+      <td style="text-align:right">${fmtNum(d.reach)}</td>
+      <td style="text-align:right">${fmtNum(d.impr)}</td>
+      <td style="text-align:right;font-weight:700;color:${roasColor}">${avgROAS > 0 ? avgROAS.toFixed(2)+'x' : '—'}</td>
+      <td style="text-align:right">${avgCTR > 0 ? avgCTR.toFixed(2)+'%' : '—'}</td>
+      <td style="text-align:right;font-weight:700;color:${results>0?'#10b981':'var(--muted)'}">${results > 0 ? fmtNum(results) : '—'}</td>
+      <td style="text-align:right">${cpr > 0 ? fmtNum(cpr) : '—'}</td>
+      <td style="text-align:right">${fmtNum(d.lclicks)}</td>
+      <td style="text-align:right">${avgCPC > 0 ? fmtNum(avgCPC) : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// 1c. PAGE BREAKDOWN (derived from campaign name prefix)
+// ══════════════════════════════════════════════════════════
+const PAGE_COLORS = ['#2563eb','#10b981','#f59e0b','#8b5cf6','#ef4444','#06b6d4','#ec4899','#84cc16'];
+
+// ── PAGE LOOKUP từ Ad Creatives ──────────────────────────
+// Tự động lấy tên Page từ dữ liệu creatives (không cần config thủ công)
+// Yêu cầu: chạy Đồng bộ ít nhất 1 lần sau khi cập nhật meta.gs
+
+function buildCampPageMap() {
+  const { headers: h, rows } = G.creatives || { headers: [], rows: [] };
+  if (!h.length) return {};
+  const ci       = n => h.indexOf(n);
+  const pgNameI  = ci('page_name');
+  const campI    = ci('campaign');
+  const adsetI   = ci('adset');
+  if (pgNameI < 0) return {}; // dữ liệu cũ chưa có cột page_name
+  const map = {};
+  rows.forEach(r => {
+    const camp   = r[campI]   || '';
+    const adset  = r[adsetI]  || '';
+    const pgName = r[pgNameI] || '';
+    if (camp && pgName) {
+      map[camp + '__' + adset] = pgName;
+      if (!map[camp + '__'])    map[camp + '__'] = pgName; // fallback chỉ theo campaign
+    }
+  });
+  return map;
+}
+
+function getPageFromCamp(campPageMap, campaign, adset) {
+  return campPageMap[campaign + '__' + adset]
+      || campPageMap[campaign + '__']
+      || 'Chưa xác định';
+}
+
+function mkDoughnut(id, labels, data) {
+  if (_charts[id]) _charts[id].destroy();
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  const total  = data.reduce((a, b) => a + b, 0);
+  const colors = PAGE_COLORS.slice(0, labels.length);
+  const pctLabels = labels.map((l, i) => `${l}  ${total > 0 ? (data[i]/total*100).toFixed(1) : 0}%`);
+  _charts[id] = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: pctLabels,
+      datasets: [{ data, backgroundColor: colors.map(c => c + 'cc'), borderColor: colors, borderWidth: 2 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '60%',
+      plugins: {
+        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } },
+        tooltip: { callbacks: { label: c => `${fmtNum(c.raw)} (${total>0?(c.raw/total*100).toFixed(1):0}%)` } }
+      }
+    }
+  });
+}
+
+function mkBar(id, labels, dataset) {
+  if (_charts[id]) _charts[id].destroy();
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  const colors = PAGE_COLORS.slice(0, labels.length);
+  _charts[id] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: dataset.label,
+        data: dataset.data,
+        backgroundColor: colors.map(c => c + 'bb'),
+        borderColor: colors,
+        borderWidth: 1.5,
+        borderRadius: 5,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => `${c.label}: ${fmtNum(c.raw)}` } }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 } }, grid: { display: false } },
+        y: { ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+function renderPageBreakdown(rows, h) {
+  const campPageMap = buildCampPageMap();
+  const ci = n => h.indexOf(n);
+  const byPage = {};
+
+  rows.forEach(r => {
+    const page = getPageFromCamp(campPageMap, r[ci('campaign')] || '', r[ci('adset')] || '');
+    if (!byPage[page]) byPage[page] = { spend:0, reach:0, impr:0, purch:0, lclicks:0, landing_pv:0, messaging:0, page_like:0, roas:[], ctr:[], cpc:[] };
+    const d = byPage[page];
+    d.spend      += +r[ci('spend')]             || 0;
+    d.reach      += +r[ci('reach')]             || 0;
+    d.impr       += +r[ci('impressions')]       || 0;
+    d.purch      += +r[ci('purchases')]         || 0;
+    d.lclicks    += +r[ci('link_clicks')]       || 0;
+    d.landing_pv += +r[ci('landing_page_view')] || 0;
+    d.messaging  += +r[ci('messaging_reply')]   || 0;
+    d.page_like  += +r[ci('page_like')]         || 0;
+    const ro = +r[ci('roas')] || 0;
+    const ct = +r[ci('ctr')]  || 0;
+    const cp = +r[ci('cpc')]  || 0;
+    if (ro > 0) d.roas.push(ro);
+    if (ct > 0) d.ctr.push(ct);
+    if (cp > 0) d.cpc.push(cp);
+  });
+
+  const pages      = Object.entries(byPage).sort((a, b) => b[1].spend - a[1].spend);
+  const totalSpend = pages.reduce((s, [, d]) => s + d.spend, 0);
+  const labels     = pages.map(([name]) => name);
+
+  document.getElementById('page-bd-count').textContent = pages.length + ' pages';
+
+  // Render bảng trước — không phụ thuộc vào Chart.js
+  document.getElementById('page-bd-body').innerHTML = pages.map(([name, d], idx) => {
+    const pct       = totalSpend > 0 ? (d.spend / totalSpend * 100) : 0;
+    const avgROAS   = mean(d.roas);
+    const avgCTR    = mean(d.ctr);
+    const avgCPC    = mean(d.cpc);
+    const roasColor = avgROAS >= 2 ? '#10b981' : avgROAS >= 1 ? '#f59e0b' : '#ef4444';
+    const pgColor   = PAGE_COLORS[idx % PAGE_COLORS.length];
+    const results   = d.messaging  > 0 ? d.messaging
+                    : d.page_like  > 0 ? d.page_like
+                    : d.purch      > 0 ? d.purch
+                    : d.landing_pv > 0 ? d.landing_pv
+                    : d.lclicks;
+    const cpr       = results > 0 ? d.spend / results : 0;
+    return `
+    <tr>
+      <td style="white-space:normal;line-height:1.4">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="width:10px;height:10px;border-radius:50%;background:${pgColor};flex-shrink:0"></span>
+          <span style="font-weight:700">${name}</span>
+        </div>
+      </td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;background:#e2e8f0;border-radius:4px;height:8px;min-width:80px">
+            <div style="width:${Math.min(pct,100).toFixed(1)}%;background:${pgColor};height:8px;border-radius:4px"></div>
+          </div>
+          <span style="font-weight:700;min-width:72px;text-align:right">${fmtNum(d.spend)}</span>
+          <span style="font-size:11px;color:#64748b;min-width:40px;text-align:right">${pct.toFixed(1)}%</span>
+        </div>
+      </td>
+      <td style="text-align:right">${fmtNum(d.reach)}</td>
+      <td style="text-align:right">${fmtNum(d.impr)}</td>
+      <td style="text-align:right;font-weight:700;color:${roasColor}">${avgROAS > 0 ? avgROAS.toFixed(2)+'x' : '—'}</td>
+      <td style="text-align:right">${avgCTR > 0 ? avgCTR.toFixed(2)+'%' : '—'}</td>
+      <td style="text-align:right;font-weight:700;color:${results>0?'#10b981':'var(--muted)'}">${results > 0 ? fmtNum(results) : '—'}</td>
+      <td style="text-align:right">${cpr > 0 ? fmtNum(cpr) : '—'}</td>
+      <td style="text-align:right">${fmtNum(d.lclicks)}</td>
+      <td style="text-align:right">${avgCPC > 0 ? fmtNum(avgCPC) : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  // Render charts sau bảng
+  mkDoughnut('chart-page-donut',    labels, pages.map(([, d]) => d.spend));
+  mkBar('chart-page-spend-bar',     labels, { label:'Chi phí', data: pages.map(([, d]) => d.spend)      });
+  mkBar('chart-page-roas',          labels, { label:'ROAS',    data: pages.map(([, d]) => mean(d.roas)) });
+  mkBar('chart-page-ctr',           labels, { label:'CTR%',    data: pages.map(([, d]) => mean(d.ctr))  });
+  mkBar('chart-page-cpc',           labels, { label:'CPC',     data: pages.map(([, d]) => mean(d.cpc))  });
+}
+
+// ══════════════════════════════════════════════════════════
+// 2. ADS TABLE
+// ══════════════════════════════════════════════════════════
+const ADS_VI = {
+  date:'Ngày', campaign:'Campaign', adset:'Ad Set', spend:'Chi phí',
+  impressions:'Hiển thị', reach:'Tiếp cận', clicks:'Clicks', ctr:'CTR%',
+  cpc:'CPC', cpm:'CPM', frequency:'Tần suất', link_clicks:'Link Clicks',
+  purchases:'Mua hàng', add_to_cart:'Thêm giỏ', roas:'ROAS'
+};
+
+function renderAds() {
+  const { headers: h, rows } = G.ads || { headers:[], rows:[] };
+  if (!rows.length) return;
+
+  document.getElementById('ads-head').innerHTML = h.map(c => `<th onclick="sortTable('ads',${h.indexOf(c)})">${ADS_VI[c]||c} ↕</th>`).join('');
+
+  const campI  = h.indexOf('campaign');
+  const adsetI = h.indexOf('adset');
+  const camps  = unique(rows.map(r=>r[campI])).sort();
+  const adsets = unique(rows.map(r=>r[adsetI])).sort();
+  populateSel('ads-camp',  camps);
+  populateSel('ads-adset', adsets);
+
+  G._adsRows = rows; G._adsH = h;
+  renderAdsTbl(rows);
+}
+
+function renderAdsTbl(rows) {
+  const h = G._adsH;
+  const FMT = { spend: fmtNum, cpc: fmtNum, cpm: fmtNum, ctr: v=>(+v).toFixed(2)+'%', roas: v=>(+v).toFixed(2)+'x' };
+  document.getElementById('ads-body').innerHTML = rows.map(r =>
+    `<tr>${h.map((c,i)=>{
+      let v = r[i];
+      if (v !== '' && FMT[c]) v = FMT[c](v);
+      return `<td title="${r[i]}">${v}</td>`;
+    }).join('')}</tr>`
+  ).join('');
+  document.getElementById('ads-count').textContent = rows.length + ' dòng';
+}
+
+function filterAds() {
+  const q = q2('ads-q'), camp = val('ads-camp'), adset = val('ads-adset');
+  const h = G._adsH;
+  const ci = name => h.indexOf(name);
+  const rows = (G._adsRows||[]).filter(r =>
+    (!camp  || r[ci('campaign')]===camp) &&
+    (!adset || r[ci('adset')]===adset) &&
+    (!q     || r.some(v=>str(v).includes(q)))
+  );
+  renderAdsTbl(rows);
+}
+
+// ══════════════════════════════════════════════════════════
+// 3. PAGE INSIGHTS
+// ══════════════════════════════════════════════════════════
+const PAGE_VI = {
+  date:'Ngày',
+  page_name:'Trang',
+  page_views_total:'Lượt xem trang',
+  page_post_engagements:'Tương tác bài viết',
+  page_total_actions:'Hành động trang',
+  page_video_views:'Video views',
+  page_daily_follows:'Follow mới',
+  page_daily_unfollows:'Bỏ Follow',
+};
+
+function renderPage() {
+  const { headers: ph, rows: pAllRows } = G.page || { headers:[], rows:[] };
+  const { headers: ah, rows: aAllRows } = G.ads  || { headers:[], rows:[] };
+  const campPageMap = buildCampPageMap();
+  const aci = n => ah.indexOf(n);
+  const pci = n => ph.indexOf(n);
+
+  // ── Filter organic rows by page_name + date ───────────────
+  const pnameIdx = ph.indexOf('page_name');
+  let prows = pAllRows;
+  if (G_TRANG_PAGE && pnameIdx >= 0) {
+    prows = prows.filter(r => r[pnameIdx] === G_TRANG_PAGE);
+  }
+  if (G_DATE.from || G_DATE.to) {
+    prows = prows.filter(r => {
+      const d = String(r[pci('date')] || '');
+      if (G_DATE.from && d < G_DATE.from) return false;
+      if (G_DATE.to   && d > G_DATE.to)   return false;
+      return true;
+    });
+  }
+
+  // ── Filter paid rows by page + date ────────────────────
+  let arows = aAllRows;
+  if (G_TRANG_PAGE) {
+    arows = arows.filter(r =>
+      getPageFromCamp(campPageMap, r[aci('campaign')]||'', r[aci('adset')]||'') === G_TRANG_PAGE
+    );
+  }
+  if (G_DATE.from || G_DATE.to) {
+    arows = arows.filter(r => {
+      const d = String(r[aci('date')] || '');
+      if (G_DATE.from && d < G_DATE.from) return false;
+      if (G_DATE.to   && d > G_DATE.to)   return false;
+      return true;
+    });
+  }
+
+  // ── Page badge ─────────────────────────────────────────
+  const badge = document.getElementById('page-paid-page-badge');
+  if (badge) {
+    if (G_TRANG_PAGE) { badge.textContent = G_TRANG_PAGE; badge.style.display = ''; }
+    else { badge.style.display = 'none'; }
+  }
+
+  // ══ ORGANIC SECTION ════════════════════════════════════
+  if (!prows.length) {
+    document.getElementById('page-kpi-grid').innerHTML =
+      `<div style="grid-column:1/-1;text-align:center;padding:30px 24px;background:#fff;
+        border-radius:10px;border:2px dashed #e2e8f0">
+        <div style="font-size:36px;margin-bottom:10px">📄</div>
+        <div style="font-weight:700;color:#1e3a5f;margin-bottom:6px">Chưa có dữ liệu Page Insights</div>
+        <div style="font-size:12px;color:#64748b">Nhấn <strong>Đồng bộ ngay</strong> để tải từ Facebook.</div>
+      </div>`;
+  } else {
+    // Aggregate by date (tổng hợp nhiều trang khi chọn "Tất cả")
+    const ORG_COLS = ["page_views_total","page_post_engagements","page_total_actions",
+                      "page_video_views","page_daily_follows","page_daily_unfollows"];
+    const byPDate = {};
+    prows.forEach(r => {
+      const d = r[pci('date')]; if (!d) return;
+      if (!byPDate[d]) { byPDate[d] = {}; ORG_COLS.forEach(k => byPDate[d][k]=0); }
+      ORG_COLS.forEach(k => { const ki = pci(k); if (ki>=0) byPDate[d][k] += +(r[ki])||0; });
+    });
+    const dates_p = Object.keys(byPDate).sort();
+    const pfcol = k => dates_p.map(d => byPDate[d][k] || 0);
+
+    const totalNew    = pfcol('page_daily_follows').reduce((a,b)=>a+b,0);
+    const totalLost   = pfcol('page_daily_unfollows').reduce((a,b)=>a+b,0);
+    const netFol      = totalNew - totalLost;
+    const totalViews  = pfcol('page_views_total').reduce((a,b)=>a+b,0);
+    const totalEng    = pfcol('page_post_engagements').reduce((a,b)=>a+b,0);
+    const totalAct    = pfcol('page_total_actions').reduce((a,b)=>a+b,0);
+    const totalVid    = pfcol('page_video_views').reduce((a,b)=>a+b,0);
+
+    document.getElementById('page-kpi-grid').innerHTML = [
+      { l:'Follow mới',         v: '+'+fmtNum(totalNew),                     s:'30 ngày',             c:'green'  },
+      { l:'Bỏ Follow',          v: '-'+fmtNum(totalLost),                    s:'30 ngày',             c:'red'    },
+      { l:'Thay đổi net',       v: (netFol>=0?'+':'')+fmtNum(netFol),       s:'30 ngày',             c: netFol>=0?'green':'red' },
+      { l:'Lượt xem trang',     v: fmtNum(totalViews),                       s:'Page views',          c:''       },
+      { l:'Tương tác bài viết', v: fmtNum(totalEng),                         s:'Post engagements',    c:'gold'   },
+      { l:'Hành động trang',    v: fmtNum(totalAct),                         s:'Page actions',        c:''       },
+      { l:'Video views',        v: fmtNum(totalVid),                         s:'30 ngày',             c:'purple' },
+    ].map(k=>`<div class="kpi-card ${k.c}"><div class="kpi-label">${k.l}</div><div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
+
+    // Chart 1: Fan growth (bar)
+    const fanCanvas = document.getElementById('chart-fans');
+    if (fanCanvas) {
+      const existing = Chart.getChart(fanCanvas);
+      const dsConfig = [
+        { type:'bar', label:'Follow mới', data: pfcol('page_daily_follows'),
+          backgroundColor:'#10b98133', borderColor:'#10b981', borderWidth:1.5 },
+        { type:'bar', label:'Bỏ Follow', data: pfcol('page_daily_unfollows').map(v=>-v),
+          backgroundColor:'#ef444433', borderColor:'#ef4444', borderWidth:1.5 },
+      ];
+      if (existing) {
+        existing.data.labels = dates_p;
+        existing.data.datasets = dsConfig;
+        existing.update('none');
+      } else {
+        _charts['chart-fans'] = new Chart(fanCanvas, {
+          data: { labels: dates_p, datasets: dsConfig },
+          options: {
+            responsive:true, maintainAspectRatio:false,
+            interaction:{ mode:'index', intersect:false },
+            plugins:{ legend:{ position:'top', labels:{ boxWidth:12, font:{size:11} } },
+              tooltip:{ callbacks:{ label: c=>`${c.dataset.label}: ${fmtNum(Math.abs(c.raw))}` } } },
+            scales:{ x:{ ticks:{maxTicksLimit:10,font:{size:10}}, grid:{display:false} },
+              y:{ ticks:{font:{size:10}} } },
+          },
+        });
+      }
+    }
+
+    // Chart 2: Views & engagement (organic)
+    mkLine('chart-page-eng', dates_p, [
+      { label:'Lượt xem trang',      data: pfcol('page_views_total'),       color:'#2563eb' },
+      { label:'Tương tác bài viết',  data: pfcol('page_post_engagements'),  color:'#10b981' },
+    ]);
+
+    // Store organic data for comparison charts
+    window._orgData = {
+      dates: dates_p,
+      views: pfcol('page_views_total'),
+      eng:   pfcol('page_post_engagements'),
+    };
+
+    // Organic table — hiện raw rows (có cột page_name để phân biệt từng trang)
+    const visibleCols = ph.filter(c => PAGE_VI[c]); // chỉ hiện cột có tên tiếng Việt
+    const visIdx = visibleCols.map(c => ph.indexOf(c));
+    document.getElementById('page-head').innerHTML = visibleCols.map(c=>`<th>${PAGE_VI[c]}</th>`).join('');
+    document.getElementById('page-body').innerHTML = [...prows].reverse().map(r=>
+      `<tr>${visIdx.map(i=>`<td>${typeof r[i]==='number'?fmtNum(r[i]):r[i]}</td>`).join('')}</tr>`
+    ).join('');
+    const pageCount = new Set(prows.map(r => pnameIdx>=0 ? r[pnameIdx] : '')).size;
+    document.getElementById('page-row-count').textContent =
+      dates_p.length + ' ngày' + (pageCount > 1 ? ` × ${pageCount} trang` : '');
+  }
+
+  // ══ PAID SECTION ═══════════════════════════════════════
+  if (!arows.length) {
+    document.getElementById('page-paid-kpi').innerHTML =
+      `<div style="grid-column:1/-1;padding:20px;text-align:center;background:#fff;border-radius:10px;color:var(--muted)">
+        ${G_TRANG_PAGE
+          ? `Không có dữ liệu paid cho trang "<b>${G_TRANG_PAGE}</b>"`
+          : 'Chưa có dữ liệu Ads. Nhấn <b>Đồng bộ ngay</b>.'}
+      </div>`;
+    // Clear comparison charts
+    mkLine('chart-page-spend',   [], []);
+    mkLine('chart-page-results', [], []);
+    mkLine('chart-page-reach',   [], []);
+    mkLine('chart-page-msg',     [], []);
+    return;
+  }
+
+  // Aggregate paid by date
+  const byDate = {};
+  arows.forEach(r => {
+    const dt = r[aci('date')]; if (!dt) return;
+    if (!byDate[dt]) byDate[dt] = { spend:0, reach:0, impr:0, lclicks:0, purch:0, landing_pv:0, messaging:0, page_like:0, ctr:[] };
+    const d = byDate[dt];
+    d.spend      += +r[aci('spend')]             || 0;
+    d.reach      += +r[aci('reach')]             || 0;
+    d.impr       += +r[aci('impressions')]       || 0;
+    d.lclicks    += +r[aci('link_clicks')]       || 0;
+    d.purch      += +r[aci('purchases')]         || 0;
+    d.landing_pv += +r[aci('landing_page_view')] || 0;
+    d.messaging  += +r[aci('messaging_reply')]   || 0;
+    d.page_like  += +r[aci('page_like')]         || 0;
+    const ctr = +r[aci('ctr')] || 0; if (ctr) d.ctr.push(ctr);
+  });
+  const dates_a = Object.keys(byDate).sort();
+
+  const getResult = d => d.messaging>0?d.messaging : d.page_like>0?d.page_like
+                       : d.purch>0?d.purch : d.landing_pv>0?d.landing_pv : d.lclicks;
+
+  // Paid KPI totals
+  let tSpend=0, tReach=0, tImpr=0, tResults=0;
+  arows.forEach(r => {
+    tSpend   += +r[aci('spend')]             || 0;
+    tReach   += +r[aci('reach')]             || 0;
+    tImpr    += +r[aci('impressions')]       || 0;
+    const msg  = +r[aci('messaging_reply')]   || 0;
+    const like = +r[aci('page_like')]         || 0;
+    const pur  = +r[aci('purchases')]         || 0;
+    const lpv  = +r[aci('landing_page_view')] || 0;
+    const lc   = +r[aci('link_clicks')]       || 0;
+    tResults += msg>0?msg : like>0?like : pur>0?pur : lpv>0?lpv : lc;
+  });
+  const cpr = tResults>0 ? tSpend/tResults : 0;
+  const cpm = tImpr>0    ? (tSpend/tImpr)*1000 : 0;
+
+  document.getElementById('page-paid-kpi').innerHTML = [
+    { l:'Chi phí',            v: fmtNum(tSpend)+'đ',   s:'Paid spend',           c:''       },
+    { l:'Tiếp cận',           v: fmtNum(tReach),        s:'Paid reach',           c:'blue'   },
+    { l:'Hiển thị',           v: fmtNum(tImpr),         s:'Impressions',          c:''       },
+    { l:'Kết quả',            v: fmtNum(tResults),      s:'Paid results',         c:'green'  },
+    { l:'CPR',                v: fmtNum(cpr)+'đ',       s:'Chi phí/kết quả',      c:'gold'   },
+    { l:'CPM',                v: fmtNum(cpm)+'đ',       s:'Chi phí/1000 hiển thị',c:''       },
+  ].map(k=>`<div class="kpi-card ${k.c}"><div class="kpi-label">${k.l}</div><div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
+
+  // Paid Chart 1: Spend
+  mkLine('chart-page-spend', dates_a, [
+    { label:'Chi phí (đ)',  data: dates_a.map(d=>byDate[d].spend),  color:'#2563eb' },
+    { label:'Tiếp cận',    data: dates_a.map(d=>byDate[d].reach),   color:'#10b981' },
+  ]);
+
+  // Paid Chart 2: Results
+  mkLine('chart-page-results', dates_a, [
+    { label:'Kết quả', data: dates_a.map(d=>getResult(byDate[d])), color:'#f59e0b' },
+    { label:'CTR (%)', data: dates_a.map(d=>mean(byDate[d].ctr)),   color:'#8b5cf6' },
+  ]);
+
+  // ══ COMPARISON CHARTS ══════════════════════════════════
+  const org = window._orgData || { dates:[], views:[], eng:[] };
+  const getOrgVal = (arr, dt) => {
+    const i = org.dates.indexOf(dt);
+    return i >= 0 ? arr[i] : 0;
+  };
+
+  mkLine('chart-page-reach', dates_a, [
+    { label:'Paid Reach',       data: dates_a.map(d=>byDate[d].reach),              color:'#2563eb' },
+    { label:'Organic Page Views', data: dates_a.map(d=>getOrgVal(org.views,d)),     color:'#10b981' },
+  ]);
+
+  mkLine('chart-page-msg', dates_a, [
+    { label:'Paid Results',        data: dates_a.map(d=>getResult(byDate[d])),      color:'#8b5cf6' },
+    { label:'Organic Engagements', data: dates_a.map(d=>getOrgVal(org.eng,d)),      color:'#f59e0b' },
+  ]);
+}
+
+// ══════════════════════════════════════════════════════════
+// 4. POSTS
+// ══════════════════════════════════════════════════════════
+const POSTS_VI = {
+  created_date:'Ngày', type:'Loại', message:'Nội dung',
+  impressions:'Hiển thị', reach:'Tiếp cận', engaged_users:'Tương tác',
+  clicks:'Clicks', reactions:'Reactions', video_views:'Video views',
+};
+const POSTS_NUM = new Set(['impressions','reach','engaged_users','clicks','reactions','video_views']);
+
+function renderPosts() {
+  const { headers: h, rows } = G.posts || { headers:[], rows:[] };
+  if (!rows.length) return;
+
+  document.getElementById('posts-head').innerHTML = h.map(c=>`<th onclick="sortTable('posts',${h.indexOf(c)})">${POSTS_VI[c]||c} ↕</th>`).join('');
+  const types = unique(rows.map(r=>r[h.indexOf('type')])).filter(Boolean).sort();
+  populateSel('posts-type', types);
+  G._postsRows=rows; G._postsH=h;
+  renderPostsTbl(rows);
+}
+
+function renderPostsTbl(rows) {
+  const h = G._postsH;
+  document.getElementById('posts-body').innerHTML = rows.map(r=>
+    `<tr>${h.map((c,i)=>{
+      const v = r[i];
+      if (c==='message') return `<td title="${v}" style="max-width:320px;white-space:normal;line-height:1.5">${v}</td>`;
+      if (POSTS_NUM.has(c) && v!=='') return `<td>${fmtNum(+v)}</td>`;
+      return `<td>${v}</td>`;
+    }).join('')}</tr>`
+  ).join('');
+  document.getElementById('posts-count').textContent = rows.length + ' bài';
+}
+
+function filterPosts() {
+  const q=q2('posts-q'), type=val('posts-type');
+  const h=G._postsH, ti=h.indexOf('type');
+  const rows=(G._postsRows||[]).filter(r=>(!type||r[ti]===type)&&(!q||r.some(v=>str(v).includes(q))));
+  renderPostsTbl(rows);
+}
+
+// ══════════════════════════════════════════════════════════
+// 5. MESSAGES
+// ══════════════════════════════════════════════════════════
+let G_MSG_DATE      = { from: '', to: '' };
+let _PAGE_ID_MAP    = {};   // { page_name → page_id } từ Ad Creatives
+let _CONV_LIST      = [];   // items tương ứng với renderMsgList
+let _convId         = '';
+let _convPageId     = '';
+let _convCustomerId = '';
+
+function initMsgDate() {
+  const today = new Date();
+  const from30 = new Date(today); from30.setDate(today.getDate() - 29);
+  G_MSG_DATE.from = fmtD(from30);
+  G_MSG_DATE.to   = fmtD(today);
+  const f = document.getElementById('msg-from'), t = document.getElementById('msg-to');
+  if (f) f.value = G_MSG_DATE.from;
+  if (t) t.value = G_MSG_DATE.to;
+}
+
+function setMsgRange(btn, days) {
+  document.querySelectorAll('#msg-date-btns .date-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const today = new Date();
+  const from  = new Date(today); from.setDate(today.getDate() - days + 1);
+  G_MSG_DATE.from = fmtD(from);
+  G_MSG_DATE.to   = fmtD(today);
+  const f = document.getElementById('msg-from'), t = document.getElementById('msg-to');
+  if (f) f.value = G_MSG_DATE.from;
+  if (t) t.value = G_MSG_DATE.to;
+  renderMessages();
+}
+
+function applyMsgDate() {
+  document.querySelectorAll('#msg-date-btns .date-btn').forEach(b => b.classList.remove('active'));
+  G_MSG_DATE.from = document.getElementById('msg-from')?.value || '';
+  G_MSG_DATE.to   = document.getElementById('msg-to')?.value  || '';
+  renderMessages();
+}
+
+function renderMessages() {
+  const { headers: h, rows: allRows } = G.messages || { headers:[], rows:[] };
+  G._msgH        = h;
+  G._msgRows     = allRows;
+  G._msgFiltRows = null; // will be set after filtRows is computed
+  const ci = n => h.indexOf(n);
+
+  if (!allRows.length) {
+    document.getElementById('msg-list').innerHTML =
+      `<div class="empty"><div style="font-size:40px">💬</div>
+       <p>Chưa có dữ liệu. Nhấn <strong>Đồng bộ ngay</strong>.</p></div>`;
+    return;
+  }
+
+  // Populate page select
+  const pages = unique(allRows.map(r => String(r[ci('page_name')]||'')).filter(Boolean)).sort();
+  const pSel = document.getElementById('msg-page-sel');
+  if (pSel) {
+    const cur = pSel.value;
+    pSel.innerHTML = '<option value="">Tất cả trang</option>' +
+      pages.map(p => `<option value="${p}" ${p===cur?'selected':''}>${p}</option>`).join('');
+  }
+
+  // Filter by date
+  const inPeriodDate = d => {
+    const ds = String(d||'');
+    if (G_MSG_DATE.from && ds < G_MSG_DATE.from) return false;
+    if (G_MSG_DATE.to   && ds > G_MSG_DATE.to)   return false;
+    return !!ds;
+  };
+  const inPeriod = r => {
+    // Ưu tiên ngày khách nhắn gần nhất; fallback updated_date nếu chưa có dữ liệu
+    const lcdIdx = ci('last_cust_date');
+    const d = (lcdIdx >= 0 && r[lcdIdx])
+      ? String(r[lcdIdx])
+      : String(r[ci('updated_date')]||'');
+    if (G_MSG_DATE.from && d < G_MSG_DATE.from) return false;
+    if (G_MSG_DATE.to   && d > G_MSG_DATE.to)   return false;
+    return true;
+  };
+
+  // Period badge
+  const badge = document.getElementById('msg-period-badge');
+  if (badge) badge.textContent = G_MSG_DATE.from + ' → ' + G_MSG_DATE.to;
+  const chartBadge = document.getElementById('msg-chart-badge');
+  if (chartBadge) chartBadge.textContent = G_MSG_DATE.from + ' → ' + G_MSG_DATE.to;
+
+  // ── Filter by date first ───────────────────────────────
+  const filtRows = allRows.filter(inPeriod);
+
+  // ── Khách mới: đọc từ Page Insights (page_messages_new_conversations_unique) ──
+  const pageNewConvMap = {};
+  {
+    const pgH = (G.page||{}).headers || [];
+    const pgR = (G.page||{}).rows    || [];
+    const _pgn = pgH.indexOf('page_name');
+    const _pdt = pgH.indexOf('date');
+    const _pnc = pgH.indexOf('page_messages_new_conversations_unique');
+    if (_pnc >= 0) {
+      pgR.forEach(pr => {
+        const d = String(pr[_pdt]||'');
+        if (!inPeriodDate(d)) return;
+        const pn = String(pr[_pgn]||'');
+        pageNewConvMap[pn] = (pageNewConvMap[pn]||0) + (Number(pr[_pnc])||0);
+      });
+    }
+  }
+  const _usePageInsight = Object.keys(pageNewConvMap).length > 0;
+
+  // ── Chi phí / tin nhắn: tổng spend từ Ads Data theo cùng kỳ ──
+  const pageSpendMap = {};
+  {
+    const campPageMap = buildCampPageMap();
+    const adH = (G.ads||{}).headers || [];
+    const adR = (G.ads||{}).rows    || [];
+    const _acamp  = adH.indexOf('campaign');
+    const _aadset = adH.indexOf('adset');
+    const _aspend = adH.indexOf('spend');
+    const _adate  = adH.indexOf('date');
+    if (_aspend >= 0) {
+      adR.forEach(r => {
+        const d = String(r[_adate]||'');
+        if (G_MSG_DATE.from && d < G_MSG_DATE.from) return;
+        if (G_MSG_DATE.to   && d > G_MSG_DATE.to)   return;
+        const pn = getPageFromCamp(campPageMap, r[_acamp]||'', r[_aadset]||'');
+        if (!pn || pn === 'Chưa xác định') return;
+        pageSpendMap[pn] = (pageSpendMap[pn]||0) + (Number(r[_aspend])||0);
+      });
+    }
+  }
+
+  // ── Summary table ──────────────────────────────────────
+  const byPage = {};
+  allRows.forEach(r => {
+    const page = String(r[ci('page_name')]||'Chưa xác định');
+    if (!byPage[page]) byPage[page] = { total:0, inPeriod:0, unread:0, rtimes:[], phones:0, engaged:0, newConvs:0 };
+    const s = byPage[page];
+    s.total++;
+    const inP = inPeriod(r);
+    if (inP) {
+      s.inPeriod++;
+      if ((+r[ci('unread')]||0) > 0) s.unread++;
+      // has_phone: kiểm tra cột sync + kiểm tra thêm trường "from" (tên tham gia)
+      const phoneRe = /(\+84|0)\d{8,10}/;
+      const hasPhoneFlag = +r[ci('has_phone')] === 1
+        || phoneRe.test(String(r[ci('from')]||''));
+      if (hasPhoneFlag) {
+        // phone_date: ngày khách để lại SĐT — chỉ đếm nếu trong kỳ chọn
+        const pdIdx = ci('phone_date');
+        const phoneDate = pdIdx >= 0
+          ? String(r[pdIdx]||r[ci('updated_date')]||'')
+          : String(r[ci('updated_date')]||'');
+        if (inPeriodDate(phoneDate)) s.phones++;
+      }
+
+      // ≥3 tin khách: dùng dữ liệu chính xác nếu có, fallback message_count>=6
+      const exactCust = +r[ci('customer_msgs')]||0;
+      const totalMsgs = +r[ci('message_count')]||0;
+      if (exactCust >= 3 || (exactCust === 0 && totalMsgs >= 6)) s.engaged++;
+
+      const rt = r[ci('response_time_hrs')];
+      if (rt !== '' && rt !== null && rt !== undefined && !isNaN(+rt) && +rt >= 0) {
+        s.rtimes.push(+rt);
+      }
+    }
+  });
+
+  // Gán Khách mới từ Page Insights nếu metric đã được sync
+  if (_usePageInsight) {
+    Object.keys(byPage).forEach(pn => { byPage[pn].newConvs = pageNewConvMap[pn] || 0; });
+  }
+
+  const tbody = document.getElementById('msg-summary-body');
+  if (tbody) {
+    const sorted = Object.entries(byPage).sort((a,b) => b[1].inPeriod - a[1].inPeriod);
+    // Totals row
+    const totals = sorted.reduce((acc,[,s]) => {
+      acc.total    += s.total;
+      acc.inPeriod += s.inPeriod;
+      acc.unread   += s.unread;
+      acc.phones   += s.phones;
+      acc.engaged  += s.engaged;
+      acc.newConvs += s.newConvs;
+      acc.rtimes    = acc.rtimes.concat(s.rtimes);
+      return acc;
+    }, { total:0, inPeriod:0, unread:0, phones:0, engaged:0, newConvs:0, rtimes:[] });
+
+    const renderRow = (label, s, bold=false) => {
+      const rate      = s.inPeriod > 0 ? Math.round((s.inPeriod - s.unread) / s.inPeriod * 100) : 0;
+      const phoneRate = s.inPeriod > 0 ? Math.round(s.phones / s.inPeriod * 100) : 0;
+      const avgRt     = s.rtimes.length > 0 ? s.rtimes.reduce((a,b)=>a+b,0)/s.rtimes.length : null;
+      const rtStr     = avgRt !== null ? (avgRt < 1 ? Math.round(avgRt*60)+'p' : avgRt.toFixed(1)+'h') : '—';
+      const rateColor = rate>=80?'#10b981' : rate>=50?'#f59e0b':'#ef4444';
+      const phoneColor= phoneRate>=20?'#10b981' : phoneRate>=10?'#f59e0b':'#64748b';
+      const w = bold ? 'font-weight:700' : '';
+      const totalSpend = bold
+        ? Object.values(pageSpendMap).reduce((a,b)=>a+b,0)
+        : (pageSpendMap[label]||0);
+      const costPerMsg = (s.inPeriod > 0 && totalSpend > 0)
+        ? Math.round(totalSpend / s.inPeriod).toLocaleString('vi-VN')
+        : '—';
+      const costColor = totalSpend > 0 ? '#dc2626' : '#94a3b8';
+      return `<tr style="${bold?'background:#f8fafc':''}">
+        <td style="font-weight:600;${w}">${label}</td>
+        <td style="text-align:center;${w}">${s.total}</td>
+        <td style="text-align:center;font-weight:700;color:#2563eb">${s.inPeriod}</td>
+        <td style="text-align:center;color:${s.unread>0?'#ef4444':'#10b981'};font-weight:600">${s.unread}</td>
+        <td style="text-align:center;color:${rateColor};font-weight:700">${rate}%</td>
+        <td style="text-align:center;${w}">${rtStr}</td>
+        <td style="text-align:center;font-weight:700;color:#059669">${s.newConvs}</td>
+        <td style="text-align:center;font-weight:700;color:#0891b2">${s.engaged}</td>
+        <td style="text-align:center;font-weight:700;color:#7c3aed">${s.phones}</td>
+        <td style="text-align:center;color:${phoneColor};font-weight:700">${phoneRate}%</td>
+        <td style="text-align:center;font-weight:700;color:${costColor}">${costPerMsg}</td>
+      </tr>`;
+    };
+
+    tbody.innerHTML =
+      sorted.map(([page, s]) => renderRow(page, s)).join('') +
+      (sorted.length > 1 ? renderRow('Tổng cộng', totals, true) : '');
+  }
+
+  // ── Daily chart (filtered by date, all pages) ──────────
+  const byDay = {};
+  filtRows.forEach(r => {
+    const d = String(r[ci('updated_date')]||'');
+    if (d) byDay[d] = (byDay[d]||0) + 1;
+  });
+  const days = Object.keys(byDay).sort();
+  mkLine('chart-msg-daily', days, [
+    { label:'Hội thoại', data: days.map(d=>byDay[d]), color:'#2563eb' },
+  ]);
+
+  // ── Conversation list ──────────────────────────────────
+  G._msgFiltRows = filtRows;
+  document.getElementById('msg-count').textContent = filtRows.length + ' trong kỳ';
+  renderMsgList(filtRows);
+}
+
+function renderMsgList(rows) {
+  const h  = G._msgH || [];
+  const ci = n => h.indexOf(n);
+  const el = document.getElementById('msg-list');
+  if (!el) return;
+
+  if (!rows.length) {
+    el.innerHTML = `<div class="empty" style="padding:30px;text-align:center;color:var(--muted)">Không có hội thoại phù hợp.</div>`;
+    _CONV_LIST = [];
+    return;
+  }
+
+  // Lưu danh sách để openConv(i) tra cứu
+  _CONV_LIST = rows.map(r => ({
+    convId:       String(r[ci('conv_id')]   || ''),
+    pageId:       _PAGE_ID_MAP[r[ci('page_name')]||''] || '',
+    pageName:     r[ci('page_name')]  || '',
+    customerName: r[ci('from')]       || 'Người dùng',
+  }));
+
+  el.innerHTML = rows.map((r, i) => {
+    const unread = +r[ci('unread')]        || 0;
+    const count  = +r[ci('message_count')] || 0;
+    const rt     = r[ci('response_time_hrs')];
+    const rtStr  = (rt !== '' && rt !== null && rt !== undefined && !isNaN(+rt) && +rt >= 0)
+      ? `· ⏱ ${+rt < 1 ? Math.round(+rt*60)+'p' : (+rt).toFixed(1)+'h'}`
+      : '';
+    const page   = r[ci('page_name')] || '';
+    const phone  = +r[ci('has_phone')] === 1;
+    return `<div class="msg-item" onclick="openConv(${i})">
+      <div class="msg-head">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span class="msg-from">${r[ci('from')]||'Người dùng'}</span>
+          ${page ? `<span style="font-size:11px;color:var(--muted);background:#f1f5f9;padding:2px 8px;border-radius:10px">${page}</span>` : ''}
+          ${unread > 0 ? `<span class="unread-dot">${unread} mới</span>` : ''}
+          ${phone ? `<span style="font-size:11px;background:#f3e8ff;color:#7c3aed;padding:2px 8px;border-radius:10px;font-weight:600">📞 SĐT</span>` : ''}
+        </div>
+        <span class="msg-meta">${r[ci('updated_date')]||''} · ${count} tin ${rtStr}</span>
+      </div>
+      <div class="msg-snippet">${r[ci('snippet')]||''}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleMsgPhoneFilter(btn) {
+  const active = btn.dataset.active === '1';
+  btn.dataset.active = active ? '0' : '1';
+  btn.style.background    = active ? '#fff'     : '#7c3aed';
+  btn.style.color         = active ? ''         : '#fff';
+  btn.style.borderColor   = active ? 'var(--border)' : '#7c3aed';
+  filterMsg();
+}
+
+function filterMsg() {
+  const q         = q2('msg-q');
+  const page      = document.getElementById('msg-page-sel')?.value || '';
+  const phoneOnly = document.getElementById('msg-phone-btn')?.dataset.active === '1';
+  const h    = G._msgH || [];
+  const ci   = n => h.indexOf(n);
+  const base = G._msgFiltRows || G._msgRows || [];
+  const rows = base.filter(r => {
+    if (page && r[ci('page_name')] !== page) return false;
+    if (phoneOnly && +r[ci('has_phone')] !== 1) return false;
+    if (q && !r.some(v => str(v).includes(q))) return false;
+    return true;
+  });
+  renderMsgList(rows);
+}
+
+// ══════════════════════════════════════════════════════════
+// 6. CREATIVES
+// ══════════════════════════════════════════════════════════
+function renderCreatives() {
+  const { headers: h, rows } = G.creatives || { headers:[], rows:[] };
+  G._crRows=rows; G._crH=h;
+  const camps = unique(rows.map(r=>r[h.indexOf('campaign')])).filter(Boolean).sort();
+  populateSel('cr-camp', camps);
+  renderCrGrid(rows);
+}
+
+function renderCrGrid(rows) {
+  const h   = G._crH || [];
+  const ci  = n => h.indexOf(n);
+  const el  = document.getElementById('cr-grid');
+  document.getElementById('cr-count').textContent = rows.length + ' ads';
+
+  if (!rows.length) {
+    el.innerHTML = `<div class="empty" style="grid-column:1/-1">
+      <div style="font-size:40px">🎨</div>
+      <p>Chưa có dữ liệu Creative.</p>
+      <p>Nhấn <strong>Đồng bộ ngay</strong> để tải dữ liệu lần đầu.</p>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = rows.map(r => {
+    const status  = (r[ci('status')]||'').toUpperCase();
+    const badgeCls = status==='ACTIVE'?'s-active': status==='PAUSED'?'s-paused':'s-archived';
+    const imgUrl  = r[ci('image_url')]||'';
+    const imgHtml = imgUrl
+      ? `<img class="cr-img" src="${imgUrl}" onerror="this.style.display='none'">`
+      : `<div class="cr-img-placeholder">🖼️</div>`;
+
+    return `
+    <div class="cr-card">
+      ${imgHtml}
+      <div class="cr-body">
+        <div class="cr-camp">${r[ci('campaign')]||''} › ${r[ci('adset')]||''}</div>
+        <div class="cr-name">
+          ${r[ci('ad_name')]||''}
+          <span class="badge ${badgeCls}">${status}</span>
+        </div>
+        ${r[ci('title')] ? `<div class="cr-title">${r[ci('title')]}</div>` : ''}
+        ${r[ci('body')]  ? `<div class="cr-text">${r[ci('body')]}</div>`   : ''}
+        ${r[ci('cta')]   ? `<span class="cr-cta">${(r[ci('cta')]||'').replace(/_/g,' ')}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterCr() {
+  const q      = q2('cr-q');
+  const status = val('cr-status').toUpperCase();
+  const camp   = val('cr-camp');
+  const h=G._crH||[], ci=n=>h.indexOf(n);
+  const rows=(G._crRows||[]).filter(r=>
+    (!status || (r[ci('status')]||'').toUpperCase()===status) &&
+    (!camp   || r[ci('campaign')]===camp) &&
+    (!q      || r.some(v=>str(v).includes(q)))
+  );
+  renderCrGrid(rows);
+}
+
+// ══════════════════════════════════════════════════════════
+// SORT TABLE (generic)
+// ══════════════════════════════════════════════════════════
+const _sortState = {};
+function sortTable(tbl, colIdx) {
+  const key = tbl + colIdx;
+  _sortState[key] = !_sortState[key];
+  const asc = _sortState[key];
+  const fns = { ads:['_adsRows',renderAdsTbl], posts:['_postsRows',renderPostsTbl] };
+  if (!fns[tbl]) return;
+  const [storeKey, renderFn] = fns[tbl];
+  const rows = [...(G[storeKey]||[])];
+  rows.sort((a,b) => {
+    const av = isNaN(+a[colIdx]) ? str(a[colIdx]) : +a[colIdx];
+    const bv = isNaN(+b[colIdx]) ? str(b[colIdx]) : +b[colIdx];
+    return asc ? (av>bv?1:av<bv?-1:0) : (av<bv?1:av>bv?-1:0);
+  });
+  renderFn(rows);
+}
+
+// ══════════════════════════════════════════════════════════
+// CHART HELPER
+// ══════════════════════════════════════════════════════════
+function mkLine(id, labels, datasets) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const dsConfig = datasets.map(ds => ({
+    label:           ds.label,
+    data:            ds.data,
+    borderColor:     ds.color,
+    backgroundColor: ds.color + '1a',
+    fill:            true,
+    tension:         0.3,
+    pointRadius:     labels.length > 20 ? 1 : 3,
+    borderWidth:     2,
+  }));
+  const existing = Chart.getChart(canvas);
+  if (existing) {
+    existing.data.labels   = labels;
+    existing.data.datasets = dsConfig;
+    existing.update('none');
+    return;
+  }
+  _charts[id] = new Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets: dsConfig },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: { position:'top', labels:{ boxWidth:12, font:{size:11} } },
+        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmtNum(c.raw)}` } }
+      },
+      scales: {
+        x: { ticks:{ maxTicksLimit:10, font:{size:10} }, grid:{display:false} },
+        y: { ticks:{ font:{size:10} } }
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════════
+function fmtNum(v) {
+  const n = parseFloat(v) || 0;
+  if (n >= 1e6)  return (n/1e6).toFixed(2) + 'M';
+  if (n >= 1e3)  return (n/1e3).toFixed(1) + 'K';
+  return n % 1 !== 0 ? n.toFixed(2) : n.toFixed(0);
+}
+function mean(arr) { return arr&&arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0; }
+function unique(arr) { return [...new Set(arr)]; }
+function str(v)  { return String(v||'').toLowerCase(); }
+function q2(id)  { return str(document.getElementById(id).value); }
+function val(id) { return document.getElementById(id).value; }
+function show(id){ document.getElementById(id).style.display='flex'; }
+function hide(id){ document.getElementById(id).style.display='none'; }
+function populateSel(id, items) {
+  const sel = document.getElementById(id);
+  items.forEach(v => { const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
+}
+
+// ══════════════════════════════════════════════════════════
+// CONV MODAL — Xem lịch sử & Trả lời tin nhắn
+// ══════════════════════════════════════════════════════════
+function openConv(i) {
+  const c = _CONV_LIST[i];
+  if (!c) return;
+  _convId         = c.convId;
+  _convPageId     = c.pageId;
+  _convCustomerId = '';
+
+  // Header info
+  document.getElementById('conv-cname').textContent = c.customerName;
+  document.getElementById('conv-pname').textContent = c.pageName;
+  document.getElementById('conv-reply').value = '';
+
+  // Show modal
+  const modal = document.getElementById('conv-modal');
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  if (!c.convId) {
+    document.getElementById('conv-body').innerHTML =
+      '<div style="text-align:center;color:#94a3b8;padding:30px">Không có ID hội thoại.</div>';
+    return;
+  }
+  if (!c.pageId) {
+    document.getElementById('conv-body').innerHTML =
+      '<div style="text-align:center;color:#f59e0b;padding:30px">Không tìm thấy Page ID. Hãy đồng bộ Ad Creatives trước.</div>';
+    return;
+  }
+
+  document.getElementById('conv-body').innerHTML =
+    '<div style="text-align:center;color:#94a3b8;padding:30px"><div class="spinner" style="margin:0 auto 10px"></div>Đang tải...</div>';
+
+  google.script.run
+    .withSuccessHandler(onConvLoaded)
+    .withFailureHandler(e => {
+      document.getElementById('conv-body').innerHTML =
+        `<div style="color:#ef4444;padding:20px;font-size:13px">Lỗi: ${e.message}</div>`;
+    })
+    .getConvMessages(_convId, _convPageId);
+}
+
+function onConvLoaded(data) {
+  const msgs   = data.messages || [];
+  const pageId = data.pageId   || _convPageId;
+
+  // Lấy customer ID từ tin nhắn đầu tiên của khách
+  const custMsg = msgs.find(m => m.from && m.from.id !== pageId);
+  _convCustomerId = custMsg ? custMsg.from.id : '';
+
+  const el = document.getElementById('conv-body');
+  if (!msgs.length) {
+    el.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:30px">Chưa có tin nhắn.</div>';
+    return;
+  }
+
+  el.innerHTML = msgs.map(m => {
+    const isPage = m.from && m.from.id === pageId;
+    const dt = m.created_time ? new Date(m.created_time) : null;
+    const timeStr = dt ? dt.toLocaleString('vi-VN', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+    const text = (m.message || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `<div class="chat-bubble ${isPage ? 'page' : 'user'}">
+      <div class="chat-text">${text}</div>
+      <div class="chat-time">${isPage ? (m.from.name||'Page') + ' · ' : ''}${timeStr}</div>
+    </div>`;
+  }).join('');
+
+  // Scroll xuống cuối
+  el.scrollTop = el.scrollHeight;
+}
+
+function closeConv() {
+  document.getElementById('conv-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function sendMsg() {
+  const text = (document.getElementById('conv-reply').value || '').trim();
+  if (!text) return;
+  if (!_convCustomerId) {
+    showConvError('Chưa tải được ID khách hàng. Vui lòng đợi tin nhắn tải xong rồi thử lại.');
+    return;
+  }
+
+  const btn = document.getElementById('conv-send-btn');
+  btn.disabled = true;
+  btn.textContent = 'Đang gửi…';
+  document.getElementById('conv-send-err')?.remove();
+
+  google.script.run
+    .withSuccessHandler(() => {
+      document.getElementById('conv-reply').value = '';
+      btn.disabled = false;
+      btn.textContent = 'Gửi';
+      google.script.run
+        .withSuccessHandler(onConvLoaded)
+        .withFailureHandler(() => {})
+        .getConvMessages(_convId, _convPageId);
+    })
+    .withFailureHandler(e => {
+      btn.disabled = false;
+      btn.textContent = 'Gửi';
+      const isDevMode = e.message && e.message.includes('pages_messaging');
+      showConvError(
+        isDevMode
+          ? `⚠️ App đang ở Development Mode — chỉ gửi được cho Admin/Tester của app.<br>
+             <a href="https://business.facebook.com/latest/inbox/all/" target="_blank"
+                style="color:#2563eb;font-weight:600">→ Mở Meta Business Suite để trả lời</a>`
+          : `Lỗi: ${e.message}`
+      );
+    })
+    .sendReply(_convPageId, _convCustomerId, text);
+}
+
+function showConvError(html) {
+  document.getElementById('conv-send-err')?.remove();
+  const div = document.createElement('div');
+  div.id = 'conv-send-err';
+  div.style.cssText = 'font-size:12px;color:#dc2626;padding:6px 14px 4px;line-height:1.6';
+  div.innerHTML = html;
+  document.getElementById('conv-input-row').before(div);
+}
+
+// ══════════════════════════════════════════════════════════
+// TOKEN CONFIG MODAL
+// ══════════════════════════════════════════════════════════
+function openTokenConfig() {
+  document.getElementById('token-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  loadTokenStatus();
+}
+
+function closeTokenConfig() {
+  document.getElementById('token-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function loadTokenStatus() {
+  const list = document.getElementById('token-page-list');
+  list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)"><div class="spinner" style="margin:0 auto 8px"></div>Đang tải...</div>';
+  google.script.run
+    .withSuccessHandler(renderTokenList)
+    .withFailureHandler(e => {
+      list.innerHTML = `<div style="color:#ef4444;padding:16px;font-size:13px">Lỗi: ${e.message}</div>`;
+    })
+    .getMsgTokenStatus();
+}
+
+function renderTokenList(pages) {
+  const list = document.getElementById('token-page-list');
+  if (!pages || !pages.length) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">Chưa có trang nào. Hãy đồng bộ Ad Creatives trước.</div>';
+    return;
+  }
+  list.innerHTML = pages.map(p => `
+    <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-weight:700;font-size:13px">${p.name}</span>
+        <span style="font-size:11px;color:var(--muted)">ID: ${p.id}</span>
+        <span id="tok-status-${p.id}" style="margin-left:auto;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;${
+          p.hasToken
+            ? 'background:#dcfce7;color:#16a34a'
+            : 'background:#fef3c7;color:#92400e'
+        }">${p.hasToken ? '✓ Đã cấu hình' : '⚠ Chưa có token'}</span>
+      </div>
+      <div style="display:flex;gap:8px">
+        <input id="tok-inp-${p.id}" type="password"
+          placeholder="${p.hasToken ? 'Nhập token mới để cập nhật...' : 'Dán Page Access Token vào đây...'}"
+          style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:monospace">
+        <button onclick="savePageToken('${p.id}','${p.name}')"
+          style="padding:7px 14px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
+          Lưu
+        </button>
+        ${p.hasToken ? `<button onclick="deletePageToken('${p.id}')"
+          style="padding:7px 10px;background:#fee2e2;color:#dc2626;border:1px solid #fecaca;border-radius:6px;font-size:12px;cursor:pointer" title="Xóa token đã lưu">
+          🗑
+        </button>` : ''}
+      </div>
+      <div id="tok-msg-${p.id}" style="font-size:12px;margin-top:6px;min-height:16px"></div>
+    </div>
+  `).join('');
+}
+
+function savePageToken(pageId, pageName) {
+  const inp = document.getElementById('tok-inp-' + pageId);
+  const token = (inp?.value || '').trim();
+  if (!token) { showTokMsg(pageId, '⚠ Vui lòng nhập token', '#f59e0b'); return; }
+  showTokMsg(pageId, 'Đang xác thực...', '#6b7280');
+  inp.disabled = true;
+  google.script.run
+    .withSuccessHandler(() => {
+      inp.value = '';
+      inp.disabled = false;
+      showTokMsg(pageId, '✓ Lưu thành công!', '#16a34a');
+      const badge = document.getElementById('tok-status-' + pageId);
+      if (badge) { badge.textContent = '✓ Đã cấu hình'; badge.style.background='#dcfce7'; badge.style.color='#16a34a'; }
+      setTimeout(() => loadTokenStatus(), 1200);
+    })
+    .withFailureHandler(e => {
+      inp.disabled = false;
+      showTokMsg(pageId, '✗ ' + e.message, '#dc2626');
+    })
+    .saveMsgToken(pageId, token);
+}
+
+function deletePageToken(pageId) {
+  if (!confirm('Xóa token đã lưu cho trang này? Sẽ dùng lại token từ CFG.TOKEN.')) return;
+  google.script.run
+    .withSuccessHandler(() => loadTokenStatus())
+    .withFailureHandler(e => alert('Lỗi: ' + e.message))
+    .deleteMsgToken(pageId);
+}
+
+function showTokMsg(pageId, msg, color) {
+  const el = document.getElementById('tok-msg-' + pageId);
+  if (el) { el.textContent = msg; el.style.color = color; }
+}
+
+// Ctrl+Enter để gửi
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeConv(); closeTokenConfig(); }
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) &&
+      document.getElementById('conv-modal').classList.contains('open')) {
+    sendMsg();
+  }
+});
+</script>
+
+<!-- ══ TOKEN CONFIG MODAL ══════════════════════════════════ -->
+<div id="token-modal" style="display:none;position:fixed;inset:0;z-index:2000;align-items:center;justify-content:center;background:rgba(0,0,0,.45)">
+  <div style="background:#fff;border-radius:14px;width:min(600px,95vw);max-height:85vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <!-- Header -->
+    <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:15px">⚙️ Token Nhắn tin</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Cấu hình Page Access Token có quyền <code>pages_messaging</code> cho từng trang</div>
+      </div>
+      <button onclick="closeTokenConfig()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted);padding:4px">✕</button>
+    </div>
+    <!-- Hướng dẫn -->
+    <div style="padding:12px 22px;background:#f0f9ff;border-bottom:1px solid #bae6fd;font-size:12px;color:#0369a1;line-height:1.7">
+      <strong>Cách lấy Page Access Token:</strong><br>
+      1. Vào <strong>Meta Business Suite → Cài đặt → Tài khoản → Trang</strong> → chọn trang → <em>Thông tin</em><br>
+      2. Hoặc dùng <strong>Graph API Explorer</strong>: chọn App → chọn Page → Generate Token → tích <code>pages_messaging</code><br>
+      3. Token phải là <strong>Page Access Token</strong> (không phải User Token), không hết hạn nếu chuyển sang Long-lived
+    </div>
+    <!-- Danh sách trang -->
+    <div id="token-page-list" style="flex:1;overflow-y:auto;padding:16px 22px;display:flex;flex-direction:column;gap:14px">
+      <div style="text-align:center;padding:20px;color:var(--muted)">Đang tải...</div>
+    </div>
+    <!-- Footer -->
+    <div style="padding:12px 22px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);text-align:right">
+      Token được lưu trong Script Properties của GAS, không xuất hiện trong code
+    </div>
+  </div>
+</div>
+
+<!-- ══ CONV MODAL ══════════════════════════════════════════ -->
+<div id="conv-modal">
+  <div id="conv-backdrop" onclick="closeConv()"></div>
+  <div id="conv-panel">
+    <!-- Header -->
+    <div id="conv-header">
+      <button onclick="closeConv()" title="Đóng">←</button>
+      <div style="flex:1;min-width:0">
+        <div id="conv-cname" style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+        <div id="conv-pname" style="font-size:11px;opacity:.75;margin-top:1px"></div>
+      </div>
+      <div style="font-size:11px;opacity:.6">Ctrl+Enter để gửi</div>
+    </div>
+    <!-- Messages -->
+    <div id="conv-body"></div>
+    <!-- Input -->
+    <div id="conv-input-row">
+      <textarea id="conv-reply" placeholder="Nhập tin nhắn trả lời…" rows="3"></textarea>
+      <button id="conv-send-btn" onclick="sendMsg()">Gửi</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

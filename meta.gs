@@ -20,10 +20,47 @@ function getPageToken() {
 }
 
 // ─── WEB APP ─────────────────────────────────────────────
+// doGet: vẫn phục vụ HTML cho ai truy cập URL GAS trực tiếp (backward compat)
 function doGet() {
-  return HtmlService.createHtmlOutputFromFile("dashboard")
+  return HtmlService.createHtmlOutputFromFile("index")
     .setTitle("Meta Ads Dashboard")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+// doPost: JSON API cho GitHub Pages frontend
+// Content-Type: text/plain (simple request, không cần CORS preflight)
+function doPost(e) {
+  let data = {};
+  try { data = JSON.parse(e.postData.contents); } catch(_) {}
+  const action = data.action || '';
+  try {
+    let result;
+    switch (action) {
+      case 'getData':     result = getDashboardData();                                     break;
+      case 'syncNow':     result = triggerSyncAsync();                                     break;
+      case 'getConv':     result = getConvMessages(data.convId, data.pageId);              break;
+      case 'sendReply':   result = sendReply(data.pageId, data.recipientId, data.text);   break;
+      case 'getTokens':   result = getMsgTokenStatus();                                    break;
+      case 'saveToken':   result = saveMsgToken(data.pageId, data.token);                 break;
+      case 'deleteToken': result = deleteMsgToken(data.pageId);                           break;
+      default: result = { _error: 'Unknown action: ' + action };
+    }
+    return _jsonResp(result);
+  } catch (err) {
+    return _jsonResp({ _error: err.message });
+  }
+}
+
+function _jsonResp(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// Lên lịch syncAllFull chạy sau 1 phút (tránh timeout khi gọi qua HTTP)
+function triggerSyncAsync() {
+  ScriptApp.newTrigger('syncAllFull').timeBased().after(60 * 1000).create();
+  return { status: 'scheduled', message: 'Đang đồng bộ, dữ liệu sẽ cập nhật sau ~2 phút. Hãy tải lại trang.' };
 }
 
 // ─── DATA API ─────────────────────────────────────────────
