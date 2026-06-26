@@ -1,0 +1,13 @@
+# Token & credentials — KHÔNG commit lên GitHub
+config.gs
+
+# Local dev
+serve.py
+preview.html
+*.pyc
+__pycache__/
+
+# Editor
+.claude/
+.DS_Store
+Thumbs.db
