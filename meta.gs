@@ -135,29 +135,37 @@ function syncMessages() {
   const allRows = [];
   const cutoff31d = new Date(); cutoff31d.setDate(cutoff31d.getDate() - 31);
 
-  // Đọc conv_id đã có SĐT + ngày phát hiện từ lần sync trước
+  // Đọc dữ liệu tích lũy từ lần sync trước
   const knownPhoneIds = new Set();
-  const phoneDateMap = {};  // conv_id → phone_date (ngày lần đầu phát hiện SĐT)
+  const phoneDateMap = {};  // conv_id → phone_date
+  const custDateMap  = {};  // conv_id → { lcd: last_cust_date, ud: updated_date }
   const msgSh = ss.getSheetByName("Messages");
   if (msgSh && msgSh.getLastRow() > 1) {
     const existing = msgSh.getDataRange().getValues();
-    const eHdr = existing[0];
+    const eHdr  = existing[0];
     const hpIdx  = eHdr.indexOf('has_phone');
     const cidIdx = eHdr.indexOf('conv_id');
     const pdIdx  = eHdr.indexOf('phone_date');
     const udIdx  = eHdr.indexOf('updated_date');
-    if (hpIdx >= 0 && cidIdx >= 0) {
+    const hlcd   = eHdr.indexOf('last_cust_date');
+    if (cidIdx >= 0) {
       existing.slice(1).forEach(row => {
-        if (+row[hpIdx] === 1) {
-          const cid = String(row[cidIdx]);
+        const cid = String(row[cidIdx]||'');
+        if (!cid) return;
+        // Tích lũy custDateMap cho mọi conv (để tính Trong kỳ chính xác)
+        custDateMap[cid] = {
+          lcd: hlcd  >= 0 ? String(row[hlcd] ||'') : '',
+          ud:  udIdx >= 0 ? String(row[udIdx] ||'') : '',
+        };
+        // Tích lũy phoneDateMap chỉ cho conv có SĐT
+        if (hpIdx >= 0 && +row[hpIdx] === 1) {
           knownPhoneIds.add(cid);
-          // Ưu tiên phone_date đã lưu, fallback sang updated_date của lần đó
           phoneDateMap[cid] = (pdIdx >= 0 && row[pdIdx]) ? String(row[pdIdx]) : (udIdx >= 0 ? String(row[udIdx]||'') : '');
         }
       });
     }
   }
-  Logger.log(`📂 Đã tích lũy ${knownPhoneIds.size} conv có SĐT từ sync trước`);
+  Logger.log(`📂 Tích lũy: ${knownPhoneIds.size} SĐT, ${Object.keys(custDateMap).length} custDate`);
 
   Object.entries(pageMap).forEach(([pid, pname]) => {
     let pt = CFG.PAGE_TOKEN;
@@ -186,9 +194,9 @@ function syncMessages() {
     });
 
     const toVnDate = t => t ? Utilities.formatDate(new Date(t), 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd') : '';
-    let rtCount = 0, phoneCount = 0;
+    let rtCount = 0, phoneCount = 0, lcdCount = 0;
     const scanStart = Date.now();
-    const SCAN_BUDGET_MS = 4 * 60 * 1000; // tối đa 4 phút để tránh timeout 6 phút
+    const SCAN_BUDGET_MS = 4 * 60 * 1000;
     convList.forEach(c => {
       let responseTimeHrs = '';
       let customerMsgs = 0;
@@ -196,23 +204,31 @@ function syncMessages() {
 
       const withinPeriod = new Date(c.updated_time) >= cutoff31d;
       const timeOk = (Date.now() - scanStart) < SCAN_BUDGET_MS;
-      const doRt    = withinPeriod && rtCount < 120 && timeOk;
-      const doPhone = withinPeriod && !hasPhone && phoneCount < 150 && timeOk;
+      const convUpdated = toVnDate(c.updated_time);
 
-      let last_cust_date = '';
-      if (doRt || doPhone) {
-        if (doRt)    rtCount++;
-        if (doPhone) phoneCount++;
+      // last_cust_date: lấy từ custDateMap trước, scan lại nếu conv có activity mới
+      const stored = custDateMap[c.id] || null;
+      // Cần scan lại nếu: chưa từng scan HOẶC conv có activity mới hơn lần scan trước
+      const needLcd = withinPeriod && (!stored || convUpdated > (stored.ud || '')) && lcdCount < 200 && timeOk;
+      let last_cust_date = stored ? stored.lcd : '';
+
+      const doRt    = withinPeriod && rtCount < 80 && timeOk;
+      const doPhone = withinPeriod && !hasPhone && phoneCount < 80 && timeOk;
+      const doScan  = doRt || doPhone || needLcd;
+
+      if (doScan) {
+        if (doRt)                       rtCount++;
+        if (doPhone)                    phoneCount++;
+        if (needLcd && !doRt && !doPhone) lcdCount++;
         try {
-          // Luôn lấy from+created_time để tính last_cust_date cho mọi conv được scan
           const msgs = apiGet(`${BASE_URL}/${c.id}/messages`, {
             access_token: pt, fields: "from,created_time,message", limit: "20",
           });
-          const msgArr = msgs.data || [];   // API trả về mới nhất trước
+          const msgArr = msgs.data || [];
           if (!hasPhone && msgArr.some(m => checkPhone(m.message))) hasPhone = 1;
-          // Ngày khách nhắn gần nhất (msgArr đã sorted newest-first)
           const latestCust = msgArr.find(m => m.from?.id !== pid);
-          if (latestCust?.created_time) last_cust_date = toVnDate(latestCust.created_time);
+          // '0000-00-00' = đã scan nhưng không có tin từ khách (chỉ outbound từ page)
+          last_cust_date = latestCust?.created_time ? toVnDate(latestCust.created_time) : '0000-00-00';
           if (doRt) {
             const rev = [...msgArr].reverse();
             customerMsgs = rev.filter(m => m.from?.id !== pid).length;
@@ -253,7 +269,7 @@ function syncMessages() {
         last_cust_date,
       ]);
     });
-    Logger.log(`✅ Messages ${pname}: ${convList.length} conv`);
+    Logger.log(`✅ Messages ${pname}: ${convList.length} conv (RT:${rtCount} Phone:${phoneCount} LCD:${lcdCount})`);
   });
 
   _writeSheet(ss, "Messages", headers, allRows);

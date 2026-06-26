@@ -1773,11 +1773,13 @@ function renderMessages() {
     return !!ds;
   };
   const inPeriod = r => {
-    // Ưu tiên ngày khách nhắn gần nhất; fallback updated_date nếu chưa có dữ liệu
     const lcdIdx = ci('last_cust_date');
-    const d = (lcdIdx >= 0 && r[lcdIdx])
-      ? String(r[lcdIdx])
-      : String(r[ci('updated_date')]||'');
+    const lcd = lcdIdx >= 0 ? String(r[lcdIdx]||'') : '';
+    // '0000-00-00' = đã scan, xác nhận không có tin từ khách (chỉ outbound từ page)
+    if (lcd === '0000-00-00') return false;
+    // Dùng last_cust_date nếu có; fallback updated_date cho conv chưa được scan
+    const d = lcd || String(r[ci('updated_date')]||'');
+    if (!d) return false;
     if (G_MSG_DATE.from && d < G_MSG_DATE.from) return false;
     if (G_MSG_DATE.to   && d > G_MSG_DATE.to)   return false;
     return true;
