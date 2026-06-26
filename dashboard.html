@@ -1733,11 +1733,19 @@ function renderMessages() {
     const lcd = lcdIdx >= 0 ? String(r[lcdIdx]||'') : '';
     // '0000-00-00' = đã scan, xác nhận không có tin từ khách (chỉ outbound từ page)
     if (lcd === '0000-00-00') return false;
-    // Dùng last_cust_date nếu có; fallback updated_date cho conv chưa được scan
-    const d = lcd || String(r[ci('updated_date')]||'');
-    if (!d) return false;
-    if (G_MSG_DATE.from && d < G_MSG_DATE.from) return false;
-    if (G_MSG_DATE.to   && d > G_MSG_DATE.to)   return false;
+
+    if (lcd) {
+      // ĐÃ SCAN: dùng last_cust_date chính xác với bounds đầy đủ
+      if (G_MSG_DATE.from && lcd < G_MSG_DATE.from) return false;
+      if (G_MSG_DATE.to   && lcd > G_MSG_DATE.to)   return false;
+      return true;
+    }
+
+    // CHƯA SCAN: chỉ kiểm tra giới hạn dưới (period_start)
+    // KHÔNG kiểm tra giới hạn trên vì updated_date có thể là ngày page trả lời SAU period_end
+    // (vd: khách nhắn 23/6, page reply 25/6 → updated_date=25/6 > period_end=24/6)
+    const ud = String(r[ci('updated_date')]||'');
+    if (!ud || (G_MSG_DATE.from && ud < G_MSG_DATE.from)) return false;
     return true;
   };
 
