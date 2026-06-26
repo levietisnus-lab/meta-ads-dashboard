@@ -1751,15 +1751,18 @@ function renderMessages() {
   const filtRows = allRows.filter(inPeriod);
 
   // ── Khách mới + Tổng người liên hệ: đọc từ Page Insights ──
-  const pageNewConvMap      = {}; // page_messages_new_conversations_unique → Khách mới
-  const pageActiveThreadMap = {}; // page_messages_active_threads_unique   → Trong kỳ
+  const pageNewConvMap      = {}; // page_messages_new_conversations_unique  → Khách mới
+  const pageActiveThreadMap = {}; // active_threads hoặc total_connections   → Trong kỳ
   {
     const pgH = (G.page||{}).headers || [];
     const pgR = (G.page||{}).rows    || [];
     const _pgn = pgH.indexOf('page_name');
     const _pdt = pgH.indexOf('date');
     const _pnc = pgH.indexOf('page_messages_new_conversations_unique');
-    const _pat = pgH.indexOf('page_messages_active_threads_unique');
+    // Thử cả 2 metrics: ưu tiên active_threads, fallback sang total_connections
+    const _pat = pgH.indexOf('page_messages_active_threads_unique') >= 0
+      ? pgH.indexOf('page_messages_active_threads_unique')
+      : pgH.indexOf('page_messages_total_messaging_connections');
     pgR.forEach(pr => {
       const d = String(pr[_pdt]||'');
       if (!inPeriodDate(d)) return;
@@ -1768,8 +1771,8 @@ function renderMessages() {
       if (_pat >= 0) pageActiveThreadMap[pn]  = (pageActiveThreadMap[pn]||0) + (Number(pr[_pat])||0);
     });
   }
-  const _usePageInsight    = Object.keys(pageNewConvMap).length > 0;
-  const _useActiveThreads  = Object.keys(pageActiveThreadMap).length > 0;
+  const _usePageInsight   = Object.keys(pageNewConvMap).length > 0;
+  const _useActiveThreads = Object.values(pageActiveThreadMap).some(v => v > 0);
 
   // ── Chi phí / tin nhắn: tổng spend từ Ads Data theo cùng kỳ ──
   const pageSpendMap = {};

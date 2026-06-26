@@ -90,6 +90,45 @@ function syncAds() {
 // ============================================================
 // DEBUG — tìm metrics NPE còn hoạt động
 // ============================================================
+// DIAGNOSTIC — tìm messaging metrics còn hoạt động
+// Chạy function này 1 lần, xem Nhật ký thực thi để biết kết quả
+// ============================================================
+function diagnoseMsgMetrics() {
+  const since = Math.floor(daysAgo(7).getTime() / 1000).toString();
+  const until = Math.floor(new Date().getTime() / 1000).toString();
+  let pt = CFG.PAGE_TOKEN;
+  try {
+    const info = apiGet(`${BASE_URL}/${CFG.PAGE_ID}`, { access_token: CFG.TOKEN, fields: "access_token" });
+    pt = info.access_token || pt;
+  } catch(e) {}
+
+  const candidates = [
+    "page_messages_new_conversations_unique",
+    "page_messages_active_threads_unique",
+    "page_messages_total_messaging_connections",
+    "page_messages_blocked_conversations_unique",
+    "page_messages_reported_conversations_unique",
+    "page_messages_feedback_by_action_unique",
+    "page_daily_follows",           // dùng để so sánh (biết trước hoạt động)
+  ];
+
+  const ok = [], fail = [];
+  candidates.forEach(m => {
+    try {
+      const r = apiGet(`${BASE_URL}/${CFG.PAGE_ID}/insights`, {
+        access_token: pt, metric: m, period: "day", since, until,
+      });
+      const vals = r.data?.[0]?.values || [];
+      const total = vals.reduce((s, v) => s + (typeof v.value === 'number' ? v.value : 0), 0);
+      ok.push(`✅ ${m} | tổng 7 ngày = ${total}`);
+    } catch(e) {
+      fail.push(`❌ ${m} | ${e.message.substring(0, 80)}`);
+    }
+  });
+  Logger.log("=== MESSAGING METRICS ===\n" + ok.join("\n") + "\n--- KHÔNG HỖ TRỢ ---\n" + fail.join("\n"));
+}
+
+// ============================================================
 function diagnosePage() {
   const since = Math.floor(daysAgo(7).getTime() / 1000).toString();
   const until = Math.floor(new Date().getTime() / 1000).toString();
@@ -161,7 +200,8 @@ function syncPage() {
   const COLS  = ["page_views_total","page_post_engagements","page_total_actions",
                  "page_video_views","page_daily_follows","page_daily_unfollows",
                  "page_messages_new_conversations_unique",
-                 "page_messages_active_threads_unique"];
+                 "page_messages_active_threads_unique",
+                 "page_messages_total_messaging_connections"];
   const headers = ["date", "page_name", ...COLS];
   const allRows = [];
 
@@ -212,6 +252,12 @@ function syncPage() {
         ...base, metric: "page_messages_active_threads_unique",
       }));
     } catch(e) { Logger.log(`⚠️ ${pname} active_threads: ${e.message}`); }
+
+    try {
+      merge(apiGet(`${BASE_URL}/${pid}/insights`, {
+        ...base, metric: "page_messages_total_messaging_connections",
+      }));
+    } catch(e) { Logger.log(`⚠️ ${pname} total_conn: ${e.message}`); }
 
     const pageRows = Object.values(byDate)
       .sort((a, b) => a.date.localeCompare(b.date))
