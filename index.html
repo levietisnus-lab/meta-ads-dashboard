@@ -268,6 +268,8 @@ tr:last-child td { border-bottom: none; }
   <div style="background:#fff;border-radius:10px;padding:13px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <span style="font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap">Khoảng thời gian:</span>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="date-btn" onclick="setPreset(this,'today')">Hôm nay</button>
+      <button class="date-btn" onclick="setPreset(this,'yesterday')">Hôm qua</button>
       <button class="date-btn" onclick="setPreset(this,7)">7 ngày</button>
       <button class="date-btn" onclick="setPreset(this,14)">14 ngày</button>
       <button class="date-btn" onclick="setPreset(this,30)">30 ngày</button>
@@ -423,6 +425,8 @@ tr:last-child td { border-bottom: none; }
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f1f5f9">
       <span style="font-size:12px;font-weight:700;color:var(--muted)">Khoảng:</span>
       <div id="ads-date-btns" style="display:flex;gap:6px">
+        <button class="date-btn" onclick="setAdsRange(this,1,0)">Hôm nay</button>
+        <button class="date-btn" onclick="setAdsRange(this,1,1)">Hôm qua</button>
         <button class="date-btn" onclick="setAdsRange(this,7)">7 ngày</button>
         <button class="date-btn active" onclick="setAdsRange(this,30)">30 ngày</button>
         <button class="date-btn" onclick="setAdsRange(this,90)">90 ngày</button>
@@ -542,6 +546,8 @@ tr:last-child td { border-bottom: none; }
       <div style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></div>
       <span style="font-size:12px;font-weight:700;color:var(--muted)">Khoảng:</span>
       <div id="posts-date-btns" style="display:flex;gap:6px">
+        <button class="date-btn" onclick="setPostsRange(this,1,0)">Hôm nay</button>
+        <button class="date-btn" onclick="setPostsRange(this,1,1)">Hôm qua</button>
         <button class="date-btn" onclick="setPostsRange(this,7)">7 ngày</button>
         <button class="date-btn active" onclick="setPostsRange(this,30)">30 ngày</button>
         <button class="date-btn" onclick="setPostsRange(this,90)">90 ngày</button>
@@ -590,6 +596,8 @@ tr:last-child td { border-bottom: none; }
   <div style="background:#fff;border-radius:10px;padding:12px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
     <span style="font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap">Khoảng:</span>
     <div id="msg-date-btns" style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="date-btn" onclick="setMsgRange(this,1,0)">Hôm nay</button>
+      <button class="date-btn" onclick="setMsgRange(this,1,1)">Hôm qua</button>
       <button class="date-btn" onclick="setMsgRange(this,7)">7 ngày</button>
       <button class="date-btn active" onclick="setMsgRange(this,30)">30 ngày</button>
       <button class="date-btn" onclick="setMsgRange(this,90)">90 ngày</button>
@@ -739,10 +747,12 @@ tr:last-child td { border-bottom: none; }
   <!-- Bộ lọc ngày -->
   <div class="card" style="margin-bottom:18px">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <span id="tt-account" style="font-size:13px;font-weight:800;color:#111"></span>
+      <span id="tt-account" style="font-size:13px;font-weight:800;color:var(--text)"></span>
       <div style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></div>
       <span style="font-size:12px;font-weight:700;color:var(--muted)">Khoảng:</span>
       <div id="tt-date-btns" style="display:flex;gap:6px">
+        <button class="date-btn" onclick="setTtRange(this,1,0)">Hôm nay</button>
+        <button class="date-btn" onclick="setTtRange(this,1,1)">Hôm qua</button>
         <button class="date-btn" onclick="setTtRange(this,7)">7 ngày</button>
         <button class="date-btn active" onclick="setTtRange(this,30)">30 ngày</button>
         <button class="date-btn" onclick="setTtRange(this,90)">90 ngày</button>
@@ -790,10 +800,12 @@ tr:last-child td { border-bottom: none; }
 <div id="tab-ttshop" class="tab-panel">
   <div class="card" style="margin-bottom:18px">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <span id="tts-account" style="font-size:13px;font-weight:800;color:#111"></span>
+      <span id="tts-account" style="font-size:13px;font-weight:800;color:var(--text)"></span>
       <div style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></div>
       <span style="font-size:12px;font-weight:700;color:var(--muted)">Khoảng:</span>
       <div id="tts-date-btns" style="display:flex;gap:6px">
+        <button class="date-btn" onclick="setTtsRange(this,1,0)">Hôm nay</button>
+        <button class="date-btn" onclick="setTtsRange(this,1,1)">Hôm qua</button>
         <button class="date-btn" onclick="setTtsRange(this,7)">7 ngày</button>
         <button class="date-btn active" onclick="setTtsRange(this,30)">30 ngày</button>
         <button class="date-btn" onclick="setTtsRange(this,90)">90 ngày</button>
@@ -858,6 +870,8 @@ tr:last-child td { border-bottom: none; }
       <div style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></div>
       <span style="font-size:12px;font-weight:700;color:var(--muted)">Khoảng:</span>
       <div id="tta-date-btns" style="display:flex;gap:6px">
+        <button class="date-btn" onclick="setTtaRange(this,1,0)">Hôm nay</button>
+        <button class="date-btn" onclick="setTtaRange(this,1,1)">Hôm qua</button>
         <button class="date-btn" onclick="setTtaRange(this,7)">7 ngày</button>
         <button class="date-btn active" onclick="setTtaRange(this,30)">30 ngày</button>
         <button class="date-btn" onclick="setTtaRange(this,90)">90 ngày</button>
@@ -1161,6 +1175,13 @@ function setPreset(btn, val) {
   } else if (val === 'lastMonth') {
     G_DATE.from = fmtD(new Date(today.getFullYear(), today.getMonth() - 1, 1));
     G_DATE.to   = fmtD(new Date(today.getFullYear(), today.getMonth(), 0));
+  } else if (val === 'today') {
+    G_DATE.from = fmtD(today);
+    G_DATE.to   = fmtD(today);
+  } else if (val === 'yesterday') {
+    const y = new Date(today); y.setDate(today.getDate() - 1);
+    G_DATE.from = fmtD(y);
+    G_DATE.to   = fmtD(y);
   } else {
     const from = new Date(today);
     from.setDate(today.getDate() - val + 1);
@@ -1738,10 +1759,10 @@ function initAdsFilters() {
   }
 }
 
-function setAdsRange(btn, days) {
+function setAdsRange(btn, days, offset) {
   document.querySelectorAll('#ads-date-btns .date-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  const today = new Date();
+  const today = new Date(); today.setDate(today.getDate() - (offset||0));
   const from  = new Date(today); from.setDate(today.getDate() - days + 1);
   G_ADS_DATE.from = fmtD(from);
   G_ADS_DATE.to   = fmtD(today);
@@ -2116,10 +2137,11 @@ function onPostsPageChange() {
   G_POSTS_PAGE = document.getElementById('posts-page-sel').value;
   fetchPostsLive();
 }
-function setPostsRange(btn, days) {
+function setPostsRange(btn, days, offset) {
   document.querySelectorAll('#posts-date-btns .date-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  const today = new Date(), from = new Date(today); from.setDate(today.getDate()-days+1);
+  const today = new Date(); today.setDate(today.getDate() - (offset||0));
+  const from = new Date(today); from.setDate(today.getDate()-days+1);
   G_POSTS_DATE.from = fmtD(from); G_POSTS_DATE.to = fmtD(today);
   const f=document.getElementById('posts-from'), t=document.getElementById('posts-to');
   if (f) f.value=G_POSTS_DATE.from; if (t) t.value=G_POSTS_DATE.to;
@@ -2237,10 +2259,11 @@ function initTikTok() {
   if (f) f.value=G_TT_DATE.from; if (t) t.value=G_TT_DATE.to;
   fetchTikTok();
 }
-function setTtRange(btn, days) {
+function setTtRange(btn, days, offset) {
   document.querySelectorAll('#tt-date-btns .date-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  const y=new Date(); y.setDate(y.getDate()-1);
+  // y = ngày mới nhất TikTok có data (hôm qua theo giờ thật, do API có độ trễ dữ liệu)
+  const y=new Date(); y.setDate(y.getDate()-1-(offset||0));
   const from=new Date(y); from.setDate(y.getDate()-days+1);
   G_TT_DATE.from=fmtD(from); G_TT_DATE.to=fmtD(y);
   const f=document.getElementById('tt-from'), t=document.getElementById('tt-to');
@@ -2401,10 +2424,11 @@ function initTikTokShop() {
   if (f) f.value=G_TTS_DATE.from; if (t) t.value=G_TTS_DATE.to;
   fetchTikTokShop();
 }
-function setTtsRange(btn, days) {
+function setTtsRange(btn, days, offset) {
   document.querySelectorAll('#tts-date-btns .date-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  const today=new Date(), from=new Date(today); from.setDate(today.getDate()-days+1);
+  const today=new Date(); today.setDate(today.getDate()-(offset||0));
+  const from=new Date(today); from.setDate(today.getDate()-days+1);
   G_TTS_DATE.from=fmtD(from); G_TTS_DATE.to=fmtD(today);
   const f=document.getElementById('tts-from'), t=document.getElementById('tts-to');
   if (f) f.value=G_TTS_DATE.from; if (t) t.value=G_TTS_DATE.to;
@@ -2626,10 +2650,10 @@ function initTikTokAds() {
   fetchTikTokAds();
 }
 function onTtaAdvChange(){ G_TTA_ADV=document.getElementById('tta-adv-sel').value; fetchTikTokAds(); }
-function setTtaRange(btn, days) {
+function setTtaRange(btn, days, offset) {
   document.querySelectorAll('#tta-date-btns .date-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  const y=new Date(); y.setDate(y.getDate()-1);
+  const y=new Date(); y.setDate(y.getDate()-1-(offset||0));
   const from=new Date(y); from.setDate(y.getDate()-days+1);
   G_TTA_DATE.from=fmtD(from); G_TTA_DATE.to=fmtD(y);
   const f=document.getElementById('tta-from'), t=document.getElementById('tta-to');
@@ -2967,10 +2991,10 @@ function initMsgDate() {
   if (t) t.value = G_MSG_DATE.to;
 }
 
-function setMsgRange(btn, days) {
+function setMsgRange(btn, days, offset) {
   document.querySelectorAll('#msg-date-btns .date-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  const today = new Date();
+  const today = new Date(); today.setDate(today.getDate() - (offset||0));
   const from  = new Date(today); from.setDate(today.getDate() - days + 1);
   G_MSG_DATE.from = fmtD(from);
   G_MSG_DATE.to   = fmtD(today);
