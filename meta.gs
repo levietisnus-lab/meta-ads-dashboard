@@ -112,6 +112,7 @@ function getDashboardData() {
     ttShop:       get("TikTok Shop Data"),
     ttPage:       get("TikTok Page Data"),
     ttProducts:   get("TikTok Product Sales"),
+    ttOrderStatus:get("TikTok Order Status"),
     
     synced:       new Date().toLocaleString("vi-VN"),
   };

@@ -812,6 +812,16 @@ tr:last-child td { border-bottom: none; }
   </div>
 
   <div class="card" style="margin-bottom:18px">
+    <div class="card-title">Lưu lượng truy cập</div>
+    <div id="tts-traffic" style="display:flex;gap:12px;flex-wrap:wrap"></div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-title">Trạng thái đơn hàng &amp; Hiệu suất quảng cáo</div>
+    <div id="tts-status" style="display:flex;gap:12px;flex-wrap:wrap"></div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px">
     <div class="card-title">Doanh thu &amp; Số đơn theo ngày</div>
     <div class="chart-box"><canvas id="chart-tts-daily"></canvas></div>
   </div>
@@ -2382,38 +2392,81 @@ function fetchTikTokShop() {
       const bySourceGmv = {};
       const dailyMap = {};
       let totalGmv=0, totalOrders=0, totalRefunds=0, totalBuyers=0, totalUnits=0;
-      
+      let totalVisitors=0, totalImpr=0, totalPageViews=0, totalCancelReturn=0;
+
       rows.forEach(r => {
         const d = String(r[0]).split('T')[0];
         if (fromStr && d < fromStr) return;
         if (toStr && d > toStr) return;
-        
+
         const gmv = Number(r[1])||0, orders = Number(r[2])||0, buyers = Number(r[3])||0,
-              units = Number(r[4])||0, refunds = Number(r[5])||0, 
-              liveG = Number(r[6])||0, videoG = Number(r[7])||0, cardG = Number(r[8])||0, othersG = Number(r[9])||0;
-              
+              units = Number(r[4])||0, refunds = Number(r[5])||0,
+              liveG = Number(r[6])||0, videoG = Number(r[7])||0, cardG = Number(r[8])||0, othersG = Number(r[9])||0,
+              visitors = Number(r[10])||0, impr = Number(r[11])||0, pageViews = Number(r[12])||0, cancelReturn = Number(r[13])||0;
+
         totalGmv += gmv; totalOrders += orders; totalBuyers += buyers; totalUnits += units; totalRefunds += refunds;
+        totalVisitors += visitors; totalImpr += impr; totalPageViews += pageViews; totalCancelReturn += cancelReturn;
         bySourceGmv['LIVE'] = (bySourceGmv['LIVE']||0) + liveG;
         bySourceGmv['VIDEO'] = (bySourceGmv['VIDEO']||0) + videoG;
         bySourceGmv['PRODUCT_CARD'] = (bySourceGmv['PRODUCT_CARD']||0) + cardG;
         bySourceGmv['OTHERS'] = (bySourceGmv['OTHERS']||0) + othersG;
-        
+
         dailyMap[d] = { date: d, gmv, orders };
       });
-      
+
       const daily = Object.values(dailyMap).sort((a,b) => a.date.localeCompare(b.date));
       const res = {
         summary: { gmv: totalGmv, orders: totalOrders, buyers: totalBuyers, aov: totalOrders>0 ? Math.round(totalGmv/totalOrders) : 0, units: totalUnits, refunds: totalRefunds },
+        traffic: { visitors: totalVisitors, impressions: totalImpr, pageViews: totalPageViews, cancelReturn: totalCancelReturn },
         daily, range: { from: fromStr, to: toStr },
         bySourceGmv
       };
-      
+
       renderTikTokShop(res);
       renderTikTokProducts(fromStr, toStr);
+      renderTikTokOrderStatusAndRoas(fromStr, toStr, totalGmv);
     } catch(e) {
       if (badge) badge.textContent='lỗi: ' + e.message;
     }
   }, 10);
+}
+
+function renderTikTokOrderStatusAndRoas(fromStr, toStr, totalGmv) {
+  // Trạng thái đơn (giao thành công / huỷ) từ sheet "TikTok Order Status"
+  const statusRows = G.ttOrderStatus?.rows || [];
+  let total=0, delivered=0, cancelled=0, other=0;
+  statusRows.forEach(r => {
+    const d = String(r[0]);
+    if (fromStr && d < fromStr) return;
+    if (toStr && d > toStr) return;
+    total += Number(r[1])||0; delivered += Number(r[2])||0; cancelled += Number(r[3])||0; other += Number(r[4])||0;
+  });
+
+  // Chi phí Ads TikTok cùng khoảng ngày (G.ttAds: ["date","advertiser","campaign_id","campaign_name",...,"spend",...])
+  const adsH = G.ttAds?.headers || [], adsR = G.ttAds?.rows || [];
+  const iDate = adsH.indexOf('date'), iSpend = adsH.indexOf('spend');
+  let totalSpend = 0;
+  if (iDate>=0 && iSpend>=0) adsR.forEach(r => {
+    const d = String(r[iDate]);
+    if (fromStr && d < fromStr) return;
+    if (toStr && d > toStr) return;
+    totalSpend += Number(r[iSpend])||0;
+  });
+  const roas = totalSpend>0 ? +(totalGmv/totalSpend).toFixed(2) : 0;
+  const roi  = totalSpend>0 ? Math.round((totalGmv-totalSpend)/totalSpend*100) : 0;
+
+  const tile=(label,val,color)=>
+    `<div style="flex:1;min-width:140px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+       <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px">${label}</div>
+       <div style="font-size:22px;font-weight:800;color:${color}">${val}</div></div>`;
+  const box = document.getElementById('tts-status');
+  if (box) box.innerHTML =
+    tile('Đơn giao thành công', fmtNum(delivered), '#059669') +
+    tile('Đơn huỷ',             fmtNum(cancelled), '#ef4444') +
+    tile('Đơn khác (đang xử lý)', fmtNum(other),   '#f59e0b') +
+    tile('Chi phí Ads (cùng kỳ)', fmtNum(totalSpend)+'đ', '#dc2626') +
+    tile('ROAS',  roas+'x', '#7c3aed') +
+    tile('ROI',   roi+'%',  roi>=0 ? '#059669' : '#ef4444');
 }
 
 function renderTikTokProducts(fromStr, toStr) {
@@ -2466,6 +2519,15 @@ function renderTikTokShop(res) {
     tile('Giá trị TB/đơn',  fmtNum(s.aov)+'đ', '#7c3aed') +
     tile('SP đã bán',       fmtNum(s.units), '#059669') +
     tile('Hoàn tiền',       fmtNum(s.refunds)+'đ', '#f59e0b');
+
+  // Lưu lượng truy cập
+  const tf = res.traffic || {};
+  const tfBox = document.getElementById('tts-traffic');
+  if (tfBox) tfBox.innerHTML =
+    tile('Lượt xem SP (Impressions)', fmtNum(tf.impressions), '#2563eb') +
+    tile('Lượt truy cập trang SP',    fmtNum(tf.pageViews),    '#0891b2') +
+    tile('Khách ghé thăm (TB/ngày)',  fmtNum(tf.visitors),     '#7c3aed') +
+    tile('Huỷ/Hoàn (đơn)',            fmtNum(tf.cancelReturn), '#ef4444');
 
   // Doanh thu theo nguồn (Live/Video/Card)
   const src=res.bySourceGmv||{};
