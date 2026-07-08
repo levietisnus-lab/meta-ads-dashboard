@@ -816,9 +816,24 @@ tr:last-child td { border-bottom: none; }
     <div class="chart-box"><canvas id="chart-tts-daily"></canvas></div>
   </div>
 
-  <div class="card">
+  <div class="card" style="margin-bottom:18px">
     <div class="card-title">Doanh thu theo nguồn</div>
     <div id="tts-source" style="display:flex;gap:14px;flex-wrap:wrap"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      Doanh số theo sản phẩm
+      <span class="badge-pill" id="tts-prod-badge"></span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr style="background:#f8fafc">
+          <th style="text-align:left">Sản phẩm</th><th>Số lượng</th><th>Doanh thu (VND)</th><th>% tổng</th>
+        </tr></thead>
+        <tbody id="tts-products"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -2394,10 +2409,40 @@ function fetchTikTokShop() {
       };
       
       renderTikTokShop(res);
+      renderTikTokProducts(fromStr, toStr);
     } catch(e) {
       if (badge) badge.textContent='lỗi: ' + e.message;
     }
   }, 10);
+}
+
+function renderTikTokProducts(fromStr, toStr) {
+  const rows = G.ttProducts?.rows || [];
+  const byProduct = {}; // product_id → { name, qty, gmv }
+  rows.forEach(r => {
+    const d = String(r[0]);
+    if (fromStr && d < fromStr) return;
+    if (toStr && d > toStr) return;
+    const pid = String(r[1]), name = String(r[2]), qty = Number(r[3])||0, gmv = Number(r[4])||0;
+    if (!byProduct[pid]) byProduct[pid] = { name, qty: 0, gmv: 0 };
+    byProduct[pid].qty += qty;
+    byProduct[pid].gmv += gmv;
+  });
+  const products = Object.values(byProduct).sort((a,b) => b.gmv - a.gmv);
+  const totalGmv = products.reduce((a,p) => a + p.gmv, 0) || 1;
+
+  const badge = document.getElementById('tts-prod-badge');
+  if (badge) badge.textContent = products.length + ' sản phẩm';
+  const tb = document.getElementById('tts-products');
+  if (tb) tb.innerHTML = products.map(p => {
+    const pct = Math.round(p.gmv / totalGmv * 100);
+    return `<tr>
+      <td style="max-width:320px;white-space:normal;line-height:1.4">${p.name}</td>
+      <td style="text-align:center;font-weight:600">${fmtNum(p.qty)}</td>
+      <td style="text-align:center;font-weight:700;color:#dc2626">${fmtNum(p.gmv)}</td>
+      <td style="text-align:center;color:var(--muted)">${pct}%</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:14px">Chưa có dữ liệu — chạy Đồng bộ ngay</td></tr>';
 }
 const TTS_SRC_VI = { LIVE:'🔴 Live', VIDEO:'🎬 Video', PRODUCT_CARD:'🛍️ Thẻ sản phẩm', OTHERS:'Khác' };
 const TTS_SRC_COLOR = { LIVE:'#e11d48', VIDEO:'#2563eb', PRODUCT_CARD:'#059669', OTHERS:'#64748b' };

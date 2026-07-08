@@ -728,6 +728,65 @@ function ttTestShopAnalytics() {
   });
 }
 
+// Doanh số theo TỪNG SẢN PHẨM — không có endpoint analytics riêng cho product,
+// nên gom từ chi tiết đơn hàng (orders/search) theo product_id. Giới hạn 50 trang
+// (~5000 đơn) để tránh timeout với khoảng ngày dài.
+function getTikTokProductSales(from, to) {
+  const cipher = _ttShopCipher();
+  const fromTs = Math.floor(new Date(from + 'T00:00:00+07:00').getTime() / 1000);
+  const toTs   = Math.floor(new Date(to   + 'T23:59:59+07:00').getTime() / 1000);
+
+  const byProduct = {}; // product_id → { name, qty, gmv }
+  let pageToken = '', pages = 0, orderCount = 0;
+  do {
+    const extra = { shop_cipher: cipher, page_size: '100' };
+    if (pageToken) extra.page_token = pageToken;
+    const j = _ttShopPost('/order/202309/orders/search', extra,
+      { create_time_ge: fromTs, create_time_lt: toTs });
+    if (j.code !== 0) return { error: j.message || ('code ' + j.code), products: [] };
+
+    (j.data.orders || []).forEach(o => {
+      orderCount++;
+      (o.line_items || []).forEach(li => {
+        const pid = li.product_id || li.product_name || '?';
+        const name = li.product_name || pid;
+        const price = Number(li.sale_price) || 0;
+        if (!byProduct[pid]) byProduct[pid] = { name, qty: 0, gmv: 0 };
+        byProduct[pid].qty++;
+        byProduct[pid].gmv += price;
+      });
+    });
+    pageToken = j.data.next_page_token || '';
+    pages++;
+  } while (pageToken && pages < 50);
+
+  const products = Object.values(byProduct).sort((a, b) => b.gmv - a.gmv);
+  return { products, orderCount, capped: pages >= 50, range: { from, to } };
+}
+
+// Dò endpoint doanh số theo TỪNG SẢN PHẨM (khác shop/performance là tổng shop)
+function ttTestProductAnalytics() {
+  const cipher = _ttShopCipher();
+  const to = new Date(); to.setDate(to.getDate() - 1);
+  const from = new Date(to); from.setDate(to.getDate() - 6);
+  const f = d => Utilities.formatDate(d, 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd');
+  const base = { shop_cipher: cipher, start_date_ge: f(from), end_date_lt: f(to), currency: 'LOCAL', page_size: '20' };
+
+  const candidates = [
+    '/analytics/202409/shop_product_performance/list',
+    '/analytics/202405/products/performance',
+    '/analytics/202406/product/performance',
+    '/analytics/202409/product/performance',
+    '/product/202502/products/search',
+  ];
+  candidates.forEach(p => {
+    try {
+      const j = _ttShopGet(p, base);
+      Logger.log('=== ' + p + ' ===\n' + JSON.stringify(j).substring(0, 1800) + '\n');
+    } catch(e) { Logger.log('=== ' + p + ' === LỖI: ' + e.message + '\n'); }
+  });
+}
+
 // Test lấy đơn hàng 7 ngày gần nhất
 function ttTestOrders() {
   const now  = Math.floor(Date.now() / 1000);
@@ -895,6 +954,48 @@ function syncTikTokShop() {
   return `${allRows.length} rows`;
 }
 
+// Doanh số theo TỪNG SẢN PHẨM × TỪNG NGÀY — gom từ orders/search (không có endpoint
+// analytics riêng cho product). Cùng khoảng 30 ngày như syncTikTokShop, giới hạn
+// 50 trang (~5000 đơn) để tránh timeout.
+function syncTikTokProducts() {
+  const from = new Date(); from.setDate(from.getDate() - 30);
+  const to = new Date(); to.setDate(to.getDate() - 1);
+  const fromTs = Math.floor(from.getTime() / 1000);
+  const toTs   = Math.floor((to.getTime() + 86400000) / 1000); // bao gồm trọn ngày cuối
+
+  const headers = ["date", "product_id", "product_name", "qty", "gmv"];
+  const byKey = {}; // "date|product_id" → { date, product_id, product_name, qty, gmv }
+
+  try {
+    const cipher = _ttShopCipher();
+    let pageToken = '', pages = 0;
+    do {
+      const extra = { shop_cipher: cipher, page_size: '100' };
+      if (pageToken) extra.page_token = pageToken;
+      const j = _ttShopPost('/order/202309/orders/search', extra,
+        { create_time_ge: fromTs, create_time_lt: toTs });
+      if (j.code !== 0) throw new Error(j.message);
+
+      (j.data.orders || []).forEach(o => {
+        const date = Utilities.formatDate(new Date(o.create_time * 1000), 'GMT', 'yyyy-MM-dd');
+        (o.line_items || []).forEach(li => {
+          const pid = li.product_id || li.product_name || '?';
+          const key = date + '|' + pid;
+          if (!byKey[key]) byKey[key] = { date, product_id: pid, product_name: li.product_name || pid, qty: 0, gmv: 0 };
+          byKey[key].qty++;
+          byKey[key].gmv += Number(li.sale_price) || 0;
+        });
+      });
+      pageToken = j.data.next_page_token || '';
+      pages++;
+    } while (pageToken && pages < 50);
+  } catch(e) { throw new Error("Lỗi sync TikTok Products: " + e.message); }
+
+  const allRows = Object.values(byKey).map(r => [r.date, r.product_id, r.product_name, r.qty, r.gmv]);
+  writeSheet("TikTok Product Sales", headers, allRows);
+  return `${allRows.length} rows`;
+}
+
 function syncTikTokPage() {
   const from = new Date(); from.setDate(from.getDate() - 30);
   const to = new Date(); to.setDate(to.getDate() - 1);
@@ -926,9 +1027,10 @@ function syncTikTokAll() {
     catch (e) { log.push(`${label} lỗi: ${e.message}`); }
   };
   
-  run("TT Ads",    syncTikTokAds);
-  run("TT Shop",   syncTikTokShop);
-  run("TT Page",   syncTikTokPage);
+  run("TT Ads",      syncTikTokAds);
+  run("TT Shop",     syncTikTokShop);
+  run("TT Products", syncTikTokProducts);
+  run("TT Page",     syncTikTokPage);
   
   const msg = "✅ syncTikTokAll — " + new Date().toLocaleString("vi-VN") + "\n" + log.join("\n");
   Logger.log(msg);
