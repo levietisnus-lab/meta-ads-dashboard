@@ -943,67 +943,94 @@ function syncTikTokAds() {
   return `${allRows.length} rows`;
 }
 
+const TT_SHOP_HEADERS = ["date", "gmv", "orders", "buyers", "units", "refunds", "live_gmv", "video_gmv", "card_gmv", "others_gmv",
+                         "visitors", "product_impressions", "page_views", "cancellations_returns"];
+
+// Gọi shop/performance cho 1 khoảng [fromStr, toStr] (inclusive), trả mảng row đã format.
+// Ném lỗi nếu API lỗi (đã tự retry bên trong _ttShopGet).
+function _fetchTtShopRange(cipher, fromStr, toStr) {
+  const endLt = Utilities.formatDate(
+    new Date(new Date(toStr + 'T00:00:00Z').getTime() + 86400000), 'GMT', 'yyyy-MM-dd');
+  const j = _ttShopGet('/analytics/202405/shop/performance', {
+    shop_cipher: cipher, start_date_ge: fromStr, end_date_lt: endLt,
+    currency: 'LOCAL', granularity: '1D',
+  });
+  if (j.code !== 0) throw new Error(j.message);
+
+  const intervals = (j.data && j.data.performance && j.data.performance.intervals) || [];
+  return intervals.map(iv => {
+    const g = Number(iv.gmv && iv.gmv.amount) || 0;
+    const bySrcG = {};
+    (iv.gmv_breakdowns || []).forEach(b => { bySrcG[b.type] = Number(b.amount || 0); });
+    return [
+      iv.start_date || iv.end_date,
+      g,
+      Number(iv.orders) || 0,
+      Number(iv.buyers) || 0,
+      Number(iv.units_sold) || 0,
+      Number(iv.refunds && iv.refunds.amount) || 0,
+      bySrcG['LIVE'] || 0,
+      bySrcG['VIDEO'] || 0,
+      bySrcG['PRODUCT_CARD'] || 0,
+      bySrcG['OTHERS'] || 0,
+      Number(iv.avg_product_page_visitors) || 0,
+      Number(iv.product_impressions) || 0,
+      Number(iv.product_page_views) || 0,
+      Number(iv.cancellations_and_returns) || 0,
+    ];
+  });
+}
+
 // Chia nhỏ theo tuần để giảm khả năng TikTok trả "Request timeout" khi truy vấn
-// nguyên 30 ngày trong 1 lần. Nếu 1 tuần lỗi (kể cả sau khi _ttShopGet đã tự retry),
-// bỏ qua tuần đó và tiếp tục — không làm mất dữ liệu các tuần khác.
+// nguyên 30 ngày trong 1 lần. Sau đó dò NGÀY nào còn thiếu (tuần đó lỗi dù đã retry)
+// và thử lại từng ngày riêng lẻ (nhẹ hơn hẳn, ít khả năng lỗi hơn) — để không bị hụt
+// GMV/đơn hàng do cả 1 tuần bị bỏ qua.
 function syncTikTokShop() {
   const from = new Date(); from.setDate(from.getDate() - 30);
   const to = new Date(); to.setDate(to.getDate() - 1);
-
-  const headers = ["date", "gmv", "orders", "buyers", "units", "refunds", "live_gmv", "video_gmv", "card_gmv", "others_gmv",
-                    "visitors", "product_impressions", "page_views", "cancellations_returns"];
-  const allRows = [];
   const cipher = _ttShopCipher();
   const errors = [];
+  const byDate = {}; // date → row
 
+  // Vòng 1: theo tuần (nhanh)
   let chunkFrom = new Date(from);
   while (chunkFrom <= to) {
     let chunkTo = new Date(chunkFrom); chunkTo.setDate(chunkTo.getDate() + 6);
     if (chunkTo > to) chunkTo = new Date(to);
     const chunkFromStr = Utilities.formatDate(chunkFrom, 'GMT', 'yyyy-MM-dd');
     const chunkToStr   = Utilities.formatDate(chunkTo,   'GMT', 'yyyy-MM-dd');
-    const endLt = Utilities.formatDate(new Date(chunkTo.getTime() + 86400000), 'GMT', 'yyyy-MM-dd');
-
     try {
-      const j = _ttShopGet('/analytics/202405/shop/performance', {
-        shop_cipher: cipher, start_date_ge: chunkFromStr, end_date_lt: endLt,
-        currency: 'LOCAL', granularity: '1D',
-      });
-      if (j.code !== 0) throw new Error(j.message);
-
-      const intervals = (j.data && j.data.performance && j.data.performance.intervals) || [];
-      intervals.forEach(iv => {
-        const g = Number(iv.gmv && iv.gmv.amount) || 0;
-        const bySrcG = {};
-        (iv.gmv_breakdowns || []).forEach(b => { bySrcG[b.type] = Number(b.amount || 0); });
-
-        allRows.push([
-          iv.start_date || iv.end_date,
-          g,
-          Number(iv.orders) || 0,
-          Number(iv.buyers) || 0,
-          Number(iv.units_sold) || 0,
-          Number(iv.refunds && iv.refunds.amount) || 0,
-          bySrcG['LIVE'] || 0,
-          bySrcG['VIDEO'] || 0,
-          bySrcG['PRODUCT_CARD'] || 0,
-          bySrcG['OTHERS'] || 0,
-          Number(iv.avg_product_page_visitors) || 0,
-          Number(iv.product_impressions) || 0,
-          Number(iv.product_page_views) || 0,
-          Number(iv.cancellations_and_returns) || 0,
-        ]);
-      });
+      _fetchTtShopRange(cipher, chunkFromStr, chunkToStr).forEach(row => { byDate[row[0]] = row; });
     } catch(e) {
       errors.push(`${chunkFromStr}→${chunkToStr}: ${e.message}`);
     }
-
     chunkFrom = new Date(chunkTo); chunkFrom.setDate(chunkFrom.getDate() + 1);
   }
 
-  writeSheet("TikTok Shop Data", headers, allRows);
-  const errMsg = errors.length ? ` (⚠️ lỗi ${errors.length} tuần: ${errors.join(' | ')})` : '';
-  return `${allRows.length} rows${errMsg}`;
+  // Vòng 2: vá các NGÀY còn thiếu (do tuần chứa nó bị lỗi ở vòng 1) — từng ngày 1,
+  // nhẹ hơn nên khả năng qua cao hơn. Giới hạn 20 ngày vá/lần để tránh vượt 6 phút.
+  const missingDates = [];
+  for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
+    const ds = Utilities.formatDate(d, 'GMT', 'yyyy-MM-dd');
+    if (!byDate[ds]) missingDates.push(ds);
+  }
+  const stillMissing = [];
+  missingDates.slice(0, 20).forEach(ds => {
+    try {
+      _fetchTtShopRange(cipher, ds, ds).forEach(row => { byDate[row[0]] = row; });
+      if (!byDate[ds]) stillMissing.push(ds); // TikTok không trả interval cho ngày đó (vd chưa có data)
+    } catch(e) {
+      stillMissing.push(ds);
+    }
+  });
+
+  const allRows = Object.values(byDate).sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+  writeSheet("TikTok Shop Data", TT_SHOP_HEADERS, allRows);
+
+  const parts = [];
+  if (errors.length) parts.push(`⚠️ ${errors.length} tuần lỗi ở vòng 1 (đã thử vá): ${errors.join(' | ')}`);
+  if (stillMissing.length) parts.push(`❌ vẫn thiếu ${stillMissing.length} ngày sau khi vá: ${stillMissing.join(', ')}`);
+  return `${allRows.length}/30 ngày${parts.length ? ' — ' + parts.join(' ; ') : ''}`;
 }
 
 // Doanh số theo TỪNG SẢN PHẨM × TỪNG NGÀY, ĐỒNG THỜI đếm trạng thái đơn (giao thành
