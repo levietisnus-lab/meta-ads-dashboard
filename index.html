@@ -2523,10 +2523,14 @@ function renderTikTokShop(res) {
   // Lưu lượng truy cập + số lượng sản phẩm
   const tf = res.traffic || {};
   const cat = G.ttCatalog || {};
+  const shopCtr = tf.impressions>0 ? (tf.pageViews/tf.impressions*100) : 0;
+  const convRate = tf.pageViews>0 ? (s.orders/tf.pageViews*100) : 0;
   const tfBox = document.getElementById('tts-traffic');
   if (tfBox) tfBox.innerHTML =
     tile('Lượt xem SP (Impressions)', fmtNum(tf.impressions), '#2563eb') +
     tile('Lượt truy cập trang SP',    fmtNum(tf.pageViews),    '#0891b2') +
+    tile('CTR (Xem → Truy cập)',      shopCtr.toFixed(2)+'%',  '#f59e0b') +
+    tile('Tỉ lệ chuyển đổi (→ Đơn)',  convRate.toFixed(2)+'%', '#10b981') +
     tile('Khách ghé thăm (TB/ngày)',  fmtNum(tf.visitors),     '#7c3aed') +
     tile('Huỷ/Hoàn (đơn)',            fmtNum(tf.cancelReturn), '#ef4444') +
     tile('Tổng số sản phẩm',          cat.total!=null ? fmtNum(cat.total) : '—', '#059669');
@@ -2675,11 +2679,15 @@ function renderTikTokAds(res) {
     `<div style="flex:1;min-width:130px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px">
        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px">${label}</div>
        <div style="font-size:22px;font-weight:800;color:${color}">${val}</div></div>`;
+  const ctr = s.impressions>0 ? (s.clicks/s.impressions*100) : 0;
+  const cpc = s.clicks>0 ? Math.round(s.spend/s.clicks) : 0;
   const box=document.getElementById('tta-summary');
   if (box) box.innerHTML=
     tile('Chi phí', fmtNum(s.spend)+'đ', '#dc2626') +
     tile('Hiển thị', fmtNum(s.impressions), '#2563eb') +
     tile('Clicks', fmtNum(s.clicks), '#0891b2') +
+    tile('CTR', ctr.toFixed(2)+'%', '#f59e0b') +
+    tile('CPC', fmtNum(cpc)+'đ', '#64748b') +
     tile('Conversion', fmtNum(s.conversion), '#059669') +
     tile('GMV (Shop)', fmtNum(s.gmv)+'đ', '#7c3aed') +
     tile('ROAS', (s.roas||0)+'x', '#f59e0b');
