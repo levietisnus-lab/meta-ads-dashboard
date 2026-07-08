@@ -989,6 +989,37 @@ function fetchData() {
     .getDashboardData();
 }
 
+// Tự động làm mới — CHỈ đọc lại Google Sheets (nhẹ, không gọi thêm API Facebook/TikTok
+// ngoài), không hiện loading overlay, không đổi tab/bộ lọc ngày người dùng đang xem.
+// Các tab đang live-fetch (Quảng cáo/Bài đăng/TikTok/TikTok Ads) không tự gọi lại ở đây
+// để tránh tăng tần suất gọi API ngoài (dễ gây lại lỗi rate-limit/timeout).
+function autoRefreshData() {
+  google.script.run
+    .withSuccessHandler(data => {
+      if (!data) return;
+      G = data;
+      const crH = G.creatives?.headers || [], crRows = G.creatives?.rows || [];
+      const _cPidI = crH.indexOf('page_id'), _cPnI = crH.indexOf('page_name');
+      if (_cPidI >= 0 && _cPnI >= 0) crRows.forEach(r => {
+        const pid = String(r[_cPidI]||'').trim(), pn = String(r[_cPnI]||'').trim();
+        if (pid && pn) _PAGE_ID_MAP[pn] = pid;
+      });
+      const syncTimeEl = document.getElementById('sync-time');
+      if (syncTimeEl) syncTimeEl.textContent = 'Cập nhật: ' + (G.synced || '') + ' (tự làm mới)';
+
+      const activeTab = document.querySelector('.nav-tab.active')?.dataset.tab;
+      if      (activeTab === 'overview')  renderOverview();
+      else if (activeTab === 'page')      renderPage();
+      else if (activeTab === 'messages')  renderMessages();
+      else if (activeTab === 'creatives') renderCreatives();
+      else if (activeTab === 'phones')    renderPhones();
+      else if (activeTab === 'ttshop')    fetchTikTokShop();
+    })
+    .withFailureHandler(e => console.warn('autoRefreshData lỗi:', e))
+    .getDashboardData();
+}
+setInterval(autoRefreshData, 3 * 60 * 1000); // 3 phút
+
 function onLoad(data) {
   if (!data) {
     onErr({message: 'getDashboardData() trả về null — kiểm tra meta.gs đã lưu và deploy lại web app.'});

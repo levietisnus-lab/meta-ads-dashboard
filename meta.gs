@@ -909,16 +909,18 @@ function syncAllFull() {
   return msg;
 }
 
-// Cập nhật trigger dùng syncMetaAll và syncTikTokAll (chạy 1 lần mỗi ngày)
+// Cập nhật trigger: syncMetaAll (mỗi 30 phút, cả ngày — Ads/Trang/Bài/Tin nhắn/SĐT/Nội dung QC
+// luôn tương đối mới) + syncTikTokAll (1 lần/ngày — TikTok tốn nhiều API call hơn, chạy dày
+// dễ lại gây timeout/rate-limit, và GMV/Traffic Shop vẫn trễ do TikTok xử lý chậm nên chạy
+// dày cũng không giúp mới hơn).
 function setupTriggerFull() {
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger("syncMetaAll")
-    .timeBased().atHour(6).everyDays(1)
-    .inTimezone("Asia/Ho_Chi_Minh")
+    .timeBased().everyMinutes(30)
     .create();
   ScriptApp.newTrigger("syncTikTokAll")
     .timeBased().atHour(6).nearMinute(30).everyDays(1) // Chạy lệch giờ Meta để tránh timeout
     .inTimezone("Asia/Ho_Chi_Minh")
     .create();
-  Logger.log("⏰ Trigger: syncMetaAll lúc 6:00 AM, syncTikTokAll lúc 6:30 AM mỗi ngày");
+  Logger.log("⏰ Trigger: syncMetaAll mỗi 30 phút (cả ngày), syncTikTokAll 1 lần/ngày lúc 6:30 AM");
 }
