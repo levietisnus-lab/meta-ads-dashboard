@@ -820,6 +820,25 @@ function syncMetaAll() {
   return msg;
 }
 
+// Điểm vào chính mà dashboard gọi ("Đồng bộ ngay") — chạy cả Meta lẫn TikTok,
+// và tự lưu 1 mốc backup code vào Sheet trước khi bắt đầu.
+function syncAllFull() {
+  try { backupCodeToSheet(); pruneOldBackups(15); }
+  catch (e) { Logger.log('⚠️ Backup code bỏ qua (chưa cấp quyền script.projects?): ' + e.message); }
+
+  const log = [];
+  const run = (label, fn) => {
+    try   { log.push(`${label}: ${fn()}`); }
+    catch (e) { log.push(`${label} lỗi: ${e.message}`); }
+  };
+  run("Meta",   syncMetaAll);
+  run("TikTok", syncTikTokAll);
+
+  const msg = "✅ syncAllFull — " + new Date().toLocaleString("vi-VN") + "\n" + log.join("\n");
+  Logger.log(msg);
+  return msg;
+}
+
 // Cập nhật trigger dùng syncMetaAll và syncTikTokAll (chạy 1 lần mỗi ngày)
 function setupTriggerFull() {
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
