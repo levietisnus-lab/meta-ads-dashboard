@@ -40,8 +40,11 @@ function getPageToken() {
 }
 
 // ─── WEB APP ─────────────────────────────────────────────
-// doGet: route callback OAuth TikTok (?code=...) hoặc phục vụ dashboard HTML
+// doGet: route callback OAuth TikTok/Shopee (?code=...) hoặc phục vụ dashboard HTML
 function doGet(e) {
+  if (e && e.parameter && e.parameter.code && e.parameter.shop_id && !e.parameter.state) {
+    return handleShopeeOAuth(e); // Shopee redirect: ?code=...&shop_id=...
+  }
   if (e && e.parameter &&
      ((e.parameter.code && (e.parameter.state === 'dev' || e.parameter.app_key)) ||
        e.parameter.auth_code || e.parameter.state === 'ads')) {
