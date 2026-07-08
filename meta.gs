@@ -20,8 +20,13 @@ function getPageToken() {
 }
 
 // ─── WEB APP ─────────────────────────────────────────────
-// doGet: vẫn phục vụ HTML cho ai truy cập URL GAS trực tiếp (backward compat)
-function doGet() {
+// doGet: route callback OAuth TikTok (?code=...) hoặc phục vụ dashboard HTML
+function doGet(e) {
+  if (e && e.parameter &&
+     ((e.parameter.code && (e.parameter.state === 'dev' || e.parameter.app_key)) ||
+       e.parameter.auth_code || e.parameter.state === 'ads')) {
+    return handleTikTokOAuth(e);
+  }
   return HtmlService.createHtmlOutputFromFile("index")
     .setTitle("Meta Ads Dashboard")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
@@ -42,7 +47,9 @@ function doPost(e) {
       case 'sendReply':   result = sendReply(data.pageId, data.recipientId, data.text);   break;
       case 'getTokens':   result = getMsgTokenStatus();                                    break;
       case 'saveToken':   result = saveMsgToken(data.pageId, data.token);                 break;
-      case 'deleteToken': result = deleteMsgToken(data.pageId);                           break;
+      case 'deleteToken':      result = deleteMsgToken(data.pageId);                      break;
+      case 'getPageMsgStats':  result = getPageMsgStats(data.from, data.to);              break;
+      case 'getAdsConvStats':  result = getAdsConvStats(data.from, data.to);              break;
       default: result = { _error: 'Unknown action: ' + action };
     }
     return _jsonResp(result);
@@ -69,13 +76,20 @@ function triggerSyncAsync() {
 function getDashboardData() {
   const ss = _getSpreadsheet();
   const get = name => _sheetToJson(ss, name);
+  const savedStats = PropertiesService.getScriptProperties().getProperty('ADS_CONV_STATS');
   return {
-    ads:       get("Ads Data"),
-    page:      get("Page Insights"),
-    posts:     get("Post Engagement"),
-    messages:  get("Messages"),
-    creatives: get("Ad Creatives"),
-    synced:    new Date().toLocaleString("vi-VN"),
+    ads:          get("Ads Data"),
+    page:         get("Page Insights"),
+    posts:        get("Post Engagement"),
+    messages:     get("Messages"),
+    creatives:    get("Ad Creatives"),
+    adsConvStats: savedStats ? JSON.parse(savedStats) : null,
+    
+    ttAds:        get("TikTok Ads Data"),
+    ttShop:       get("TikTok Shop Data"),
+    ttPage:       get("TikTok Page Data"),
+    
+    synced:       new Date().toLocaleString("vi-VN"),
   };
 }
 
@@ -124,20 +138,33 @@ function syncMessages() {
   }
   if (!Object.keys(pageMap).length) pageMap[CFG.PAGE_ID] = 'Main Page';
 
-  // Chuẩn hóa và kiểm tra SĐT 10-11 chữ số, chấp nhận cách nhau bằng khoảng trắng/dấu chấm/gạch
+  // Chỉ nhận SĐT DI ĐỘNG VN hợp lệ (đầu 03/05/07/08/09), 10 số, có ranh giới
+  // → tránh bắt nhầm mã đơn/ID/số dài. Chấp nhận cách nhau bằng khoảng trắng/dấu chấm/gạch.
+  const PHONE_RE = /(?<![0-9])(?:\+?84|0)(?:3[2-9]|5[2689]|7[06-9]|8[1-9]|9[0-9])[0-9]{7}(?![0-9])/;
   const checkPhone = txt => {
     if (!txt) return false;
     const norm = String(txt).replace(/([0-9])[\s.\-]+(?=[0-9])/g, '$1');
-    return /(?:\+84[0-9]{9}|0[0-9]{9,10})(?![0-9])/.test(norm);
+    return PHONE_RE.test(norm);
+  };
+  // Trích xuất SĐT thật (chuẩn hoá về 0xxxxxxxxx)
+  const extractPhone = txt => {
+    if (!txt) return '';
+    const norm = String(txt).replace(/([0-9])[\s.\-]+(?=[0-9])/g, '$1');
+    const m = norm.match(PHONE_RE);
+    if (!m) return '';
+    let p = m[0].replace(/^\+?84/, '0');
+    return p;
   };
 
-  const headers = ["updated_date","created_date","page_name","snippet","from","message_count","unread","response_time_hrs","has_phone","customer_msgs","conv_id","phone_date","last_cust_date"];
+  const headers = ["updated_date","created_date","page_name","snippet","from","message_count","unread","response_time_hrs","has_phone","customer_msgs","conv_id","phone_date","last_cust_date","phone"];
   const allRows = [];
   const cutoff31d = new Date(); cutoff31d.setDate(cutoff31d.getDate() - 31);
+  const cutoff31dStr = Utilities.formatDate(cutoff31d, 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd');
 
   // Đọc dữ liệu tích lũy từ lần sync trước
   const knownPhoneIds = new Set();
   const phoneDateMap = {};  // conv_id → phone_date
+  const phoneNumMap  = {};  // conv_id → số điện thoại đã lưu
   const custDateMap  = {};  // conv_id → { lcd: last_cust_date, ud: updated_date }
   const msgSh = ss.getSheetByName("Messages");
   if (msgSh && msgSh.getLastRow() > 1) {
@@ -148,6 +175,7 @@ function syncMessages() {
     const pdIdx  = eHdr.indexOf('phone_date');
     const udIdx  = eHdr.indexOf('updated_date');
     const hlcd   = eHdr.indexOf('last_cust_date');
+    const phIdx  = eHdr.indexOf('phone');
     if (cidIdx >= 0) {
       existing.slice(1).forEach(row => {
         const cid = String(row[cidIdx]||'');
@@ -157,10 +185,11 @@ function syncMessages() {
           lcd: hlcd  >= 0 ? String(row[hlcd] ||'') : '',
           ud:  udIdx >= 0 ? String(row[udIdx] ||'') : '',
         };
-        // Tích lũy phoneDateMap chỉ cho conv có SĐT
+        // Tích lũy phoneDateMap + số điện thoại chỉ cho conv có SĐT
         if (hpIdx >= 0 && +row[hpIdx] === 1) {
           knownPhoneIds.add(cid);
           phoneDateMap[cid] = (pdIdx >= 0 && row[pdIdx]) ? String(row[pdIdx]) : (udIdx >= 0 ? String(row[udIdx]||'') : '');
+          if (phIdx >= 0 && row[phIdx]) phoneNumMap[cid] = String(row[phIdx]);
         }
       });
     }
@@ -168,11 +197,8 @@ function syncMessages() {
   Logger.log(`📂 Tích lũy: ${knownPhoneIds.size} SĐT, ${Object.keys(custDateMap).length} custDate`);
 
   Object.entries(pageMap).forEach(([pid, pname]) => {
-    let pt = CFG.PAGE_TOKEN;
-    try {
-      const info = apiGet(`${BASE_URL}/${pid}`, { access_token: CFG.TOKEN, fields: "access_token" });
-      if (info.access_token) pt = info.access_token;
-    } catch(e) { return; }
+    // Lấy page token qua /me/accounts (đúng cho system user token)
+    const pt = _pageTokenFor(pid);
 
     let convList = [];
     try {
@@ -184,13 +210,11 @@ function syncMessages() {
       }, 20);
     } catch(e) { Logger.log(`❌ Messages ${pname}: ${e.message}`); return; }
 
-    // ── Phát hiện SĐT: 3 tầng, tích lũy qua các lần sync ──────────────
-    // Tầng 1 (miễn phí): snippet của hội thoại
-    // Tầng 2 (miễn phí): conv_id đã phát hiện SĐT trong lần sync trước (knownPhoneIds)
-    // Tầng 3 (API sequential): response_time top 120, phone scan top 400
+    // ── Phát hiện SĐT: CHỈ từ tin nhắn của KHÁCH (không tính snippet/tin của page) ──
+    // Giá trị tích lũy (knownPhoneIds) chỉ dùng làm khởi tạo; khi quét lại sẽ tính lại chính xác.
     const phoneSet = new Set();
     convList.forEach(c => {
-      if (knownPhoneIds.has(c.id) || checkPhone(c.snippet)) phoneSet.add(c.id);
+      if (knownPhoneIds.has(c.id)) phoneSet.add(c.id);
     });
 
     const toVnDate = t => t ? Utilities.formatDate(new Date(t), 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd') : '';
@@ -201,19 +225,23 @@ function syncMessages() {
       let responseTimeHrs = '';
       let customerMsgs = 0;
       let hasPhone = phoneSet.has(c.id) ? 1 : 0;
+      let phoneNum = phoneNumMap[c.id] || '';   // giữ số đã lưu; ghi đè khi quét lại
 
       const withinPeriod = new Date(c.updated_time) >= cutoff31d;
       const timeOk = (Date.now() - scanStart) < SCAN_BUDGET_MS;
       const convUpdated = toVnDate(c.updated_time);
 
-      // last_cust_date: lấy từ custDateMap trước, scan lại nếu conv có activity mới
       const stored = custDateMap[c.id] || null;
-      // Cần scan lại nếu: chưa từng scan HOẶC conv có activity mới hơn lần scan trước
-      const needLcd = withinPeriod && (!stored || convUpdated > (stored.ud || '')) && lcdCount < 200 && timeOk;
+      // lcdIsStale: lcd cũ hơn 31 ngày và conv đã có activity mới hơn → khách có thể đã nhắn lại
+      const lcdIsStale = stored && stored.lcd && stored.lcd !== '0000-00-00'
+        && stored.lcd < cutoff31dStr && convUpdated > stored.lcd;
+      // needLcd: chưa scan, lcd trống, có activity mới hơn lần scan, hoặc lcd cũ (cần làm mới)
+      const needLcd = withinPeriod && (!stored || !stored.lcd || convUpdated > (stored.ud || '') || lcdIsStale) && lcdCount < 200 && timeOk;
       let last_cust_date = stored ? stored.lcd : '';
 
       const doRt    = withinPeriod && rtCount < 80 && timeOk;
-      const doPhone = withinPeriod && !hasPhone && phoneCount < 80 && timeOk;
+      // Quét lại CẢ conv đã cờ SĐT (bỏ !hasPhone) để tính lại chính xác, sửa false-positive cũ
+      const doPhone = withinPeriod && phoneCount < 500 && timeOk;
       const doScan  = doRt || doPhone || needLcd;
 
       if (doScan) {
@@ -225,7 +253,16 @@ function syncMessages() {
             access_token: pt, fields: "from,created_time,message", limit: "50",
           });
           const msgArr = msgs.data || [];
-          if (!hasPhone && msgArr.some(m => checkPhone(m.message))) hasPhone = 1;
+          // Chỉ tính SĐT do KHÁCH gửi (m.from.id !== page id). Tính lại từ đầu → sửa được sai cũ.
+          if (doPhone) {
+            hasPhone = 0; phoneNum = '';
+            for (const m of msgArr) {
+              if (m.from?.id !== pid) {
+                const ph = extractPhone(m.message);
+                if (ph) { hasPhone = 1; phoneNum = ph; break; }
+              }
+            }
+          }
           const latestCust = msgArr.find(m => m.from?.id !== pid);
           // '0000-00-00' = đã scan nhưng không có tin từ khách (chỉ outbound từ page)
           last_cust_date = latestCust?.created_time ? toVnDate(latestCust.created_time) : '0000-00-00';
@@ -267,6 +304,7 @@ function syncMessages() {
         c.id || '',
         phone_date,
         last_cust_date,
+        hasPhone === 1 ? phoneNum : '',
       ]);
     });
     Logger.log(`✅ Messages ${pname}: ${convList.length} conv (RT:${rtCount} Phone:${phoneCount} LCD:${lcdCount})`);
@@ -274,6 +312,290 @@ function syncMessages() {
 
   _writeSheet(ss, "Messages", headers, allRows);
   return `${allRows.length} hội thoại`;
+}
+
+// ============================================================
+// 4b-0. ADS CONV STATS — Lấy messaging_conversation_started từ Ads API (account level)
+// ============================================================
+// Gọi ở account level → Facebook dedup unique người → khớp "Tài khoản Meta" trong Ads Manager
+function getAdsConvStats(from, to) {
+  if (!from || !to) return { total: 0, byAccount: {} };
+  let total = 0;
+  const byAccount = {};
+  AD_ACCOUNTS.forEach(acct => {
+    try {
+      const rows = fetchPaged(`${BASE_URL}/${acct.id}/insights`, {
+        access_token: CFG.TOKEN,
+        fields:       "actions",
+        time_range:   JSON.stringify({ since: from, until: to }),
+        level:        "account",
+      });
+      let acctTotal = 0;
+      rows.forEach(d => {
+        const act = toActionMap(d.actions);
+        acctTotal += act["onsite_conversion.messaging_conversation_started_7d"]
+                  || act["onsite_conversion.messaging_first_reply"] || 0;
+      });
+      byAccount[acct.name] = acctTotal;
+      total += acctTotal;
+    } catch(e) {
+      Logger.log('getAdsConvStats ' + acct.name + ': ' + e.message);
+    }
+  });
+  return { total, byAccount };
+}
+
+// ============================================================
+// 4b-0a. PAGE MSG DEDUP — Người liên hệ nhắn tin dedup theo TỪNG TRANG
+// ============================================================
+// Lọc campaign.id của từng trang ở level=account (Facebook dedup trong phạm vi lọc),
+// dùng Batch API để tránh lỗi URL dài. Trả { byPage, byAccount, total }.
+function getPageMsgDedup(from, to) {
+  if (!from || !to) return { byPage: {}, byAccount: {}, total: { c:0, n:0, d:0 } };
+  return _computePageMsgDedup(from, to);
+}
+
+// POST Batch API tới graph, retry khi GAS/FB throttle ("too much traffic"/#17/#4)
+function _fbBatchPost(items, token) {
+  const tk = token || CFG.TOKEN;
+  let lastErr = '';
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const res = UrlFetchApp.fetch(`${BASE_URL}/`, {
+        method: 'post', muteHttpExceptions: true,
+        payload: { access_token: tk, batch: JSON.stringify(items) },
+      });
+      const txt = res.getContentText();
+      const arr = JSON.parse(txt);
+      if (Array.isArray(arr)) return arr;
+      lastErr = txt;                       // lỗi cấp batch (vd rate limit) → thử lại
+    } catch(e) { lastErr = e.message; }    // "too much traffic" từ UrlFetch → thử lại
+    Utilities.sleep(2000 * (attempt + 1)); // backoff tăng dần
+  }
+  Logger.log('_fbBatchPost thất bại sau 4 lần: ' + lastErr);
+  return [];
+}
+
+// Trả { byPage:{name:{c,n}}, byAccount:{name:{c,n}}, total:{c,n} }
+//   c = messaging contacts (conversation_started_7d), n = new messaging contacts (first_reply)
+function _computePageMsgDedup(from, to) {
+  function extractPageId(ad) {
+    const s = ad.effective_object_story_id || '';
+    if (s) return s.split('_')[0];
+    const spec = ad.creative && ad.creative.object_story_spec;
+    if (spec && spec.page_id) return spec.page_id;
+    if (ad.creative && ad.creative.actor_id) return ad.creative.actor_id;
+    return '';
+  }
+  const MSG  = 'onsite_conversion.messaging_conversation_started_7d';   // Messaging contacts
+  const MSGN = 'onsite_conversion.messaging_first_reply';               // New messaging contacts
+  const MSGD = 'onsite_conversion.messaging_user_depth_3_message_send'; // Gửi ≥3 tin
+
+  // pageId → tên (từ Ad Creatives)
+  const ss = _getSpreadsheet();
+  const cr = ss.getSheetByName('Ad Creatives');
+  const pidName = {};
+  if (cr && cr.getLastRow() > 1) {
+    const cv = cr.getRange(1,1,cr.getLastRow(),cr.getLastColumn()).getValues();
+    const cH = cv[0], iPid = cH.indexOf('page_id'), iPn = cH.indexOf('page_name');
+    cv.slice(1).forEach(row => {
+      const pid = String(row[iPid]||'').trim();
+      if (pid) pidName[pid] = String(row[iPn]||pid).trim();
+    });
+  }
+
+  // pageId → { accountId → Set(campaignId) }, và tên account
+  const pageMap = {};
+  const acctName = {};
+  AD_ACCOUNTS.forEach(acct => {
+    acctName[acct.id] = acct.name;
+    const ads = fetchPaged(`${BASE_URL}/${acct.id}/ads`, {
+      access_token: CFG.TOKEN,
+      fields: 'campaign{id},effective_object_story_id,creative{object_story_spec{page_id},actor_id}',
+      limit: '200',
+    }, 10);
+    ads.forEach(ad => {
+      const pid = extractPageId(ad);
+      if (!pid || !ad.campaign || !ad.campaign.id) return;
+      pageMap[pid] = pageMap[pid] || {};
+      pageMap[pid][acct.id] = pageMap[pid][acct.id] || {};
+      pageMap[pid][acct.id][ad.campaign.id] = true;
+    });
+  });
+
+  // (Không giải tên page qua batch — POST thứ 2 vào cùng URL gây throttle. Page ngoài Ad Creatives
+  //  giữ raw id, không khớp bảng Messages nên tự động bị loại khỏi tổng hiển thị.)
+
+  // Chuẩn bị batch: mỗi (page, account) 1 request
+  const reqs = [];       // { pid, acctId }
+  const relUrls = [];
+  Object.keys(pageMap).forEach(pid => {
+    Object.keys(pageMap[pid]).forEach(acctId => {
+      const ids = Object.keys(pageMap[pid][acctId]);
+      if (!ids.length) return;
+      const qs = [
+        'level=account',
+        'fields=actions',
+        'time_range=' + encodeURIComponent(JSON.stringify({ since: from, until: to })),
+        'filtering=' + encodeURIComponent(JSON.stringify([{ field: 'campaign.id', operator: 'IN', value: ids }])),
+      ].join('&');
+      reqs.push({ pid, acctId });
+      relUrls.push(`${acctId}/insights?${qs}`);
+    });
+  });
+
+  // Gọi Batch API theo lô 50 (giới hạn batch của FB), có sleep giữa các lô để tránh throttle
+  const results = [];
+  for (let i = 0; i < relUrls.length; i += 50) {
+    const batch = relUrls.slice(i, i + 50).map(u => ({ method: 'GET', relative_url: u }));
+    if (i > 0) Utilities.sleep(1200);
+    _fbBatchPost(batch).forEach(x => results.push(x));
+  }
+
+  // Gộp kết quả (2 metric: c = messaging contacts, n = new messaging contacts)
+  const byPage = {}, byAccount = {};
+  const total = { c: 0, n: 0, d: 0 };
+  results.forEach((item, idx) => {
+    const meta = reqs[idx];
+    if (!item || item.code !== 200) return;
+    let body;
+    try { body = JSON.parse(item.body); } catch(e) { return; }
+    let c = 0, n = 0, d3 = 0;
+    (body.data || []).forEach(d => (d.actions || []).forEach(a => {
+      if (a.action_type === MSG)  c  += Number(a.value) || 0;
+      if (a.action_type === MSGN) n  += Number(a.value) || 0;
+      if (a.action_type === MSGD) d3 += Number(a.value) || 0;
+    }));
+    const pname = pidName[meta.pid] || meta.pid;
+    const aname = acctName[meta.acctId] || meta.acctId;
+    byPage[pname]    = byPage[pname]    || { c:0, n:0, d:0 };
+    byAccount[aname] = byAccount[aname] || { c:0, n:0, d:0 };
+    byPage[pname].c += c;    byPage[pname].n += n;    byPage[pname].d += d3;
+    byAccount[aname].c += c; byAccount[aname].n += n; byAccount[aname].d += d3;
+    total.c += c;            total.n += n;            total.d += d3;
+  });
+
+  return { byPage, byAccount, total };
+}
+
+// ============================================================
+// 4b-0b. ADS DAILY — Lấy live dữ liệu campaign/adset theo NGÀY từ Ads API
+// ============================================================
+// from, to: 'yyyy-MM-dd'. accountName: tên tài khoản ('' hoặc 'all' = tất cả)
+// Trả về { headers, rows } cùng cấu trúc "Ads Data" để dashboard render trực tiếp.
+function getAdsDaily(from, to, accountName) {
+  const headers = [
+    "date", "account", "campaign", "adset",
+    "spend", "impressions", "reach",
+    "clicks", "ctr", "cpc", "cpm", "frequency",
+    "link_clicks", "purchases", "add_to_cart",
+    "landing_page_view", "messaging_reply", "page_like",
+    "roas"
+  ];
+  if (!from || !to) return { headers, rows: [] };
+
+  const fields = [
+    "campaign_name", "adset_name",
+    "spend", "impressions", "reach",
+    "clicks", "ctr", "cpc", "cpm",
+    "frequency", "actions", "purchase_roas",
+    "date_start", "date_stop"
+  ].join(",");
+
+  const wanted = String(accountName || '').trim().toLowerCase();
+  const accts  = AD_ACCOUNTS.filter(a =>
+    !wanted || wanted === 'all' || a.name.toLowerCase() === wanted);
+
+  const rows = [];
+  accts.forEach(acct => {
+    try {
+      const data = fetchPaged(`${BASE_URL}/${acct.id}/insights`, {
+        access_token:   CFG.TOKEN,
+        time_range:     JSON.stringify({ since: from, until: to }),
+        level:          "adset",
+        fields:         fields,
+        limit:          "200",
+        time_increment: "1",
+      });
+      data.forEach(d => {
+        const act  = toActionMap(d.actions);
+        const roas = d.purchase_roas ? parseFloat(d.purchase_roas[0]?.value || 0) : 0;
+        rows.push([
+          d.date_start,
+          acct.name,
+          d.campaign_name,
+          d.adset_name,
+          num(d.spend),
+          num(d.impressions),
+          num(d.reach),
+          num(d.clicks),
+          num(d.ctr),
+          num(d.cpc),
+          num(d.cpm),
+          num(d.frequency),
+          act["link_click"]                                                || 0,
+          act["purchase"]                                                  || 0,
+          act["add_to_cart"]                                               || 0,
+          act["landing_page_view"]                                         || 0,
+          act["onsite_conversion.messaging_conversation_started_7d"]
+            || act["onsite_conversion.messaging_first_reply"]              || 0,
+          act["like"]                                                      || 0,
+          roas,
+        ]);
+      });
+    } catch(e) {
+      Logger.log('getAdsDaily ' + acct.name + ': ' + e.message);
+    }
+  });
+  rows.sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+  return { headers, rows };
+}
+
+// ============================================================
+// 4b-1. PAGE MSG STATS — Lấy số liệu tổng kỳ từ Page Insights
+// ============================================================
+// Trả về { page_name: { inPeriod, newConvs } } dùng period=total_over_range
+// → khớp chính xác "Tổng số người liên hệ" của Meta Business Suite
+function getPageMsgStats(from, to) {
+  if (!from || !to) return {};
+  const crSh = SS.getSheetByName("Ad Creatives");
+  const pageMap = {};
+  if (crSh && crSh.getLastRow() > 1) {
+    const vals = crSh.getRange(1,1,crSh.getLastRow(),crSh.getLastColumn()).getValues();
+    const hdr  = vals[0];
+    const pidI = hdr.indexOf('page_id'), pnI = hdr.indexOf('page_name');
+    if (pidI >= 0) vals.slice(1).forEach(r => {
+      const pid = String(r[pidI]||'').trim();
+      if (pid && pid !== '0') pageMap[pid] = String(r[pnI]||pid).trim();
+    });
+  }
+  if (!Object.keys(pageMap).length) pageMap[CFG.PAGE_ID] = 'Main Page';
+
+  const sinceTs = String(Math.floor(new Date(from).getTime() / 1000));
+  const untilTs = String(Math.floor(new Date(to + 'T23:59:59+07:00').getTime() / 1000));
+  const out = {};
+  Object.entries(pageMap).forEach(([pid, pname]) => {
+    // Lấy page token qua /me/accounts (đúng cho system user token)
+    const pt = _pageTokenFor(pid);
+    try {
+      const r = apiGet(`${BASE_URL}/${pid}/insights`, {
+        access_token: pt,
+        metric: "page_messages_active_threads_unique,page_messages_new_conversations_unique",
+        period: "total_over_range",
+        since: sinceTs,
+        until: untilTs,
+      });
+      const vals = {};
+      (r.data || []).forEach(m => { vals[m.name] = m.values?.[0]?.value ?? 0; });
+      out[pname] = {
+        inPeriod: vals['page_messages_active_threads_unique']      || 0,
+        newConvs:  vals['page_messages_new_conversations_unique']   || 0,
+      };
+    } catch(e) {
+      Logger.log('getPageMsgStats ' + pname + ': ' + e.message);
+    }
+  });
+  return out;
 }
 
 // ============================================================
@@ -472,7 +794,7 @@ function _writeSheet(ss, name, headers, rows) {
 // ============================================================
 // SYNC ĐẦY ĐỦ — gọi từ dashboard hoặc trigger
 // ============================================================
-function syncAllFull() {
+function syncMetaAll() {
   const log = [];
   const run = (label, fn) => {
     try   { log.push(`${label}: ${fn()}`); }
@@ -483,17 +805,31 @@ function syncAllFull() {
   run("Posts",     syncPosts);
   run("Messages",  syncMessages);
   run("Creatives", syncAdCreatives);
+
+  // Lưu account-level messaging metric (dedup unique người) vào Properties
+  try {
+    const today  = Utilities.formatDate(new Date(),    'Asia/Ho_Chi_Minh', 'yyyy-MM-dd');
+    const from31 = Utilities.formatDate(daysAgo(30),   'Asia/Ho_Chi_Minh', 'yyyy-MM-dd');
+    const stats  = getAdsConvStats(from31, today);
+    PropertiesService.getScriptProperties().setProperty('ADS_CONV_STATS', JSON.stringify(stats));
+    log.push(`AdsConvStats: ${stats.total} (${from31} → ${today})`);
+  } catch(e) { log.push('AdsConvStats lỗi: ' + e.message); }
+
   const msg = "✅ syncAllFull — " + new Date().toLocaleString("vi-VN") + "\n" + log.join("\n");
   Logger.log(msg);
   return msg;
 }
 
-// Cập nhật trigger dùng syncAllFull (chạy 1 lần)
+// Cập nhật trigger dùng syncMetaAll và syncTikTokAll (chạy 1 lần mỗi ngày)
 function setupTriggerFull() {
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
-  ScriptApp.newTrigger("syncAllFull")
+  ScriptApp.newTrigger("syncMetaAll")
     .timeBased().atHour(6).everyDays(1)
     .inTimezone("Asia/Ho_Chi_Minh")
     .create();
-  Logger.log("⏰ Trigger: syncAllFull lúc 6:00 AM mỗi ngày");
+  ScriptApp.newTrigger("syncTikTokAll")
+    .timeBased().atHour(6).nearMinute(30).everyDays(1) // Chạy lệch giờ Meta để tránh timeout
+    .inTimezone("Asia/Ho_Chi_Minh")
+    .create();
+  Logger.log("⏰ Trigger: syncMetaAll lúc 6:00 AM, syncTikTokAll lúc 6:30 AM mỗi ngày");
 }

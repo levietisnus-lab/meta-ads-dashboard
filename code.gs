@@ -13,6 +13,12 @@ function syncAll() {
   try { log.push("Ads: "   + syncAds());   } catch(e) { log.push("Ads lỗi: "  + e.message); }
   try { log.push("Page: "  + syncPage());  } catch(e) { log.push("Page lỗi: " + e.message); }
   try { log.push("Posts: " + syncPosts()); } catch(e) { log.push("Post lỗi: " + e.message); }
+  
+  // Đồng bộ TikTok
+  try { log.push("TT Ads: "   + syncTikTokAds());  } catch(e) { log.push("TT Ads lỗi: "  + e.message); }
+  try { log.push("TT Shop: "  + syncTikTokShop()); } catch(e) { log.push("TT Shop lỗi: " + e.message); }
+  try { log.push("TT Page: "  + syncTikTokPage()); } catch(e) { log.push("TT Page lỗi: " + e.message); }
+  
   Logger.log("✅ " + new Date().toLocaleString("vi-VN") + "\n" + log.join("\n"));
 }
 
@@ -274,31 +280,72 @@ function syncPage() {
 // ============================================================
 // 3. POST ENGAGEMENT
 // ============================================================
+// Lấy page access token đúng cách cho system user: qua /me/accounts (không dùng /{pid}?fields=access_token)
+function _pageTokenFor(pageId) {
+  try {
+    const j = apiGet(`${BASE_URL}/me/accounts`, { access_token: CFG.TOKEN, fields: "id,access_token", limit: "100" });
+    const p = (j.data || []).find(x => String(x.id) === String(pageId));
+    if (p && p.access_token) return p.access_token;
+  } catch(e) { Logger.log('_pageTokenFor: ' + e.message); }
+  return CFG.PAGE_TOKEN; // fallback
+}
+
+// FB chặn post_impressions/post_impressions_unique → chỉ dùng metric hợp lệ
+const POSTS_HEADERS = ["date","message","story","reactions","comments","shares","clicks","video_views","engaged","post_id"];
+const POSTS_FIELDS  = "id,message,created_time,story,shares," +
+  "reactions.summary(true).limit(0),comments.summary(true).limit(0)," +
+  "insights.metric(post_clicks,post_reactions_by_type_total,post_video_views)";
+
+function _postRow(p) {
+  const ins = {};
+  (p.insights?.data || []).forEach(m => { ins[m.name] = m.values?.[0]?.value ?? 0; });
+  let reactions = p.reactions?.summary?.total_count;
+  if (reactions == null) {
+    const rt = ins.post_reactions_by_type_total || {};
+    reactions = Object.values(rt).reduce((a, b) => a + (Number(b) || 0), 0);
+  }
+  reactions = reactions || 0;
+  const comments = p.comments?.summary?.total_count || 0;
+  const shares   = p.shares?.count || 0;
+  const clicks   = ins.post_clicks || 0;
+  const videoV   = ins.post_video_views || 0;
+  const engaged  = reactions + comments + shares + clicks;
+  return [
+    (p.created_time || "").split("T")[0],
+    (p.message || p.story || "").substring(0, 200),
+    p.story || "",
+    reactions, comments, shares, clicks, videoV, engaged,
+    p.id || "",
+  ];
+}
+
 function syncPosts() {
-  const raw = apiGet(`${BASE_URL}/${CFG.PAGE_ID}/posts`, {
-    access_token: CFG.PAGE_TOKEN,
-    fields: "id,message,created_time,story",
-    limit: "50",
-  });
-
-  const headers = ["date","message","story","impressions","reach","engaged","clicks","post_id"];
-  const rows = (raw.data || []).map(p => {
-    const ins = {};
-    (p.insights?.data || []).forEach(m => { ins[m.name] = m.values?.[0]?.value ?? 0; });
-    return [
-      (p.created_time || "").split("T")[0],
-      (p.message || p.story || "").substring(0, 200),
-      p.story || "",
-      ins.post_impressions || 0,
-      ins.post_impressions_unique || 0,
-      ins.post_engaged_users || 0,
-      ins.post_clicks || 0,
-      p.id || "",
-    ];
-  });
-
-  _writeSheet(SS || _getSpreadsheet(), "Post Engagement", headers, rows);
+  const pt  = _pageTokenFor(CFG.PAGE_ID);
+  const raw = apiGet(`${BASE_URL}/${CFG.PAGE_ID}/posts`, { access_token: pt, fields: POSTS_FIELDS, limit: "50" });
+  const rows = (raw.data || []).map(_postRow);
+  _writeSheet(SS || _getSpreadsheet(), "Post Engagement", POSTS_HEADERS, rows);
   return `${rows.length} bài viết`;
+}
+
+// Danh sách page mà token quản lý (cho dropdown chọn trang)
+function getManagedPages() {
+  try {
+    const j = apiGet(`${BASE_URL}/me/accounts`, { access_token: CFG.TOKEN, fields: "id,name", limit: "100" });
+    return (j.data || []).map(p => ({ id: String(p.id), name: p.name || String(p.id) }));
+  } catch(e) { Logger.log('getManagedPages: ' + e.message); return []; }
+}
+
+// Lấy live posts theo page + khoảng ngày (from/to yyyy-MM-dd)
+function getPostsLive(pageId, from, to) {
+  const pid = pageId || CFG.PAGE_ID;
+  const pt  = _pageTokenFor(pid);
+  const params = { access_token: pt, fields: POSTS_FIELDS, limit: "100" };
+  if (from) params.since = from;
+  if (to)   params.until = to;
+  let data = [];
+  try { data = fetchPaged(`${BASE_URL}/${pid}/posts`, params, 10); }
+  catch(e) { Logger.log('getPostsLive: ' + e.message); }
+  return { headers: POSTS_HEADERS, rows: data.map(_postRow) };
 }
 
 // ============================================================

@@ -393,6 +393,26 @@ tr:last-child td { border-bottom: none; }
 <div id="tab-ads" class="tab-panel">
   <div class="card">
     <div class="card-title">Chi tiết Quảng cáo theo ngày</div>
+
+    <!-- Date range + Account filter -->
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f1f5f9">
+      <span style="font-size:12px;font-weight:700;color:var(--muted)">Khoảng:</span>
+      <div id="ads-date-btns" style="display:flex;gap:6px">
+        <button class="date-btn" onclick="setAdsRange(this,7)">7 ngày</button>
+        <button class="date-btn active" onclick="setAdsRange(this,30)">30 ngày</button>
+        <button class="date-btn" onclick="setAdsRange(this,90)">90 ngày</button>
+      </div>
+      <input type="date" id="ads-from" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px">
+      <span style="color:var(--muted)">→</span>
+      <input type="date" id="ads-to" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px">
+      <button onclick="applyAdsDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
+      <div style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></div>
+      <span style="font-size:12px;font-weight:700;color:var(--muted)">Tài khoản:</span>
+      <div id="ads-account-btns" style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="date-btn active" onclick="setAdsAccount(this,'')">Tất cả</button>
+      </div>
+    </div>
+
     <div class="search-row">
       <input  id="ads-q"    type="text"   placeholder="Tìm campaign, adset..." oninput="filterAds()">
       <select id="ads-camp"               onchange="filterAds()"><option value="">Tất cả Campaign</option></select>
@@ -525,6 +545,26 @@ tr:last-child td { border-bottom: none; }
     <button onclick="openTokenConfig()" style="margin-left:auto;padding:5px 12px;background:#f8fafc;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;color:#374151;font-weight:500">
       ⚙️ Token nhắn tin
     </button>
+  </div>
+
+  <!-- Người liên hệ nhắn tin (Meta Ads, dedup theo tài khoản) -->
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-title">
+      Người liên hệ nhắn tin (Meta Ads)
+      <span class="badge-pill" id="ads-conv-badge"></span>
+      <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:8px">
+        Số người duy nhất bắt đầu nhắn tin qua quảng cáo — dedup theo tài khoản, khớp Meta Ads Manager
+      </span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr style="background:#f8fafc">
+          <th style="text-align:left">Tài khoản</th>
+          <th>Người liên hệ nhắn tin</th>
+        </tr></thead>
+        <tbody id="ads-conv-body"></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Summary table -->
@@ -689,8 +729,11 @@ function onLoad(data) {
   renderAds();
   renderPage();
   renderPosts();
+  // Đọc account-level messaging total từ sync (đã lưu trong Properties)
+  if (G.adsConvStats && G.adsConvStats.total > 0) G_ADS_CONV_TOTAL = G.adsConvStats.total;
   renderMessages();
   renderCreatives();
+  fetchPageMsgStats();
 }
 
 function onErr(e) {
@@ -1324,11 +1367,90 @@ function renderPageBreakdown(rows, h) {
 // 2. ADS TABLE
 // ══════════════════════════════════════════════════════════
 const ADS_VI = {
-  date:'Ngày', campaign:'Campaign', adset:'Ad Set', spend:'Chi phí',
+  date:'Ngày', account:'Tài khoản', campaign:'Campaign', adset:'Ad Set', spend:'Chi phí',
   impressions:'Hiển thị', reach:'Tiếp cận', clicks:'Clicks', ctr:'CTR%',
   cpc:'CPC', cpm:'CPM', frequency:'Tần suất', link_clicks:'Link Clicks',
-  purchases:'Mua hàng', add_to_cart:'Thêm giỏ', roas:'ROAS'
+  purchases:'Mua hàng', add_to_cart:'Thêm giỏ', landing_page_view:'Xem LP',
+  messaging_reply:'Người liên hệ nhắn tin', page_like:'Thích trang', roas:'ROAS'
 };
+
+let G_ADS_ACCOUNT = '';
+let G_ADS_DATE    = { from: '', to: '' };
+
+function initAdsFilters() {
+  if (!G_ADS_DATE.from) {
+    const today = new Date();
+    const from30 = new Date(today); from30.setDate(today.getDate() - 29);
+    G_ADS_DATE.from = fmtD(from30);
+    G_ADS_DATE.to   = fmtD(today);
+  }
+  const f = document.getElementById('ads-from'), t = document.getElementById('ads-to');
+  if (f) f.value = G_ADS_DATE.from;
+  if (t) t.value = G_ADS_DATE.to;
+
+  const h   = G._adsH || [];
+  const rows = G._adsRows || [];
+  const acctI = h.indexOf('account');
+  const accounts = acctI >= 0 ? unique(rows.map(r => r[acctI]).filter(Boolean)).sort() : [];
+  const container = document.getElementById('ads-account-btns');
+  if (container && accounts.length > 0) {
+    container.innerHTML =
+      `<button class="date-btn ${G_ADS_ACCOUNT===''?'active':''}" onclick="setAdsAccount(this,'')">Tất cả</button>` +
+      accounts.map(a => `<button class="date-btn ${G_ADS_ACCOUNT===a?'active':''}" onclick="setAdsAccount(this,'${String(a).replace(/'/g,"\\'")}')">${a}</button>`).join('');
+  }
+}
+
+function setAdsRange(btn, days) {
+  document.querySelectorAll('#ads-date-btns .date-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const today = new Date();
+  const from  = new Date(today); from.setDate(today.getDate() - days + 1);
+  G_ADS_DATE.from = fmtD(from);
+  G_ADS_DATE.to   = fmtD(today);
+  const f = document.getElementById('ads-from'), t = document.getElementById('ads-to');
+  if (f) f.value = G_ADS_DATE.from;
+  if (t) t.value = G_ADS_DATE.to;
+  fetchAdsLive();
+}
+
+function applyAdsDate() {
+  document.querySelectorAll('#ads-date-btns .date-btn').forEach(b => b.classList.remove('active'));
+  G_ADS_DATE.from = document.getElementById('ads-from')?.value || '';
+  G_ADS_DATE.to   = document.getElementById('ads-to')?.value   || '';
+  fetchAdsLive();
+}
+
+function setAdsAccount(btn, account) {
+  document.querySelectorAll('#ads-account-btns .date-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  G_ADS_ACCOUNT = account;
+  fetchAdsLive();
+}
+
+// Lấy live dữ liệu campaign/adset theo ngày từ Facebook API (qua getAdsDaily server)
+function fetchAdsLive() {
+  const from = G_ADS_DATE.from, to = G_ADS_DATE.to;
+  const countEl = document.getElementById('ads-count');
+  if (!from || !to) { if (countEl) countEl.textContent = 'Chọn khoảng ngày'; return; }
+  if (countEl) countEl.textContent = '⏳ Đang tải từ Facebook...';
+  google.script.run
+    .withSuccessHandler(res => {
+      if (!res || !res.rows) { if (countEl) countEl.textContent = 'Không có dữ liệu'; return; }
+      G._adsH    = res.headers;
+      G._adsRows = res.rows;
+      // Cập nhật dropdown campaign/adset theo dữ liệu mới
+      const h = res.headers;
+      const camps  = unique(res.rows.map(r => r[h.indexOf('campaign')]).filter(Boolean)).sort();
+      const adsets = unique(res.rows.map(r => r[h.indexOf('adset')]).filter(Boolean)).sort();
+      populateSel('ads-camp',  camps);
+      populateSel('ads-adset', adsets);
+      filterAds();
+    })
+    .withFailureHandler(e => {
+      if (countEl) countEl.textContent = 'Lỗi: ' + (e.message || e);
+    })
+    .getAdsDaily(from, to, G_ADS_ACCOUNT);
+}
 
 function renderAds() {
   const { headers: h, rows } = G.ads || { headers:[], rows:[] };
@@ -1344,7 +1466,8 @@ function renderAds() {
   populateSel('ads-adset', adsets);
 
   G._adsRows = rows; G._adsH = h;
-  renderAdsTbl(rows);
+  initAdsFilters();
+  filterAds();
 }
 
 function renderAdsTbl(rows) {
@@ -1362,13 +1485,18 @@ function renderAdsTbl(rows) {
 
 function filterAds() {
   const q = q2('ads-q'), camp = val('ads-camp'), adset = val('ads-adset');
-  const h = G._adsH;
+  const h  = G._adsH || [];
   const ci = name => h.indexOf(name);
-  const rows = (G._adsRows||[]).filter(r =>
-    (!camp  || r[ci('campaign')]===camp) &&
-    (!adset || r[ci('adset')]===adset) &&
-    (!q     || r.some(v=>str(v).includes(q)))
-  );
+  const rows = (G._adsRows||[]).filter(r => {
+    if (camp            && r[ci('campaign')] !== camp)            return false;
+    if (adset           && r[ci('adset')]    !== adset)           return false;
+    if (q               && !r.some(v=>str(v).includes(q)))        return false;
+    if (G_ADS_ACCOUNT   && r[ci('account')] !== G_ADS_ACCOUNT)   return false;
+    const d = String(r[ci('date')]||'');
+    if (G_ADS_DATE.from && d < G_ADS_DATE.from)                  return false;
+    if (G_ADS_DATE.to   && d > G_ADS_DATE.to)                    return false;
+    return true;
+  });
   renderAdsTbl(rows);
 }
 
@@ -1667,8 +1795,30 @@ let _CONV_LIST      = [];   // items tương ứng với renderMsgList
 let _convId         = '';
 let _convPageId     = '';
 let _convCustomerId = '';
+let G_PAGE_MSG_STATS = null; // { page_name: { inPeriod, newConvs } } từ total_over_range API
+let G_ADS_CONV_TOTAL = null; // tổng unique người từ ADS_CONV_STATS (lưu trong sync)
+
+function fetchPageMsgStats() {
+  if (!G_MSG_DATE.from || !G_MSG_DATE.to) return;
+  google.script.run
+    .withSuccessHandler(stats => {
+      if (stats && Object.keys(stats).length) {
+        G_PAGE_MSG_STATS = stats;
+        renderMessages();
+      }
+    })
+    .withFailureHandler(e => console.warn('getPageMsgStats:', e))
+    .getPageMsgStats(G_MSG_DATE.from, G_MSG_DATE.to);
+}
 
 function initMsgDate() {
+  if (G_MSG_DATE.from && G_MSG_DATE.to) {
+    // Giữ nguyên ngày user đã set, chỉ cập nhật input UI
+    const f = document.getElementById('msg-from'), t = document.getElementById('msg-to');
+    if (f) f.value = G_MSG_DATE.from;
+    if (t) t.value = G_MSG_DATE.to;
+    return;
+  }
   const today = new Date();
   const from30 = new Date(today); from30.setDate(today.getDate() - 29);
   G_MSG_DATE.from = fmtD(from30);
@@ -1695,10 +1845,43 @@ function applyMsgDate() {
   document.querySelectorAll('#msg-date-btns .date-btn').forEach(b => b.classList.remove('active'));
   G_MSG_DATE.from = document.getElementById('msg-from')?.value || '';
   G_MSG_DATE.to   = document.getElementById('msg-to')?.value  || '';
+  G_PAGE_MSG_STATS = null;
   renderMessages();
+  fetchPageMsgStats();
+}
+
+// Bảng "Người liên hệ nhắn tin (Meta Ads)" — dedup theo tài khoản từ sync
+function renderAdsConvByAccount() {
+  const stats   = G.adsConvStats || {};
+  const byAcct  = stats.byAccount || {};
+  const tbody   = document.getElementById('ads-conv-body');
+  const badge   = document.getElementById('ads-conv-badge');
+  if (!tbody) return;
+  const names = Object.keys(byAcct);
+  if (!names.length) {
+    tbody.innerHTML = `<tr><td colspan="2" style="text-align:center;color:#94a3b8;padding:14px">
+      Chưa có dữ liệu — nhấn <strong>Đồng bộ ngay</strong></td></tr>`;
+    if (badge) badge.textContent = '';
+    return;
+  }
+  let total = 0;
+  const rowsHtml = names.sort().map(n => {
+    const v = Number(byAcct[n]) || 0;
+    total += v;
+    return `<tr>
+      <td style="text-align:left;font-weight:500">${n}</td>
+      <td style="text-align:center;font-weight:700;color:#2563eb">${v.toLocaleString('vi-VN')}</td>
+    </tr>`;
+  }).join('');
+  tbody.innerHTML = rowsHtml + `<tr style="background:#f8fafc;font-weight:700">
+      <td style="text-align:left">Tổng cộng</td>
+      <td style="text-align:center;color:#1e40af">${total.toLocaleString('vi-VN')}</td>
+    </tr>`;
+  if (badge) badge.textContent = '30 ngày gần nhất (lúc đồng bộ)';
 }
 
 function renderMessages() {
+  renderAdsConvByAccount();
   const { headers: h, rows: allRows } = G.messages || { headers:[], rows:[] };
   G._msgH        = h;
   G._msgRows     = allRows;
@@ -1735,17 +1918,16 @@ function renderMessages() {
     if (lcd === '0000-00-00') return false;
 
     if (lcd) {
-      // ĐÃ SCAN: dùng last_cust_date chính xác với bounds đầy đủ
+      // ĐÃ SCAN: dùng last_cust_date chính xác
       if (G_MSG_DATE.from && lcd < G_MSG_DATE.from) return false;
       if (G_MSG_DATE.to   && lcd > G_MSG_DATE.to)   return false;
       return true;
     }
 
-    // CHƯA SCAN: chỉ kiểm tra giới hạn dưới (period_start)
-    // KHÔNG kiểm tra giới hạn trên vì updated_date có thể là ngày page trả lời SAU period_end
-    // (vd: khách nhắn 23/6, page reply 25/6 → updated_date=25/6 > period_end=24/6)
+    // CHƯA SCAN: dùng updated_date với cả 2 bounds
     const ud = String(r[ci('updated_date')]||'');
     if (!ud || (G_MSG_DATE.from && ud < G_MSG_DATE.from)) return false;
+    if (G_MSG_DATE.to && ud > G_MSG_DATE.to) return false;
     return true;
   };
 
@@ -1782,8 +1964,10 @@ function renderMessages() {
   const _usePageInsight   = Object.keys(pageNewConvMap).length > 0;
   const _useActiveThreads = Object.values(pageActiveThreadMap).some(v => v > 0);
 
-  // ── Chi phí / tin nhắn: tổng spend từ Ads Data theo cùng kỳ ──
-  const pageSpendMap = {};
+  // ── Chi phí + Tin nhắn Ads: tổng spend & messaging_conv từ Ads Data theo cùng kỳ ──
+  const pageSpendMap   = {};
+  const pageAdsConvMap = {}; // onsite_conversion.messaging_conversation_started_7d theo page
+  let   _adsConvTotal  = 0;  // tổng toàn tài khoản (kể cả campaign chưa map được page)
   {
     const campPageMap = buildCampPageMap();
     const adH = (G.ads||{}).headers || [];
@@ -1791,18 +1975,23 @@ function renderMessages() {
     const _acamp  = adH.indexOf('campaign');
     const _aadset = adH.indexOf('adset');
     const _aspend = adH.indexOf('spend');
+    const _amsg   = adH.indexOf('messaging_reply'); // = onsite_conversion.messaging_conversation_started_7d
     const _adate  = adH.indexOf('date');
     if (_aspend >= 0) {
       adR.forEach(r => {
         const d = String(r[_adate]||'');
         if (G_MSG_DATE.from && d < G_MSG_DATE.from) return;
         if (G_MSG_DATE.to   && d > G_MSG_DATE.to)   return;
+        if (_amsg >= 0) _adsConvTotal += Number(r[_amsg]) || 0; // đếm tất cả
         const pn = getPageFromCamp(campPageMap, r[_acamp]||'', r[_aadset]||'');
         if (!pn || pn === 'Chưa xác định') return;
-        pageSpendMap[pn] = (pageSpendMap[pn]||0) + (Number(r[_aspend])||0);
+        pageSpendMap[pn]   = (pageSpendMap[pn]  ||0) + (Number(r[_aspend])||0);
+        if (_amsg >= 0)
+          pageAdsConvMap[pn] = (pageAdsConvMap[pn]||0) + (Number(r[_amsg])  ||0);
       });
     }
   }
+  const _useAdsConv = _adsConvTotal > 0;
 
   // ── Summary table ──────────────────────────────────────
   const byPage = {};
@@ -1840,13 +2029,18 @@ function renderMessages() {
     }
   });
 
-  // Gán Khách mới từ Page Insights nếu metric đã được sync
-  if (_usePageInsight) {
-    Object.keys(byPage).forEach(pn => { byPage[pn].newConvs = pageNewConvMap[pn] || 0; });
-  }
-  // Gán Tổng người liên hệ (Trong kỳ) từ Page Insights — khớp với Meta Business Suite
-  if (_useActiveThreads) {
-    Object.keys(byPage).forEach(pn => { byPage[pn].inPeriod = pageActiveThreadMap[pn] || 0; });
+  // Trong kỳ per-page: giữ đếm từ Messages sheet (Facebook không tách dedup theo trang được)
+  // Số "người liên hệ nhắn tin" dedup chính xác được hiển thị riêng theo tài khoản (renderAdsConvByAccount)
+  if (G_PAGE_MSG_STATS) {
+    // Page Insights total_over_range (nếu có)
+    Object.keys(byPage).forEach(pn => {
+      const s = G_PAGE_MSG_STATS[pn];
+      if (s) { byPage[pn].inPeriod = s.inPeriod; byPage[pn].newConvs = s.newConvs; }
+    });
+  } else {
+    // Fallback: daily sum từ Page Insights
+    if (_usePageInsight)   Object.keys(byPage).forEach(pn => { byPage[pn].newConvs = pageNewConvMap[pn]      || 0; });
+    if (_useActiveThreads) Object.keys(byPage).forEach(pn => { byPage[pn].inPeriod = pageActiveThreadMap[pn] || 0; });
   }
 
   const tbody = document.getElementById('msg-summary-body');
@@ -1863,14 +2057,15 @@ function renderMessages() {
       acc.rtimes    = acc.rtimes.concat(s.rtimes);
       return acc;
     }, { total:0, inPeriod:0, unread:0, phones:0, engaged:0, newConvs:0, rtimes:[] });
+    // Tổng "Trong kỳ" = tổng các trang (đếm từ Messages). Số người liên hệ dedup xem bảng riêng theo tài khoản.
 
     const renderRow = (label, s, bold=false) => {
-      const rate      = s.inPeriod > 0 ? Math.round((s.inPeriod - s.unread) / s.inPeriod * 100) : 0;
-      const phoneRate = s.inPeriod > 0 ? Math.round(s.phones / s.inPeriod * 100) : 0;
-      const avgRt     = s.rtimes.length > 0 ? s.rtimes.reduce((a,b)=>a+b,0)/s.rtimes.length : null;
-      const rtStr     = avgRt !== null ? (avgRt < 1 ? Math.round(avgRt*60)+'p' : avgRt.toFixed(1)+'h') : '—';
-      const rateColor = rate>=80?'#10b981' : rate>=50?'#f59e0b':'#ef4444';
-      const phoneColor= phoneRate>=20?'#10b981' : phoneRate>=10?'#f59e0b':'#64748b';
+      const rate       = s.inPeriod > 0 ? Math.round((s.inPeriod - s.unread) / s.inPeriod * 100) : 0;
+      const phoneRate  = s.inPeriod > 0 ? Math.round(s.phones / s.inPeriod * 100) : 0;
+      const avgRt      = s.rtimes.length > 0 ? s.rtimes.reduce((a,b)=>a+b,0)/s.rtimes.length : null;
+      const rtStr      = avgRt !== null ? (avgRt < 1 ? Math.round(avgRt*60)+'p' : avgRt.toFixed(1)+'h') : '—';
+      const rateColor  = rate>=80?'#10b981' : rate>=50?'#f59e0b':'#ef4444';
+      const phoneColor = phoneRate>=20?'#10b981' : phoneRate>=10?'#f59e0b':'#64748b';
       const w = bold ? 'font-weight:700' : '';
       const totalSpend = bold
         ? Object.values(pageSpendMap).reduce((a,b)=>a+b,0)
