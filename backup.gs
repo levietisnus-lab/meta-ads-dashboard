@@ -77,7 +77,7 @@ function backupCodeToSheet() {
 
 // Xoá các bản backup cũ, chỉ giữ N mốc gần nhất (gọi định kỳ để Sheet không phình to)
 function pruneOldBackups(keepLast) {
-  keepLast = keepLast || 10;
+  keepLast = keepLast || 15;
   const ss = _getSpreadsheet();
   const sh = ss.getSheetByName(BACKUP_SHEET_NAME);
   if (!sh || sh.getLastRow() < 2) return 'Chưa có backup nào.';

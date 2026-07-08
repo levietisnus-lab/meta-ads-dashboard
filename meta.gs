@@ -6,6 +6,26 @@
 // ID của Google Sheet (để web app đọc đúng sheet trong mọi context)
 const SHEET_ID = "1UhBB5Hlgik0AIqCAzASsLgYcfBCSVAdFZmCWI1YNoz0";
 
+// ─── MENU TÙY CHỈNH TRÊN SHEET ───────────────────────────────
+// Tự chạy mỗi khi mở Sheet — thêm menu "🚀 Fujiwa Dashboard" để bấm
+// chạy các hàm mà không cần mở Apps Script editor.
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu('🚀 Fujiwa Dashboard')
+    .addItem('🔄 Đồng bộ ngay (tất cả)', 'syncAllFull')
+    .addSeparator()
+    .addItem('📊 Đồng bộ Meta (Ads/Trang/Bài/Tin nhắn)', 'syncMetaAll')
+    .addItem('🎵 Đồng bộ TikTok (Ads/Shop/Trang)', 'syncTikTokAll')
+    .addItem('📱 Chỉ đồng bộ SĐT khách', 'syncPhoneList')
+    .addSeparator()
+    .addSubMenu(SpreadsheetApp.getUi().createMenu('💾 Backup code')
+      .addItem('Lưu 1 mốc backup ngay', 'backupCodeToSheet')
+      .addItem('Xem danh sách mốc backup', 'listCodeBackups')
+      .addItem('Xoá bớt mốc cũ (giữ 15 gần nhất)', 'pruneOldBackups'))
+    .addSeparator()
+    .addItem('⏰ Cài lại trigger tự động (6h/6h30 sáng)', 'setupTriggerFull')
+    .addToUi();
+}
+
 // ============================================================
 // HELPERS dùng trong meta.gs (nếu code.gs không export được)
 // ============================================================
