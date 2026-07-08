@@ -2520,14 +2520,16 @@ function renderTikTokShop(res) {
     tile('SP đã bán',       fmtNum(s.units), '#059669') +
     tile('Hoàn tiền',       fmtNum(s.refunds)+'đ', '#f59e0b');
 
-  // Lưu lượng truy cập
+  // Lưu lượng truy cập + số lượng sản phẩm
   const tf = res.traffic || {};
+  const cat = G.ttCatalog || {};
   const tfBox = document.getElementById('tts-traffic');
   if (tfBox) tfBox.innerHTML =
     tile('Lượt xem SP (Impressions)', fmtNum(tf.impressions), '#2563eb') +
     tile('Lượt truy cập trang SP',    fmtNum(tf.pageViews),    '#0891b2') +
     tile('Khách ghé thăm (TB/ngày)',  fmtNum(tf.visitors),     '#7c3aed') +
-    tile('Huỷ/Hoàn (đơn)',            fmtNum(tf.cancelReturn), '#ef4444');
+    tile('Huỷ/Hoàn (đơn)',            fmtNum(tf.cancelReturn), '#ef4444') +
+    tile('Tổng số sản phẩm',          cat.total!=null ? fmtNum(cat.total) : '—', '#059669');
 
   // Doanh thu theo nguồn (Live/Video/Card)
   const src=res.bySourceGmv||{};

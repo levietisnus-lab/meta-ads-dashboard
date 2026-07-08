@@ -100,6 +100,7 @@ function getDashboardData() {
   const ss = _getSpreadsheet();
   const get = name => _sheetToJson(ss, name);
   const savedStats = PropertiesService.getScriptProperties().getProperty('ADS_CONV_STATS');
+  const savedCatalog = PropertiesService.getScriptProperties().getProperty('TT_PRODUCT_CATALOG');
   return {
     ads:          get("Ads Data"),
     page:         get("Page Insights"),
@@ -107,12 +108,13 @@ function getDashboardData() {
     messages:     get("Messages"),
     creatives:    get("Ad Creatives"),
     adsConvStats: savedStats ? JSON.parse(savedStats) : null,
-    
+
     ttAds:        get("TikTok Ads Data"),
     ttShop:       get("TikTok Shop Data"),
     ttPage:       get("TikTok Page Data"),
     ttProducts:   get("TikTok Product Sales"),
     ttOrderStatus:get("TikTok Order Status"),
+    ttCatalog:    savedCatalog ? JSON.parse(savedCatalog) : null,
     
     synced:       new Date().toLocaleString("vi-VN"),
   };

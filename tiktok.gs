@@ -1031,6 +1031,31 @@ function syncTikTokProducts() {
   return `${prodRows.length} rows sản phẩm, ${statusRows.length} ngày trạng thái đơn`;
 }
 
+// Tổng số sản phẩm trong catalog shop (không phải doanh số) — phân trang đếm hết,
+// gộp theo status (ACTIVATE/DEACTIVATED...). Lưu vào Properties (nhẹ, không cần sheet).
+function syncTikTokProductCatalog() {
+  const cipher = _ttShopCipher();
+  const byStatus = {};
+  let pageToken = '', pages = 0, total = 0;
+  do {
+    const extra = { shop_cipher: cipher, page_size: '100' };
+    if (pageToken) extra.page_token = pageToken;
+    const j = _ttShopPost('/product/202309/products/search', extra, { page_size: 100 });
+    if (j.code !== 0) throw new Error('Lỗi sync TikTok Product Catalog: ' + j.message);
+    (j.data.products || []).forEach(p => {
+      total++;
+      const st = p.status || 'UNKNOWN';
+      byStatus[st] = (byStatus[st] || 0) + 1;
+    });
+    pageToken = j.data.next_page_token || '';
+    pages++;
+  } while (pageToken && pages < 30);
+
+  const result = { total, byStatus, syncedAt: new Date().toLocaleString('vi-VN') };
+  PropertiesService.getScriptProperties().setProperty('TT_PRODUCT_CATALOG', JSON.stringify(result));
+  return `${total} sản phẩm (${Object.entries(byStatus).map(([k,v])=>k+':'+v).join(', ')})`;
+}
+
 function syncTikTokPage() {
   const from = new Date(); from.setDate(from.getDate() - 30);
   const to = new Date(); to.setDate(to.getDate() - 1);
@@ -1065,6 +1090,7 @@ function syncTikTokAll() {
   run("TT Ads",      syncTikTokAds);
   run("TT Shop",     syncTikTokShop);
   run("TT Products", syncTikTokProducts);
+  run("TT Catalog",  syncTikTokProductCatalog);
   run("TT Page",     syncTikTokPage);
   
   const msg = "✅ syncTikTokAll — " + new Date().toLocaleString("vi-VN") + "\n" + log.join("\n");
