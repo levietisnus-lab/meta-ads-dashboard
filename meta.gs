@@ -878,6 +878,11 @@ function syncMetaAll() {
 
 // Điểm vào chính mà dashboard gọi ("Đồng bộ ngay") — chạy cả Meta lẫn TikTok,
 // và tự lưu 1 mốc backup code vào Sheet trước khi bắt đầu.
+// Meta sync (backup + Ads/Page/Posts/Messages/SĐT/Creatives) đã gần chạm 6 phút một mình
+// (Messages có thể quét tới 4 phút). TikTok (Ads/Shop/Products/Page) nay còn nặng hơn vì
+// Products phải phân trang qua orders. Gộp cả 2 trong 1 lần chạy sẽ vượt giới hạn cứng 6
+// phút của GAS → nên tách TikTok ra chạy ở 1 execution RIÊNG qua trigger, có 6 phút của
+// chính nó, không cộng dồn với phần Meta.
 function syncAllFull() {
   try { backupCodeToSheet(); pruneOldBackups(15); }
   catch (e) { Logger.log('⚠️ Backup code bỏ qua (chưa cấp quyền script.projects?): ' + e.message); }
@@ -887,8 +892,11 @@ function syncAllFull() {
     try   { log.push(`${label}: ${fn()}`); }
     catch (e) { log.push(`${label} lỗi: ${e.message}`); }
   };
-  run("Meta",   syncMetaAll);
-  run("TikTok", syncTikTokAll);
+  run("Meta", syncMetaAll);
+
+  // TikTok chạy riêng sau 5 giây (execution mới, không tính chung 6 phút với Meta ở trên)
+  ScriptApp.newTrigger('syncTikTokAll').timeBased().after(5 * 1000).create();
+  log.push("TikTok: đã lên lịch chạy riêng (~5 giây nữa, xem log của syncTikTokAll)");
 
   const msg = "✅ syncAllFull — " + new Date().toLocaleString("vi-VN") + "\n" + log.join("\n");
   Logger.log(msg);
