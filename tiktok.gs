@@ -565,7 +565,10 @@ function _ttShopSign(path, params, body) {
 }
 
 // GET có ký. extra = query params thêm (vd shop_cipher, page_size...)
-function _ttShopGet(path, extra, maxRetries = 2) {
+// Các lỗi tạm thời từ phía TikTok (không phải lỗi request của mình) — đáng để thử lại
+const _TT_TRANSIENT_ERR = /timeout|internal error|internal_error|try again|please try|server error|service unavailable/i;
+
+function _ttShopGet(path, extra, maxRetries = 3) {
   let attempts = 0;
   while (attempts <= maxRetries) {
     const params = Object.assign({
@@ -578,34 +581,45 @@ function _ttShopGet(path, extra, maxRetries = 2) {
       method: 'get', muteHttpExceptions: true,
       headers: { 'x-tts-access-token': _ttShopToken(), 'content-type': 'application/json' },
     });
-    
+
     const json = JSON.parse(res.getContentText());
-    
-    // Nếu request timeout hoặc mã lỗi nội bộ từ TikTok, thử lại sau 2 giây
-    if (json.code !== 0 && (json.message || "").toLowerCase().includes("timeout") && attempts < maxRetries) {
+
+    // Lỗi tạm thời từ TikTok (timeout, internal error, service unavailable...) → thử lại,
+    // giãn cách tăng dần (2s, 4s, 6s) để cho server TikTok thời gian hồi phục
+    if (json.code !== 0 && _TT_TRANSIENT_ERR.test(json.message || "") && attempts < maxRetries) {
       attempts++;
-      Utilities.sleep(2000);
+      Utilities.sleep(2000 * attempts);
       continue;
     }
-    
+
     return json;
   }
 }
 
 // POST có ký (body JSON)
-function _ttShopPost(path, extra, bodyObj) {
+function _ttShopPost(path, extra, bodyObj, maxRetries = 3) {
   const body = JSON.stringify(bodyObj || {});
-  const params = Object.assign({
-    app_key:   TIKTOK.SHOP_APP_KEY,
-    timestamp: String(Math.floor(Date.now() / 1000)),
-  }, extra || {});
-  params.sign = _ttShopSign(path, params, body);
-  const qs = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
-  const res = UrlFetchApp.fetch(`${TT_SHOP_DOMAIN}${path}?${qs}`, {
-    method: 'post', muteHttpExceptions: true, payload: body,
-    headers: { 'x-tts-access-token': _ttShopToken(), 'content-type': 'application/json' },
-  });
-  return JSON.parse(res.getContentText());
+  let attempts = 0;
+  while (attempts <= maxRetries) {
+    const params = Object.assign({
+      app_key:   TIKTOK.SHOP_APP_KEY,
+      timestamp: String(Math.floor(Date.now() / 1000)),
+    }, extra || {});
+    params.sign = _ttShopSign(path, params, body);
+    const qs = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+    const res = UrlFetchApp.fetch(`${TT_SHOP_DOMAIN}${path}?${qs}`, {
+      method: 'post', muteHttpExceptions: true, payload: body,
+      headers: { 'x-tts-access-token': _ttShopToken(), 'content-type': 'application/json' },
+    });
+    const json = JSON.parse(res.getContentText());
+
+    if (json.code !== 0 && _TT_TRANSIENT_ERR.test(json.message || "") && attempts < maxRetries) {
+      attempts++;
+      Utilities.sleep(2000 * attempts);
+      continue;
+    }
+    return json;
+  }
 }
 
 // Lấy shop_cipher + shop_id (lưu vào TT_SHOP để dùng cho các call sau)
