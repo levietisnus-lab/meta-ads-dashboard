@@ -929,52 +929,67 @@ function syncTikTokAds() {
   return `${allRows.length} rows`;
 }
 
+// Chia nhỏ theo tuần để giảm khả năng TikTok trả "Request timeout" khi truy vấn
+// nguyên 30 ngày trong 1 lần. Nếu 1 tuần lỗi (kể cả sau khi _ttShopGet đã tự retry),
+// bỏ qua tuần đó và tiếp tục — không làm mất dữ liệu các tuần khác.
 function syncTikTokShop() {
   const from = new Date(); from.setDate(from.getDate() - 30);
   const to = new Date(); to.setDate(to.getDate() - 1);
-  const fromStr = Utilities.formatDate(from, 'GMT', 'yyyy-MM-dd');
-  const toStr = Utilities.formatDate(to, 'GMT', 'yyyy-MM-dd');
-  const endLt = Utilities.formatDate(new Date(to.getTime() + 86400000), 'GMT', 'yyyy-MM-dd');
-  
+
   const headers = ["date", "gmv", "orders", "buyers", "units", "refunds", "live_gmv", "video_gmv", "card_gmv", "others_gmv",
                     "visitors", "product_impressions", "page_views", "cancellations_returns"];
   const allRows = [];
+  const cipher = _ttShopCipher();
+  const errors = [];
 
-  try {
-    const cipher = _ttShopCipher();
-    const j = _ttShopGet('/analytics/202405/shop/performance', {
-      shop_cipher: cipher, start_date_ge: fromStr, end_date_lt: endLt,
-      currency: 'LOCAL', granularity: '1D',
-    });
-    if (j.code !== 0) throw new Error(j.message);
+  let chunkFrom = new Date(from);
+  while (chunkFrom <= to) {
+    let chunkTo = new Date(chunkFrom); chunkTo.setDate(chunkTo.getDate() + 6);
+    if (chunkTo > to) chunkTo = new Date(to);
+    const chunkFromStr = Utilities.formatDate(chunkFrom, 'GMT', 'yyyy-MM-dd');
+    const chunkToStr   = Utilities.formatDate(chunkTo,   'GMT', 'yyyy-MM-dd');
+    const endLt = Utilities.formatDate(new Date(chunkTo.getTime() + 86400000), 'GMT', 'yyyy-MM-dd');
 
-    const intervals = (j.data && j.data.performance && j.data.performance.intervals) || [];
-    intervals.forEach(iv => {
-      const g = Number(iv.gmv && iv.gmv.amount) || 0;
-      const bySrcG = {};
-      (iv.gmv_breakdowns || []).forEach(b => { bySrcG[b.type] = Number(b.amount || 0); });
+    try {
+      const j = _ttShopGet('/analytics/202405/shop/performance', {
+        shop_cipher: cipher, start_date_ge: chunkFromStr, end_date_lt: endLt,
+        currency: 'LOCAL', granularity: '1D',
+      });
+      if (j.code !== 0) throw new Error(j.message);
 
-      allRows.push([
-        iv.start_date || iv.end_date,
-        g,
-        Number(iv.orders) || 0,
-        Number(iv.buyers) || 0,
-        Number(iv.units_sold) || 0,
-        Number(iv.refunds && iv.refunds.amount) || 0,
-        bySrcG['LIVE'] || 0,
-        bySrcG['VIDEO'] || 0,
-        bySrcG['PRODUCT_CARD'] || 0,
-        bySrcG['OTHERS'] || 0,
-        Number(iv.avg_product_page_visitors) || 0,
-        Number(iv.product_impressions) || 0,
-        Number(iv.product_page_views) || 0,
-        Number(iv.cancellations_and_returns) || 0,
-      ]);
-    });
-  } catch(e) { throw new Error("Lỗi sync TikTok Shop: " + e.message); }
-  
+      const intervals = (j.data && j.data.performance && j.data.performance.intervals) || [];
+      intervals.forEach(iv => {
+        const g = Number(iv.gmv && iv.gmv.amount) || 0;
+        const bySrcG = {};
+        (iv.gmv_breakdowns || []).forEach(b => { bySrcG[b.type] = Number(b.amount || 0); });
+
+        allRows.push([
+          iv.start_date || iv.end_date,
+          g,
+          Number(iv.orders) || 0,
+          Number(iv.buyers) || 0,
+          Number(iv.units_sold) || 0,
+          Number(iv.refunds && iv.refunds.amount) || 0,
+          bySrcG['LIVE'] || 0,
+          bySrcG['VIDEO'] || 0,
+          bySrcG['PRODUCT_CARD'] || 0,
+          bySrcG['OTHERS'] || 0,
+          Number(iv.avg_product_page_visitors) || 0,
+          Number(iv.product_impressions) || 0,
+          Number(iv.product_page_views) || 0,
+          Number(iv.cancellations_and_returns) || 0,
+        ]);
+      });
+    } catch(e) {
+      errors.push(`${chunkFromStr}→${chunkToStr}: ${e.message}`);
+    }
+
+    chunkFrom = new Date(chunkTo); chunkFrom.setDate(chunkFrom.getDate() + 1);
+  }
+
   writeSheet("TikTok Shop Data", headers, allRows);
-  return `${allRows.length} rows`;
+  const errMsg = errors.length ? ` (⚠️ lỗi ${errors.length} tuần: ${errors.join(' | ')})` : '';
+  return `${allRows.length} rows${errMsg}`;
 }
 
 // Doanh số theo TỪNG SẢN PHẨM × TỪNG NGÀY, ĐỒNG THỜI đếm trạng thái đơn (giao thành
