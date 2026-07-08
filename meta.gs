@@ -315,6 +315,40 @@ function syncMessages() {
 }
 
 // ============================================================
+// 4a. DANH SÁCH SĐT KHÁCH — đọc từ Messages, dedup theo số, ghi ra sheet riêng
+// ============================================================
+function syncPhoneList() {
+  const ss = _getSpreadsheet();
+  const msgSh = ss.getSheetByName("Messages");
+  if (!msgSh || msgSh.getLastRow() < 2) {
+    _writeSheet(ss, "Danh sách SĐT", ["ten_tai_khoan", "so_dien_thoai", "trang", "ngay_de_lai"], []);
+    return "0 SĐT (chưa có Messages)";
+  }
+  const vals = msgSh.getRange(1, 1, msgSh.getLastRow(), msgSh.getLastColumn()).getValues();
+  const hdr = vals[0];
+  const ci = n => hdr.indexOf(n);
+  const iHas = ci('has_phone'), iPhone = ci('phone'), iFrom = ci('from'),
+        iPage = ci('page_name'), iPd = ci('phone_date'), iUd = ci('updated_date');
+
+  const seen = {}; // phone → { name, phone, page, date }
+  vals.slice(1).forEach(r => {
+    if (+r[iHas] !== 1) return;
+    const phone = String(iPhone >= 0 ? (r[iPhone] || '') : '').trim();
+    if (!phone) return;
+    const date = String((iPd >= 0 && r[iPd]) ? r[iPd] : (iUd >= 0 ? r[iUd] : '') || '');
+    const rec = { name: String(r[iFrom] || '').trim(), phone, page: String(r[iPage] || ''), date };
+    if (!seen[phone] || date > seen[phone].date) seen[phone] = rec;
+  });
+
+  const rows = Object.values(seen)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .map(p => [p.name, p.phone, p.page, p.date]);
+
+  _writeSheet(ss, "Danh sách SĐT", ["ten_tai_khoan", "so_dien_thoai", "trang", "ngay_de_lai"], rows);
+  return `${rows.length} SĐT`;
+}
+
+// ============================================================
 // 4b-0. ADS CONV STATS — Lấy messaging_conversation_started từ Ads API (account level)
 // ============================================================
 // Gọi ở account level → Facebook dedup unique người → khớp "Tài khoản Meta" trong Ads Manager
@@ -804,6 +838,7 @@ function syncMetaAll() {
   run("Page",      syncPage);
   run("Posts",     syncPosts);
   run("Messages",  syncMessages);
+  run("SĐT",       syncPhoneList);
   run("Creatives", syncAdCreatives);
 
   // Lưu account-level messaging metric (dedup unique người) vào Properties
