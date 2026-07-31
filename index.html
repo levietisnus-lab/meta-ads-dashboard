@@ -362,6 +362,7 @@ tr:last-child td { border-bottom: none; }
   <div class="nav-tab"         data-tab="creatives"   onclick="switchTab(this)">🎨 Nội dung QC</div>
 
   <div class="nav-tab"         data-tab="website"     onclick="switchTab(this)">🌐 Website</div>
+  <div class="nav-tab"         data-tab="content-plan" onclick="switchTab(this)">📅 Kế hoạch ND</div>
 </nav>
 
 <!-- ── MAIN ───────────────────────────────────────────── -->
@@ -999,6 +1000,9 @@ tr:last-child td { border-bottom: none; }
   </div>
 </div>
 
+<div id="tab-content-plan" class="tab-panel">
+  <div class="card" style="text-align:center;padding:30px;color:var(--muted)">Đang tải...</div>
+</div>
 
 </main>
 
@@ -1206,6 +1210,7 @@ function switchTab(el) {
   if (el.dataset.tab === 'posts'  && !_postsInited) { _postsInited = true; initPostsControls(); }
   if (el.dataset.tab === 'website' && !_webInited)  { _webInited   = true; initWebsite(); }
   if (el.dataset.tab === 'phones')                  { initPhones(); }
+  if (el.dataset.tab === 'content-plan' && !_cpInited) { _cpInited = true; initContentPlan(); }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2834,6 +2839,10 @@ function filterPosts() {
 // ══════════════════════════════════════════════════════════
 let G_WEB_DATE = { from:'', to:'' };
 let _webInited = false;
+let _cpInited = false;
+function initContentPlan() {
+  document.getElementById('tab-content-plan').innerHTML = '<div class="card" style="text-align:center;padding:30px;color:var(--muted)">Đang xây dựng — sẽ hoàn thiện ở task tiếp theo.</div>';
+}
 
 function initWebsite() {
   if (!G_WEB_DATE.from) {
