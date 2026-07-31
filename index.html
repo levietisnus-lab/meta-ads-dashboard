@@ -3,7 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Meta Ads Dashboard - Theo dõi hiệu suất quảng cáo Facebook, tin nhắn, bài đăng và website">
 <title>Meta Ads Dashboard</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -16,18 +20,52 @@
   --purple:    #8b5cf6;
   --cyan:      #06b6d4;
   
-  --bg:        #0B0F19; /* Deep dark blue/black */
+  --bg:        #0B0F19;
   --bg-glow:   radial-gradient(circle at 50% -20%, #1e3a8a 0%, #0B0F19 50%);
-  --card:      rgba(30, 41, 59, 0.4); /* Glassmorphism card */
+  --card:      rgba(30, 41, 59, 0.4);
   --card-hover: rgba(30, 41, 59, 0.7);
   --text:      #f8fafc;
-  --muted:     #94a3b8;
+  --muted:     #b8c2d6;
   --border:    rgba(255, 255, 255, 0.08);
   --glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 
+/* ── LIGHT MODE ──────────────────────────────────────── */
+[data-theme="light"] {
+  --bg: #f0f2f5;
+  --bg-glow: linear-gradient(135deg, #e8edf5 0%, #f0f2f5 100%);
+  --card: rgba(255, 255, 255, 0.85);
+  --card-hover: rgba(255, 255, 255, 0.95);
+  --text: #1e293b;
+  --muted: #64748b;
+  --border: rgba(0, 0, 0, 0.08);
+  --glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.04);
+  --primary: #1e293b;
+}
+[data-theme="light"] .header { background: rgba(255,255,255,.85); color: var(--text); }
+[data-theme="light"] .header h1 { color: var(--text); }
+[data-theme="light"] .nav { background: rgba(255,255,255,.7); }
+[data-theme="light"] .nav-tab { color: var(--muted); }
+[data-theme="light"] .nav-tab.active { color: var(--blue); }
+[data-theme="light"] .nav-tab:hover { color: var(--text); }
+[data-theme="light"] th { background: #f1f5f9; color: #334155; border-bottom-color: #e2e8f0; }
+[data-theme="light"] th:hover { background: #e2e8f0; }
+[data-theme="light"] td { color: var(--text); border-bottom-color: #e2e8f0; }
+[data-theme="light"] tr:hover td { background: rgba(59,130,246,.04); }
+[data-theme="light"] .kpi-value { color: var(--text); }
+[data-theme="light"] .card-title { color: var(--text); }
+[data-theme="light"] .search-row input, [data-theme="light"] .search-row select { background: #fff; color: var(--text); border-color: #e2e8f0; }
+[data-theme="light"] .search-row select option { background: #fff; color: var(--text); }
+[data-theme="light"] .msg-from { color: var(--text); }
+[data-theme="light"] .chat-bubble.user .chat-text { background: #f1f5f9; color: var(--text); border-color: #e2e8f0; }
+[data-theme="light"] .cr-name, [data-theme="light"] .cr-title { color: var(--text); }
+[data-theme="light"] .cr-text { color: #475569; }
+[data-theme="light"] .tbl-wrap { background: rgba(255,255,255,.9); }
+[data-theme="light"] .badge-pill { background: rgba(6,182,212,.08); }
+[data-theme="light"] .btn-sync { box-shadow: 0 4px 15px rgba(245,158,11,.15); }
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Outfit', sans-serif; background: var(--bg); background-image: var(--bg-glow); background-attachment: fixed; color: var(--text); font-size: 14px; min-height: 100vh; }
+body { font-family: 'Outfit', sans-serif; background: var(--bg); background-image: var(--bg-glow); background-attachment: fixed; color: var(--text); font-size: 14px; min-height: 100vh; transition: background .3s, color .3s; }
 
 /* ── HEADER ───────────────────────────────────────────── */
 .header {
@@ -78,8 +116,9 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); background-imag
 
 /* ── LAYOUT ───────────────────────────────────────────── */
 .main { padding: 22px; max-width: 1440px; margin: 0 auto; }
-.tab-panel { display: none; }
-.tab-panel.active { display: block; }
+.tab-panel { display: none; opacity: 0; transform: translateY(8px); }
+.tab-panel.active { display: block; animation: tabFadeIn .35s ease forwards; }
+@keyframes tabFadeIn { to { opacity: 1; transform: translateY(0); } }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
 @media (max-width: 900px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
@@ -97,7 +136,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); background-imag
   border-left: 4px solid var(--primary);
   transition: transform 0.2s, background 0.2s;
 }
-.kpi-card:hover { transform: translateY(-2px); background: var(--card-hover); }
+.kpi-card:hover { transform: translateY(-4px); background: var(--card-hover); box-shadow: 0 8px 30px rgba(0,0,0,.15); }
 .kpi-card.gold   { border-left-color: var(--gold); box-shadow: -4px 0 20px rgba(245,158,11,0.15); }
 .kpi-card.green  { border-left-color: var(--green); box-shadow: -4px 0 20px rgba(16,185,129,0.15); }
 .kpi-card.red    { border-left-color: var(--red); box-shadow: -4px 0 20px rgba(239,68,68,0.15); }
@@ -107,13 +146,35 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); background-imag
 .kpi-sub { font-size: 12px; color: var(--muted); margin-top: 8px; }
 
 /* ── CARD ─────────────────────────────────────────────── */
-.card { background: var(--card); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--border); border-radius: 16px; padding: 22px; box-shadow: var(--glass-shadow); margin-bottom: 20px; transition: background 0.2s; }
-.card:hover { background: var(--card-hover); }
+.card { background: var(--card); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--border); border-radius: 16px; padding: 22px; box-shadow: var(--glass-shadow); margin-bottom: 20px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.card:hover { background: var(--card-hover); border-color: rgba(255,255,255,0.15); box-shadow: 0 8px 40px rgba(0,0,0,.2), 0 0 20px rgba(59,130,246,0.1); transform: translateY(-2px); }
+
+/* ── RESPONSIVE ───────────────────────────────────────── */
+@media (max-width: 768px) {
+  .header { flex-direction: column; align-items: flex-start; gap: 12px; padding: 12px 16px; }
+  .header-right { width: 100%; justify-content: space-between; }
+  .nav { overflow-x: auto; padding: 0 16px; margin-bottom: 16px; }
+  .main { padding: 16px; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+  .card { padding: 16px; border-radius: 12px; margin-bottom: 16px; }
+  .chart-box { height: 240px; }
+  #conv-panel { width: 100%; border-left: none; }
+  .search-row { flex-direction: column; align-items: stretch; }
+  .search-row input, .search-row select { width: 100%; }
+  #chart-fullscreen .fs-card { padding: 16px; height: 80vh; width: 95vw; }
+}
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+}
 .card-title { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 .badge-pill { font-size: 11px; color: var(--cyan); background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.2); padding: 4px 12px; border-radius: 20px; font-weight: 600; }
 .date-btn { padding: 6px 14px; border: 1px solid var(--border); border-radius: 8px; background: transparent; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--muted); transition: all .2s; white-space: nowrap; }
 .date-btn:hover { border-color: var(--blue); color: var(--blue); background: rgba(59, 130, 246, 0.05); }
 .date-btn.active { background: rgba(59, 130, 246, 0.15); color: var(--blue); border-color: var(--blue); text-shadow: 0 0 8px rgba(59, 130, 246, 0.4); }
+/* Thanh lọc nền trắng (Overview/Trang/Tin nhắn) — chữ tối để đọc được trên nền sáng */
+.filter-bar-light, .filter-bar-light .date-btn { color: #374151; }
+.filter-bar-light .date-btn:hover { color: var(--blue); }
+.filter-bar-light .date-btn.active { color: var(--blue); }
 
 /* ── CHARTS ───────────────────────────────────────────── */
 .chart-box { position: relative; height: 300px; width: 100%; }
@@ -223,6 +284,55 @@ tr:last-child td { border-bottom: none; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .empty { text-align: center; padding: 60px 24px; color: var(--muted); background: var(--card); border-radius: 16px; border: 1px dashed rgba(255,255,255,0.15); }
 .empty p { margin-top: 12px; font-size: 14px; color: #94a3b8; }
+
+/* ── SHIMMER SKELETON ────────────────────────────────── */
+.skeleton { background: linear-gradient(90deg, rgba(255,255,255,.04) 25%, rgba(255,255,255,.08) 50%, rgba(255,255,255,.04) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+[data-theme="light"] .skeleton { background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%); background-size: 200% 100%; }
+
+/* ── SCROLL TO TOP ───────────────────────────────────── */
+#scroll-top { position: fixed; bottom: 28px; right: 28px; width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--blue), #2563eb); color: #fff; border: none; font-size: 20px; cursor: pointer; box-shadow: 0 4px 20px rgba(59,130,246,.4); z-index: 900; opacity: 0; transform: translateY(20px); transition: all .3s; display: flex; align-items: center; justify-content: center; }
+#scroll-top.show { opacity: 1; transform: translateY(0); }
+#scroll-top:hover { transform: translateY(-3px); box-shadow: 0 6px 25px rgba(59,130,246,.5); }
+
+/* ── THEME TOGGLE ────────────────────────────────────── */
+.theme-toggle { background: rgba(255,255,255,.1); border: 1px solid var(--border); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; transition: all .2s; }
+.theme-toggle:hover { background: rgba(255,255,255,.2); transform: rotate(15deg); }
+[data-theme="light"] .theme-toggle { background: rgba(0,0,0,.06); }
+[data-theme="light"] .theme-toggle:hover { background: rgba(0,0,0,.1); }
+
+/* ── NOTIFICATION BELL ───────────────────────────────── */
+.notif-bell { position: relative; background: rgba(255,255,255,.1); border: 1px solid var(--border); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; transition: all .2s; }
+.notif-bell:hover { background: rgba(255,255,255,.2); }
+[data-theme="light"] .notif-bell { background: rgba(0,0,0,.06); }
+.notif-badge { position: absolute; top: -4px; right: -4px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 10px; min-width: 16px; text-align: center; display: none; animation: notifPop .3s ease; }
+.notif-badge.show { display: block; }
+@keyframes notifPop { 0% { transform: scale(0); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+
+/* ── FULLSCREEN CHART MODAL ──────────────────────────── */
+#chart-fullscreen { display: none; position: fixed; inset: 0; z-index: 1500; background: rgba(0,0,0,.8); backdrop-filter: blur(8px); align-items: center; justify-content: center; }
+#chart-fullscreen.open { display: flex; }
+#chart-fullscreen .fs-card { background: var(--card); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 20px; width: 90vw; max-width: 1100px; height: 70vh; padding: 24px; position: relative; }
+#chart-fullscreen .fs-close { position: absolute; top: 14px; right: 14px; background: rgba(255,255,255,.1); border: none; color: #fff; width: 36px; height: 36px; border-radius: 50%; font-size: 18px; cursor: pointer; transition: all .2s; }
+#chart-fullscreen .fs-close:hover { background: rgba(255,255,255,.2); }
+#chart-fullscreen .fs-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: #fff; }
+
+/* ── EXPORT BTN ──────────────────────────────────────── */
+.export-btn { padding: 5px 12px; background: rgba(16,185,129,.15); color: var(--green); border: 1px solid rgba(16,185,129,.3); border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all .2s; white-space: nowrap; }
+.export-btn:hover { background: var(--green); color: #fff; box-shadow: 0 4px 15px rgba(16,185,129,.3); }
+
+/* ── PRINT STYLES ────────────────────────────────────── */
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  .header, .nav, #scroll-top, .btn-sync, .theme-toggle, .notif-bell, .search-row, .date-btn, .refresh-btn, #chart-fullscreen { display: none !important; }
+  .tab-panel { display: block !important; opacity: 1 !important; transform: none !important; page-break-inside: avoid; }
+  .card { background: #fff !important; border: 1px solid #ddd !important; box-shadow: none !important; break-inside: avoid; }
+  .kpi-card { border: 1px solid #ddd !important; background: #fff !important; }
+  .kpi-value, .card-title { color: #000 !important; }
+  table { font-size: 11px !important; }
+  th { background: #f3f4f6 !important; color: #000 !important; }
+  td { color: #000 !important; }
+}
 </style>
 </head>
 <body>
@@ -232,6 +342,11 @@ tr:last-child td { border-bottom: none; }
   <h1>📊 Meta Ads Dashboard</h1>
   <div class="header-right">
     <span class="sync-info" id="sync-time">Đang tải...</span>
+    <div class="notif-bell" id="notif-bell" onclick="switchTab(document.querySelector('[data-tab=messages]'))" title="Tin nhắn chưa đọc">
+      🔔
+      <span class="notif-badge" id="notif-badge">0</span>
+    </div>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Đổi giao diện">🌙</button>
     <button class="btn btn-sync" id="btn-sync" onclick="triggerSync()">⟳ Đồng bộ ngay</button>
   </div>
 </header>
@@ -245,9 +360,8 @@ tr:last-child td { border-bottom: none; }
   <div class="nav-tab"         data-tab="messages"    onclick="switchTab(this)">💬 Tin nhắn</div>
   <div class="nav-tab"         data-tab="phones"      onclick="switchTab(this)">📱 SĐT khách</div>
   <div class="nav-tab"         data-tab="creatives"   onclick="switchTab(this)">🎨 Nội dung QC</div>
-  <div class="nav-tab"         data-tab="tiktok"      onclick="switchTab(this)">🎵 TikTok</div>
-  <div class="nav-tab"         data-tab="ttshop"      onclick="switchTab(this)">🛒 TikTok Shop</div>
-  <div class="nav-tab"         data-tab="ttads"       onclick="switchTab(this)">📣 TikTok Ads</div>
+
+  <div class="nav-tab"         data-tab="website"     onclick="switchTab(this)">🌐 Website</div>
 </nav>
 
 <!-- ── MAIN ───────────────────────────────────────────── -->
@@ -265,8 +379,8 @@ tr:last-child td { border-bottom: none; }
 <div id="tab-overview" class="tab-panel">
 
   <!-- Date Range Filter -->
-  <div style="background:#fff;border-radius:10px;padding:13px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <span style="font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap">Khoảng thời gian:</span>
+  <div class="filter-bar-light" style="background:#fff;border-radius:10px;padding:13px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:#374151;white-space:nowrap">Khoảng thời gian:</span>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="date-btn" onclick="setPreset(this,'today')">Hôm nay</button>
       <button class="date-btn" onclick="setPreset(this,'yesterday')">Hôm qua</button>
@@ -278,25 +392,30 @@ tr:last-child td { border-bottom: none; }
       <button class="date-btn active" onclick="setPreset(this,'all')">Tất cả</button>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <input type="date" id="date-from" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text);outline:none">
-      <span style="color:var(--muted);font-size:12px">→</span>
-      <input type="date" id="date-to" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text);outline:none">
+      <input type="date" id="date-from" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:#0f172a;background:#fff;outline:none">
+      <span style="color:#374151;font-size:12px">→</span>
+      <input type="date" id="date-to" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:#0f172a;background:#fff;outline:none">
       <button onclick="applyCustomDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
     </div>
     <span id="date-range-info" class="badge-pill"></span>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <span id="export-status" style="font-size:11px;color:var(--muted)"></span>
+      <button onclick="exportOverviewHTML()" style="padding:5px 12px;background:#fff;color:#374151;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">📄 Xuất HTML</button>
+      <button onclick="exportOverviewPPTX()" style="padding:5px 12px;background:#fff;color:#374151;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">📊 Xuất PPTX</button>
+    </div>
   </div>
 
   <!-- Account Filter (ẩn nếu chỉ có 1 tài khoản) -->
-  <div id="account-filter-row" style="background:#fff;border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:10px;display:none;align-items:center;gap:12px;flex-wrap:wrap">
-    <span style="font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap">Tài khoản:</span>
+  <div id="account-filter-row" class="filter-bar-light" style="background:#fff;border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:10px;display:none;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:#374151;white-space:nowrap">Tài khoản:</span>
     <div id="account-filter-btns" style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="date-btn active" onclick="setAccountFilter(this,-1)">Tất cả</button>
     </div>
   </div>
 
   <!-- Page Filter -->
-  <div style="background:#fff;border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <span style="font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap">Trang:</span>
+  <div class="filter-bar-light" style="background:#fff;border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:#374151;white-space:nowrap">Trang:</span>
     <div id="page-filter-btns" style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="date-btn active" onclick="setPageFilter(this,-1)">Tất cả</button>
     </div>
@@ -424,16 +543,23 @@ tr:last-child td { border-bottom: none; }
     <!-- Date range + Account filter (lấy live từ API) -->
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f1f5f9">
       <span style="font-size:12px;font-weight:700;color:var(--muted)">Khoảng:</span>
-      <div id="ads-date-btns" style="display:flex;gap:6px">
+      <div id="ads-date-btns" style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="date-btn" onclick="setAdsRange(this,1,0)">Hôm nay</button>
         <button class="date-btn" onclick="setAdsRange(this,1,1)">Hôm qua</button>
         <button class="date-btn" onclick="setAdsRange(this,7)">7 ngày</button>
         <button class="date-btn active" onclick="setAdsRange(this,30)">30 ngày</button>
         <button class="date-btn" onclick="setAdsRange(this,90)">90 ngày</button>
+        <div style="width:1px;height:20px;background:#e2e8f0;margin:0 2px"></div>
+        <button class="date-btn" onclick="setAdsPreset(this,'thisMonth')">Tháng này</button>
+        <button class="date-btn" onclick="setAdsPreset(this,'lastMonth')">1 tháng qua</button>
+        <button class="date-btn" onclick="setAdsPreset(this,'last3Months')">3 tháng qua</button>
+        <button class="date-btn" onclick="setAdsPreset(this,'last6Months')">6 tháng qua</button>
+        <button class="date-btn" onclick="setAdsPreset(this,'ytd')">Từ đầu năm</button>
+        <button class="date-btn" onclick="setAdsPreset(this,'all')">Tất cả</button>
       </div>
-      <input type="date" id="ads-from" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px">
+      <input type="date" id="ads-from" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
       <span style="color:var(--muted)">→</span>
-      <input type="date" id="ads-to" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px">
+      <input type="date" id="ads-to" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
       <button onclick="applyAdsDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
       <div style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></div>
       <span style="font-size:12px;font-weight:700;color:var(--muted)">Tài khoản:</span>
@@ -462,17 +588,59 @@ tr:last-child td { border-bottom: none; }
 ════════════════════════════════════════════════════════ -->
 <div id="tab-page" class="tab-panel">
   <!-- Page filter -->
-  <div style="background:#fff;border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <span style="font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap">Trang:</span>
+  <div class="filter-bar-light" style="background:#fff;border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:#374151;white-space:nowrap">Trang:</span>
     <div id="page-tab-filter-btns" style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="date-btn active" onclick="setTrangPage(this,-1)">Tất cả</button>
     </div>
+    <div style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></div>
+    <span style="font-size:12px;font-weight:700;color:#374151;white-space:nowrap">Khoảng:</span>
+    <div id="page-date-btns" style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="date-btn" onclick="setPagePreset(this,'today')">Hôm nay</button>
+      <button class="date-btn" onclick="setPagePreset(this,'yesterday')">Hôm qua</button>
+      <button class="date-btn" onclick="setPagePreset(this,'thisMonth')">Tháng này</button>
+      <button class="date-btn" onclick="setPagePreset(this,'lastMonth')">1 tháng qua</button>
+      <button class="date-btn" onclick="setPagePreset(this,'last3Months')">3 tháng qua</button>
+      <button class="date-btn" onclick="setPagePreset(this,'last6Months')">6 tháng qua</button>
+      <button class="date-btn" onclick="setPagePreset(this,'ytd')">Từ đầu năm</button>
+      <button class="date-btn active" onclick="setPagePreset(this,'all')">Tất cả</button>
+    </div>
+    <input type="date" id="page-from" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
+    <span style="color:#94a3b8">→</span>
+    <input type="date" id="page-to" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
+    <button onclick="applyPageDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
   </div>
+
+  <!-- Chế độ so sánh Kỳ A/B -->
+  <div class="filter-bar-light" style="background:#fff;border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:700;color:#374151">
+      <input type="checkbox" id="page-compare-toggle" onchange="togglePageCompare(this)" style="width:16px;height:16px;cursor:pointer">
+      ⚖️ Chế độ so sánh
+    </label>
+    <div id="page-compare-controls" style="display:none;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></div>
+      <span style="font-size:12px;font-weight:700;color:var(--muted)">🔁 Tự so sánh với:</span>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="date-btn" onclick="setPageCompareQuick(this,'7d')">7 ngày trước</button>
+        <button class="date-btn" onclick="setPageCompareQuick(this,'1m')">1 tháng trước</button>
+        <button class="date-btn" onclick="setPageCompareQuick(this,'3m')">3 tháng trước</button>
+        <button class="date-btn" onclick="setPageCompareQuick(this,'1y')">1 năm trước</button>
+      </div>
+      <span style="font-size:12px;color:var(--muted)">hoặc</span>
+      <span style="font-size:12px;font-weight:700;color:var(--muted)">Kỳ B:</span>
+      <input type="date" id="page-compare-from" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
+      <span style="color:#94a3b8">→</span>
+      <input type="date" id="page-compare-to" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
+      <button onclick="applyPageCompareDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
+    </div>
+  </div>
+
+  <div id="page-compare-section" style="display:none;margin-bottom:18px"></div>
 
   <!-- Section: Organic -->
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
     <div style="width:4px;height:22px;background:#10b981;border-radius:2px"></div>
-    <span style="font-size:15px;font-weight:700;color:var(--primary)">Organic (Page Insights)</span>
+    <span style="font-size:15px;font-weight:700">Organic (Page Insights)</span>
   </div>
   <div class="kpi-grid" id="page-kpi-grid" style="margin-bottom:18px"></div>
 
@@ -490,7 +658,7 @@ tr:last-child td { border-bottom: none; }
   <!-- Section: Paid -->
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
     <div style="width:4px;height:22px;background:#2563eb;border-radius:2px"></div>
-    <span style="font-size:15px;font-weight:700;color:var(--primary)">Paid Ads</span>
+    <span style="font-size:15px;font-weight:700">Paid Ads</span>
     <span class="badge-pill" id="page-paid-page-badge" style="display:none"></span>
   </div>
   <div class="kpi-grid" id="page-paid-kpi" style="margin-bottom:18px"></div>
@@ -509,7 +677,7 @@ tr:last-child td { border-bottom: none; }
   <!-- Section: So sánh -->
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
     <div style="width:4px;height:22px;background:#8b5cf6;border-radius:2px"></div>
-    <span style="font-size:15px;font-weight:700;color:var(--primary)">So sánh Paid vs Organic</span>
+    <span style="font-size:15px;font-weight:700">So sánh Paid vs Organic</span>
   </div>
   <div class="grid-2" style="margin-bottom:18px">
     <div class="card">
@@ -552,9 +720,9 @@ tr:last-child td { border-bottom: none; }
         <button class="date-btn active" onclick="setPostsRange(this,30)">30 ngày</button>
         <button class="date-btn" onclick="setPostsRange(this,90)">90 ngày</button>
       </div>
-      <input type="date" id="posts-from" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px">
+      <input type="date" id="posts-from" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
       <span style="color:var(--muted)">→</span>
-      <input type="date" id="posts-to" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px">
+      <input type="date" id="posts-to" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
       <button onclick="applyPostsDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
     </div>
   </div>
@@ -593,8 +761,8 @@ tr:last-child td { border-bottom: none; }
 <div id="tab-messages" class="tab-panel">
 
   <!-- Date filter -->
-  <div style="background:#fff;border-radius:10px;padding:12px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-    <span style="font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap">Khoảng:</span>
+  <div class="filter-bar-light" style="background:#fff;border-radius:10px;padding:12px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:#374151;white-space:nowrap">Khoảng:</span>
     <div id="msg-date-btns" style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="date-btn" onclick="setMsgRange(this,1,0)">Hôm nay</button>
       <button class="date-btn" onclick="setMsgRange(this,1,1)">Hôm qua</button>
@@ -602,9 +770,9 @@ tr:last-child td { border-bottom: none; }
       <button class="date-btn active" onclick="setMsgRange(this,30)">30 ngày</button>
       <button class="date-btn" onclick="setMsgRange(this,90)">90 ngày</button>
     </div>
-    <input type="date" id="msg-from" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px">
-    <span style="color:var(--muted)">→</span>
-    <input type="date" id="msg-to" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+    <input type="date" id="msg-from" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:#fff;color:#0f172a">
+    <span style="color:#374151">→</span>
+    <input type="date" id="msg-to" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:#fff;color:#0f172a">
     <button onclick="applyMsgDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
     <button onclick="openTokenConfig()" style="margin-left:auto;padding:5px 12px;background:#f8fafc;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;color:#374151;font-weight:500">
       ⚙️ Token nhắn tin
@@ -740,181 +908,97 @@ tr:last-child td { border-bottom: none; }
   </div>
 </div>
 
+
 <!-- ════════════════════════════════════════════════════
-     TIKTOK FANPAGE
+     WEBSITE (Search Console + Google Analytics 4)
 ════════════════════════════════════════════════════════ -->
-<div id="tab-tiktok" class="tab-panel">
-  <!-- Bộ lọc ngày -->
+<div id="tab-website" class="tab-panel">
   <div class="card" style="margin-bottom:18px">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <span id="tt-account" style="font-size:13px;font-weight:800;color:var(--text)"></span>
+      <span style="font-size:13px;font-weight:800;color:var(--text)">🌐 Website</span>
       <div style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></div>
       <span style="font-size:12px;font-weight:700;color:var(--muted)">Khoảng:</span>
-      <div id="tt-date-btns" style="display:flex;gap:6px">
-        <button class="date-btn" onclick="setTtRange(this,1,0)">Hôm nay</button>
-        <button class="date-btn" onclick="setTtRange(this,1,1)">Hôm qua</button>
-        <button class="date-btn" onclick="setTtRange(this,7)">7 ngày</button>
-        <button class="date-btn active" onclick="setTtRange(this,30)">30 ngày</button>
-        <button class="date-btn" onclick="setTtRange(this,90)">90 ngày</button>
+      <div id="web-date-btns" style="display:flex;gap:6px">
+        <button class="date-btn" onclick="setWebRange(this,7)">7 ngày</button>
+        <button class="date-btn active" onclick="setWebRange(this,30)">30 ngày</button>
+        <button class="date-btn" onclick="setWebRange(this,90)">90 ngày</button>
       </div>
-      <input type="date" id="tt-from" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px">
+      <input type="date" id="web-from" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
       <span style="color:var(--muted)">→</span>
-      <input type="date" id="tt-to" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px">
-      <button onclick="applyTtDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
-      <span class="badge-pill" id="tt-badge" style="margin-left:auto"></span>
+      <input type="date" id="web-to" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
+      <button onclick="applyWebDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
     </div>
   </div>
 
-  <!-- KPI tiles -->
+  <!-- SEARCH CONSOLE -->
   <div class="card" style="margin-bottom:18px">
-    <div class="card-title">Tổng quan Fanpage TikTok</div>
-    <div id="tt-summary" style="display:flex;gap:12px;flex-wrap:wrap"></div>
+    <div class="card-title">🔍 Search Console — Tìm kiếm tự nhiên (Google) <span class="badge-pill" id="gsc-badge"></span></div>
+    <div id="gsc-summary" style="display:flex;gap:12px;flex-wrap:wrap"></div>
+  </div>
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-title">Clicks &amp; Hiển thị theo ngày</div>
+    <div class="chart-box"><canvas id="chart-gsc-daily"></canvas></div>
+  </div>
+  <div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:18px">
+    <div class="card" style="flex:1;min-width:320px">
+      <div class="card-title">Top từ khoá</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr style="background:#f8fafc">
+            <th style="text-align:left">Từ khoá</th><th>Clicks</th><th>Hiển thị</th><th>CTR</th><th>Vị trí TB</th>
+          </tr></thead>
+          <tbody id="gsc-queries"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card" style="flex:1;min-width:320px">
+      <div class="card-title">Top trang</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr style="background:#f8fafc">
+            <th style="text-align:left">Trang</th><th>Clicks</th><th>Hiển thị</th><th>CTR</th><th>Vị trí TB</th>
+          </tr></thead>
+          <tbody id="gsc-pages"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
-  <!-- Chart -->
+  <!-- GOOGLE ANALYTICS -->
   <div class="card" style="margin-bottom:18px">
-    <div class="card-title">Video views &amp; Followers theo ngày</div>
-    <div class="chart-box"><canvas id="chart-tt-daily"></canvas></div>
+    <div class="card-title">📊 Google Analytics — Lưu lượng truy cập <span class="badge-pill" id="ga4-badge"></span></div>
+    <div id="ga4-summary" style="display:flex;gap:12px;flex-wrap:wrap"></div>
   </div>
-
-  <!-- Bảng ngày -->
-  <div class="card">
-    <div class="card-title">Chi tiết theo ngày</div>
-    <div class="tbl-wrap">
-      <table>
-        <thead><tr style="background:#f8fafc">
-          <th style="text-align:left">Ngày</th>
-          <th>Video views</th><th>Profile views</th><th>Likes</th>
-          <th>Comments</th><th>Shares</th><th>Follower mới</th>
-          <th>Follower mất</th><th>Net follower</th><th>Tổng follower</th>
-        </tr></thead>
-        <tbody id="tt-body"></tbody>
-      </table>
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-title">Sessions &amp; Pageviews theo ngày</div>
+    <div class="chart-box"><canvas id="chart-ga4-daily"></canvas></div>
+  </div>
+  <div style="display:flex;gap:18px;flex-wrap:wrap">
+    <div class="card" style="flex:1;min-width:320px">
+      <div class="card-title">Nguồn truy cập</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr style="background:#f8fafc">
+            <th style="text-align:left">Kênh</th><th>Sessions</th><th>Users</th>
+          </tr></thead>
+          <tbody id="ga4-channels"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card" style="flex:1;min-width:320px">
+      <div class="card-title">Top trang xem nhiều</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr style="background:#f8fafc">
+            <th style="text-align:left">Trang</th><th>Pageviews</th><th>Users</th>
+          </tr></thead>
+          <tbody id="ga4-pages"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════
-     TIKTOK SHOP (Seller Center)
-════════════════════════════════════════════════════════ -->
-<div id="tab-ttshop" class="tab-panel">
-  <div class="card" style="margin-bottom:18px">
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <span id="tts-account" style="font-size:13px;font-weight:800;color:var(--text)"></span>
-      <div style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></div>
-      <span style="font-size:12px;font-weight:700;color:var(--muted)">Khoảng:</span>
-      <div id="tts-date-btns" style="display:flex;gap:6px">
-        <button class="date-btn" onclick="setTtsRange(this,1,0)">Hôm nay</button>
-        <button class="date-btn" onclick="setTtsRange(this,1,1)">Hôm qua</button>
-        <button class="date-btn" onclick="setTtsRange(this,7)">7 ngày</button>
-        <button class="date-btn active" onclick="setTtsRange(this,30)">30 ngày</button>
-        <button class="date-btn" onclick="setTtsRange(this,90)">90 ngày</button>
-      </div>
-      <input type="date" id="tts-from" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px">
-      <span style="color:var(--muted)">→</span>
-      <input type="date" id="tts-to" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px">
-      <button onclick="applyTtsDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
-      <span class="badge-pill" id="tts-badge" style="margin-left:auto"></span>
-    </div>
-  </div>
-
-  <div class="card" style="margin-bottom:18px">
-    <div class="card-title">Tổng quan Shop</div>
-    <div id="tts-summary" style="display:flex;gap:12px;flex-wrap:wrap"></div>
-  </div>
-
-  <div class="card" style="margin-bottom:18px">
-    <div class="card-title">Lưu lượng truy cập</div>
-    <div id="tts-traffic" style="display:flex;gap:12px;flex-wrap:wrap"></div>
-  </div>
-
-  <div class="card" style="margin-bottom:18px">
-    <div class="card-title">Trạng thái đơn hàng &amp; Hiệu suất quảng cáo</div>
-    <div id="tts-status" style="display:flex;gap:12px;flex-wrap:wrap"></div>
-  </div>
-
-  <div class="card" style="margin-bottom:18px">
-    <div class="card-title">Doanh thu &amp; Số đơn theo ngày</div>
-    <div class="chart-box"><canvas id="chart-tts-daily"></canvas></div>
-  </div>
-
-  <div class="card" style="margin-bottom:18px">
-    <div class="card-title">Doanh thu theo nguồn</div>
-    <div id="tts-source" style="display:flex;gap:14px;flex-wrap:wrap"></div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">
-      Doanh số theo sản phẩm
-      <span class="badge-pill" id="tts-prod-badge"></span>
-    </div>
-    <div class="tbl-wrap">
-      <table>
-        <thead><tr style="background:#f8fafc">
-          <th style="text-align:left">Sản phẩm</th><th>Số lượng</th><th>Doanh thu (VND)</th><th>% tổng</th>
-        </tr></thead>
-        <tbody id="tts-products"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- ════════════════════════════════════════════════════
-     TIKTOK ADS
-════════════════════════════════════════════════════════ -->
-<div id="tab-ttads" class="tab-panel">
-  <div class="card" style="margin-bottom:18px">
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <span style="font-size:12px;font-weight:700;color:var(--muted)">Tài khoản:</span>
-      <select id="tta-adv-sel" onchange="onTtaAdvChange()" style="font-size:13px;border:1px solid #e2e8f0;border-radius:6px;padding:5px 10px;min-width:220px"></select>
-      <div style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></div>
-      <span style="font-size:12px;font-weight:700;color:var(--muted)">Khoảng:</span>
-      <div id="tta-date-btns" style="display:flex;gap:6px">
-        <button class="date-btn" onclick="setTtaRange(this,1,0)">Hôm nay</button>
-        <button class="date-btn" onclick="setTtaRange(this,1,1)">Hôm qua</button>
-        <button class="date-btn" onclick="setTtaRange(this,7)">7 ngày</button>
-        <button class="date-btn active" onclick="setTtaRange(this,30)">30 ngày</button>
-        <button class="date-btn" onclick="setTtaRange(this,90)">90 ngày</button>
-      </div>
-      <input type="date" id="tta-from" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px">
-      <span style="color:var(--muted)">→</span>
-      <input type="date" id="tta-to" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px">
-      <button onclick="applyTtaDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
-      <span class="badge-pill" id="tta-badge" style="margin-left:auto"></span>
-    </div>
-  </div>
-
-  <div class="card" style="margin-bottom:18px">
-    <div class="card-title">Tổng quan Quảng cáo (tất cả campaign)</div>
-    <div id="tta-summary" style="display:flex;gap:12px;flex-wrap:wrap"></div>
-  </div>
-
-  <div class="card" style="margin-bottom:18px;border:2px solid #fecdd3">
-    <div class="card-title">🚀 GMV Max</div>
-    <div id="tta-gmvmax" style="display:flex;gap:12px;flex-wrap:wrap"></div>
-  </div>
-
-  <div class="card" style="margin-bottom:18px">
-    <div class="card-title">📉 Biểu đồ Xu hướng GMV</div>
-    <div style="height:250px;width:100%">
-      <canvas id="tta-chart-gmv"></canvas>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">Chi tiết Campaign</div>
-    <div class="tbl-wrap">
-      <table>
-        <thead><tr style="background:#f8fafc">
-          <th style="text-align:left">Campaign</th><th>Loại</th><th>Chi phí</th>
-          <th>Hiển thị</th><th>Clicks</th><th>CTR%</th>
-          <th>Conversion</th><th>Đơn hàng</th><th>CPO</th><th>GMV (Shop)</th><th>ROAS</th>
-        </tr></thead>
-        <tbody id="tta-body"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
 
 </main>
 
@@ -928,7 +1012,7 @@ tr:last-child td { border-bottom: none; }
   const IS_GAS = (typeof google !== 'undefined') && google.script && google.script.run;
   if (IS_GAS) return; // chạy trong GAS — dùng google.script.run gốc
 
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbzrQdZtfKi_lJrYT8rZA8w9_LMAu7u7Uwzr4f15d0V1pFLW4hNsDmJIzJkDTl34ffSF_g/exec';
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbxN1-TdrCO6xuUeQbGLBbmdzk2fZCwOQ6Mh4K5hVT5zLKSMrmdtkmEb9xwpRMESLg73Vg/exec';
 
   function gasPost(payload) {
     return fetch(GAS_URL, {
@@ -989,9 +1073,9 @@ function fetchData() {
     .getDashboardData();
 }
 
-// Tự động làm mới — CHỈ đọc lại Google Sheets (nhẹ, không gọi thêm API Facebook/TikTok
+// Tự động làm mới — CHỈ đọc lại Google Sheets (nhẹ, không gọi thêm API Facebook
 // ngoài), không hiện loading overlay, không đổi tab/bộ lọc ngày người dùng đang xem.
-// Các tab đang live-fetch (Quảng cáo/Bài đăng/TikTok/TikTok Ads) không tự gọi lại ở đây
+// Các tab đang live-fetch (Quảng cáo/Bài đăng) không tự gọi lại ở đây
 // để tránh tăng tần suất gọi API ngoài (dễ gây lại lỗi rate-limit/timeout).
 function autoRefreshData() {
   google.script.run
@@ -1013,7 +1097,6 @@ function autoRefreshData() {
       else if (activeTab === 'messages')  renderMessages();
       else if (activeTab === 'creatives') renderCreatives();
       else if (activeTab === 'phones')    renderPhones();
-      else if (activeTab === 'ttshop')    fetchTikTokShop();
     })
     .withFailureHandler(e => console.warn('autoRefreshData lỗi:', e))
     .getDashboardData();
@@ -1074,6 +1157,7 @@ function onLoad(data) {
   initAccountFilter();
   initPageFilter();
   initTrangPageFilter();
+  initPageDateFilter();
   initMsgDate();
   renderOverview();
   renderAds();
@@ -1082,6 +1166,7 @@ function onLoad(data) {
   renderMessages();
   renderCreatives();
   fetchAdsConvLive(); // sẽ tự chuỗi gọi fetchPageMsgDedup sau khi xong
+  if (typeof updateNotifBadge === 'function') updateNotifBadge();
 }
 
 function onErr(e) {
@@ -1119,9 +1204,7 @@ function switchTab(el) {
   document.getElementById('tab-' + el.dataset.tab).classList.add('active');
   // Lazy-load posts live khi mở tab Bài đăng (tránh gọi FA đồng thời lúc load → throttle dedup tin nhắn)
   if (el.dataset.tab === 'posts'  && !_postsInited) { _postsInited = true; initPostsControls(); }
-  if (el.dataset.tab === 'tiktok' && !_ttInited)    { _ttInited    = true; initTikTok(); }
-  if (el.dataset.tab === 'ttshop' && !_ttsInited)   { _ttsInited   = true; initTikTokShop(); }
-  if (el.dataset.tab === 'ttads'  && !_ttaInited)   { _ttaInited   = true; initTikTokAds(); }
+  if (el.dataset.tab === 'website' && !_webInited)  { _webInited   = true; initWebsite(); }
   if (el.dataset.tab === 'phones')                  { initPhones(); }
 }
 
@@ -1135,24 +1218,15 @@ function triggerSync() {
   
   google.script.run
     .withSuccessHandler((metaLog) => {
-      btn.textContent = '⟳ Đang đồng bộ TikTok...';
-      google.script.run
-        .withSuccessHandler((ttLog) => {
-           btn.disabled = false;
-           btn.textContent = '⟳ Đồng bộ ngay';
-           fetchData();
-           console.log("Meta Sync:\n" + metaLog);
-           console.log("TikTok Sync:\n" + ttLog);
-           if (ttLog.includes('lỗi') || metaLog.includes('lỗi')) {
-             alert("Quá trình đồng bộ hoàn tất nhưng có một số lỗi:\n\n" + metaLog + "\n\n" + ttLog);
-           } else {
-             alert("Đồng bộ hoàn tất thành công!\n\n" + metaLog + "\n\n" + ttLog);
-           }
-        })
-        .withFailureHandler(e => {
-           btn.disabled = false; btn.textContent = '⟳ Đồng bộ ngay'; alert('Lỗi máy chủ TikTok: ' + e.message);
-        })
-        .syncTikTokAll();
+       btn.disabled = false;
+       btn.textContent = '⟳ Đồng bộ ngay';
+       fetchData();
+       console.log("Meta Sync:\n" + metaLog);
+       if (metaLog.includes('lỗi')) {
+         alert("Quá trình đồng bộ hoàn tất nhưng có một số lỗi:\n\n" + metaLog);
+       } else {
+         alert("Đồng bộ hoàn tất thành công!\n\n" + metaLog);
+       }
     })
     .withFailureHandler(e => { 
        btn.disabled = false; btn.textContent = '⟳ Đồng bộ ngay'; alert('Lỗi máy chủ Meta: ' + e.message); 
@@ -1244,6 +1318,43 @@ function fmtD(d) {
   return `${y}-${m}-${day}`;
 }
 
+// Tính khoảng {from,to} cho các preset dùng chung giữa Ads/Page/Overview
+// (tránh lặp logic tính tháng ở nhiều nơi). val 'all' trả về rỗng — nơi gọi
+// tự quyết định 'all' nghĩa là gì (bỏ lọc, hay 1 khoảng rất rộng).
+function computeRangeForPreset(val) {
+  const today = new Date();
+  let from, to;
+  if (val === 'all') {
+    return { from: '', to: '' };
+  } else if (val === 'today') {
+    from = new Date(today); to = new Date(today);
+  } else if (val === 'yesterday') {
+    from = new Date(today); from.setDate(today.getDate() - 1);
+    to = new Date(from);
+  } else if (val === 'thisMonth') {
+    from = new Date(today.getFullYear(), today.getMonth(), 1);
+    to = new Date(today);
+  } else if (val === 'lastMonth') {
+    from = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    to = new Date(today.getFullYear(), today.getMonth(), 0);
+  } else if (val === 'last3Months') {
+    from = new Date(today.getFullYear(), today.getMonth() - 3, today.getDate());
+    to = new Date(today);
+  } else if (val === 'last6Months') {
+    from = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate());
+    to = new Date(today);
+  } else if (val === 'ytd') {
+    from = new Date(today.getFullYear(), 0, 1);
+    to = new Date(today);
+  } else if (typeof val === 'number') {
+    to = new Date(today);
+    from = new Date(today); from.setDate(today.getDate() - val + 1);
+  } else {
+    from = new Date(today); to = new Date(today);
+  }
+  return { from: fmtD(from), to: fmtD(to) };
+}
+
 // ══════════════════════════════════════════════════════════
 // ACCOUNT FILTER
 // ══════════════════════════════════════════════════════════
@@ -1281,21 +1392,15 @@ function setAccountFilter(btn, idx) {
 function initTrangPageFilter() {
   const container = document.getElementById('page-tab-filter-btns');
   if (!container) return;
-  // Reuse _PAGE_LIST (populated by initPageFilter)
-  if (!_PAGE_LIST.length) {
-    // build from creatives if available
-    const map = buildCampPageMap();
-    const { headers: h, rows } = G.ads || { headers: [], rows: [] };
-    const ci = n => h.indexOf(n);
-    const pages = new Set();
-    rows.forEach(r => {
-      const p = getPageFromCamp(map, r[ci('campaign')] || '', r[ci('adset')] || '');
-      if (p && p !== 'Chưa xác định' && !/^\d+$/.test(p)) pages.add(p);
-    });
-    _TRANG_PAGE_LIST = [...pages].sort();
-  } else {
-    _TRANG_PAGE_LIST = [..._PAGE_LIST];
-  }
+  const pages = new Set(_PAGE_LIST); // Page có chạy Ads (từ initPageFilter)
+
+  // Bổ sung Page thuần organic (không chạy Ads) lấy trực tiếp từ Page Insights đã đồng bộ —
+  // trước đây danh sách chỉ lấy từ Ads nên Page như "chăm sóc sức khỏe" bị mất tích khỏi bộ lọc.
+  const { headers: ph, rows: pRows } = G.page || { headers:[], rows:[] };
+  const pnameIdx = ph.indexOf('page_name');
+  if (pnameIdx >= 0) pRows.forEach(r => { if (r[pnameIdx]) pages.add(r[pnameIdx]); });
+
+  _TRANG_PAGE_LIST = [...pages].sort();
   if (!_TRANG_PAGE_LIST.length) return;
   const activeIdx = _TRANG_PAGE_LIST.indexOf(G_TRANG_PAGE);
   container.innerHTML =
@@ -1310,6 +1415,335 @@ function setTrangPage(btn, idx) {
   btn.classList.add('active');
   G_TRANG_PAGE = idx < 0 ? '' : (_TRANG_PAGE_LIST[idx] || '');
   renderPage();
+  if (G_PAGE_COMPARE.enabled) renderPageCompare();
+}
+
+// ══════════════════════════════════════════════════════════
+// TRANG TAB — bộ lọc ngày riêng (độc lập với G_DATE của Overview)
+// ══════════════════════════════════════════════════════════
+let G_PAGE_DATE = { from: '', to: '' };
+
+function initPageDateFilter() {
+  const f = document.getElementById('page-from'), t = document.getElementById('page-to');
+  if (f) f.value = G_PAGE_DATE.from;
+  if (t) t.value = G_PAGE_DATE.to;
+}
+
+function setPagePreset(btn, val) {
+  document.querySelectorAll('#page-date-btns .date-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const r = computeRangeForPreset(val);
+  G_PAGE_DATE.from = r.from; G_PAGE_DATE.to = r.to;
+  const f = document.getElementById('page-from'), t = document.getElementById('page-to');
+  if (f) f.value = G_PAGE_DATE.from;
+  if (t) t.value = G_PAGE_DATE.to;
+  renderPage();
+  if (G_PAGE_COMPARE.enabled) renderPageCompare();
+}
+
+function applyPageDate() {
+  document.querySelectorAll('#page-date-btns .date-btn').forEach(b => b.classList.remove('active'));
+  G_PAGE_DATE.from = document.getElementById('page-from')?.value || '';
+  G_PAGE_DATE.to   = document.getElementById('page-to')?.value   || '';
+  renderPage();
+  if (G_PAGE_COMPARE.enabled) renderPageCompare();
+}
+
+// ══════════════════════════════════════════════════════════
+// TRANG TAB — Chế độ so sánh Kỳ A/B (⚖️) + chấm điểm Tốt/TB/Xấu
+// ══════════════════════════════════════════════════════════
+let G_PAGE_COMPARE = { enabled: false, bFrom: '', bTo: '' };
+
+function togglePageCompare(el) {
+  G_PAGE_COMPARE.enabled = el.checked;
+  const ctrl = document.getElementById('page-compare-controls');
+  const sect = document.getElementById('page-compare-section');
+  if (ctrl) ctrl.style.display = el.checked ? 'flex' : 'none';
+  if (sect) sect.style.display = el.checked ? '' : 'none';
+  if (el.checked) {
+    if (!G_PAGE_COMPARE.bFrom) setPageCompareQuick(ctrl?.querySelector('.date-btn'), '7d');
+    else renderPageCompare();
+  }
+}
+
+// Tự tính Kỳ B: dịch lùi Kỳ A (G_PAGE_DATE) theo mốc chọn, giữ nguyên độ dài kỳ
+function setPageCompareQuick(btn, unit) {
+  document.querySelectorAll('#page-compare-controls .date-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (!G_PAGE_DATE.from || !G_PAGE_DATE.to) { renderPageCompare(); return; }
+  const aFrom = new Date(G_PAGE_DATE.from + 'T00:00:00');
+  const aTo   = new Date(G_PAGE_DATE.to   + 'T00:00:00');
+  const lenDays = Math.round((aTo - aFrom) / 86400000) + 1;
+  const shiftDays = { '7d':7, '1m':30, '3m':90, '1y':365 }[unit] || lenDays;
+  const bTo   = new Date(aTo);   bTo.setDate(bTo.getDate() - shiftDays);
+  const bFrom = new Date(bTo);   bFrom.setDate(bTo.getDate() - lenDays + 1);
+  G_PAGE_COMPARE.bFrom = fmtD(bFrom);
+  G_PAGE_COMPARE.bTo   = fmtD(bTo);
+  const f = document.getElementById('page-compare-from'), t = document.getElementById('page-compare-to');
+  if (f) f.value = G_PAGE_COMPARE.bFrom;
+  if (t) t.value = G_PAGE_COMPARE.bTo;
+  renderPageCompare();
+}
+
+function applyPageCompareDate() {
+  document.querySelectorAll('#page-compare-controls .date-btn').forEach(b => b.classList.remove('active'));
+  G_PAGE_COMPARE.bFrom = document.getElementById('page-compare-from')?.value || '';
+  G_PAGE_COMPARE.bTo   = document.getElementById('page-compare-to')?.value   || '';
+  renderPageCompare();
+}
+
+// Lọc rows Page Insights theo page_name + khoảng ngày (dùng lại cho cả Kỳ A/B)
+function _filterPageRowsForRange(pAllRows, ph, from, to) {
+  const pnameIdx = ph.indexOf('page_name'), pci = n => ph.indexOf(n);
+  let rows = pAllRows;
+  if (G_TRANG_PAGE && pnameIdx >= 0) rows = rows.filter(r => r[pnameIdx] === G_TRANG_PAGE);
+  if (from || to) {
+    rows = rows.filter(r => {
+      const d = String(r[pci('date')] || '');
+      if (from && d < from) return false;
+      if (to   && d > to)   return false;
+      return true;
+    });
+  }
+  return rows;
+}
+
+// Cộng dồn theo Page các chỉ số organic cần cho so sánh/chấm điểm
+function _sumByPage(rows, ph) {
+  const pci = n => ph.indexOf(n);
+  const pnameIdx = ph.indexOf('page_name');
+  const byPage = {};
+  rows.forEach(r => {
+    const pn = pnameIdx >= 0 ? (r[pnameIdx] || '(?)') : '(?)';
+    if (!byPage[pn]) byPage[pn] = { views:0, actions:0, engage:0, newFollows:0 };
+    byPage[pn].views      += +r[pci('page_views_total')]       || 0;
+    byPage[pn].actions    += +r[pci('page_total_actions')]     || 0;
+    byPage[pn].engage     += +r[pci('page_post_engagements')]  || 0;
+    byPage[pn].newFollows += +r[pci('page_daily_follows')]     || 0;
+  });
+  return byPage;
+}
+
+// Lọc rows Ads theo Page (qua campPageMap) + khoảng ngày — dùng để lấy follow do Ads (page_like)
+function _filterAdsRowsForRange(aAllRows, ah, campPageMap, from, to) {
+  const aci = n => ah.indexOf(n);
+  let rows = aAllRows;
+  if (G_TRANG_PAGE) {
+    rows = rows.filter(r => getPageFromCamp(campPageMap, r[aci('campaign')]||'', r[aci('adset')]||'') === G_TRANG_PAGE);
+  }
+  if (from || to) {
+    rows = rows.filter(r => {
+      const d = String(r[aci('date')] || '');
+      if (from && d < from) return false;
+      if (to   && d > to)   return false;
+      return true;
+    });
+  }
+  return rows;
+}
+
+// Cộng dồn "Thích trang" quy cho Ads (page_like) theo Page — dùng cho "Followers mới (gồm cả do ads)"
+function _sumAdsFollowsByPage(rows, ah, campPageMap) {
+  const aci = n => ah.indexOf(n);
+  const byPage = {};
+  rows.forEach(r => {
+    const pn = getPageFromCamp(campPageMap, r[aci('campaign')]||'', r[aci('adset')]||'') || '(?)';
+    byPage[pn] = (byPage[pn] || 0) + (+r[aci('page_like')] || 0);
+  });
+  return byPage;
+}
+
+function _pctDelta(a, b) {
+  if (!b) return a > 0 ? 100 : 0;
+  return Math.round((a - b) / b * 100);
+}
+
+let _G_PAGE_COMPARE_SEQ = 0; // huỷ kết quả của lần gọi cũ nếu người dùng đổi khoảng ngày trước khi trả lời xong
+
+function renderPageCompare() {
+  const sect = document.getElementById('page-compare-section');
+  if (!sect || !G_PAGE_COMPARE.enabled) return;
+
+  if (!G_PAGE_DATE.from || !G_PAGE_DATE.to) {
+    sect.innerHTML = `<div class="card" style="text-align:center;padding:20px;color:var(--muted);font-size:13px">
+      Chọn 1 khoảng ngày cụ thể cho Kỳ A (khác "Tất cả") ở phần "Khoảng" phía trên để bật so sánh.</div>`;
+    return;
+  }
+  if (!G_PAGE_COMPARE.bFrom || !G_PAGE_COMPARE.bTo) {
+    sect.innerHTML = `<div class="card" style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Chọn Kỳ B để so sánh.</div>`;
+    return;
+  }
+
+  const { headers: ph, rows: pAllRows } = G.page || { headers:[], rows:[] };
+  const { headers: ah, rows: aAllRows } = G.ads  || { headers:[], rows:[] };
+  const campPageMap = buildCampPageMap();
+  const aRows = _filterPageRowsForRange(pAllRows, ph, G_PAGE_DATE.from, G_PAGE_DATE.to);
+  const bRows = _filterPageRowsForRange(pAllRows, ph, G_PAGE_COMPARE.bFrom, G_PAGE_COMPARE.bTo);
+  const byPageA = _sumByPage(aRows, ph);
+  const byPageB = _sumByPage(bRows, ph);
+  const paidFollowsA = _sumAdsFollowsByPage(_filterAdsRowsForRange(aAllRows, ah, campPageMap, G_PAGE_DATE.from, G_PAGE_DATE.to), ah, campPageMap);
+  const paidFollowsB = _sumAdsFollowsByPage(_filterAdsRowsForRange(aAllRows, ah, campPageMap, G_PAGE_COMPARE.bFrom, G_PAGE_COMPARE.bTo), ah, campPageMap);
+  const pages = unique([...Object.keys(byPageA), ...Object.keys(byPageB)]);
+
+  sect.innerHTML = `<div class="card" style="text-align:center;padding:20px;color:var(--muted);font-size:13px">⏳ Đang tính điểm so sánh (lấy số bài đăng + Reactions/Comments/Shares từ Facebook)...</div>`;
+
+  const seq = ++_G_PAGE_COMPARE_SEQ;
+  let postCountsA = null, postCountsB = null, engageA = null, engageB = null;
+  const tryRender = () => {
+    if (seq !== _G_PAGE_COMPARE_SEQ) return; // đã có lần gọi mới hơn
+    if (!postCountsA || !postCountsB || !engageA || !engageB) return;
+    _renderPageCompareTable(pages, byPageA, byPageB, paidFollowsA, paidFollowsB, postCountsA, postCountsB, engageA, engageB, aRows.length, bRows.length);
+  };
+  google.script.run.withSuccessHandler(r => { postCountsA = r || {}; tryRender(); })
+    .withFailureHandler(() => { postCountsA = {}; tryRender(); })
+    .getPagePostCounts(G_PAGE_DATE.from, G_PAGE_DATE.to);
+  google.script.run.withSuccessHandler(r => { postCountsB = r || {}; tryRender(); })
+    .withFailureHandler(() => { postCountsB = {}; tryRender(); })
+    .getPagePostCounts(G_PAGE_COMPARE.bFrom, G_PAGE_COMPARE.bTo);
+  google.script.run.withSuccessHandler(r => { engageA = r || {}; tryRender(); })
+    .withFailureHandler(() => { engageA = {}; tryRender(); })
+    .getPageEngagementBreakdown(G_PAGE_DATE.from, G_PAGE_DATE.to);
+  google.script.run.withSuccessHandler(r => { engageB = r || {}; tryRender(); })
+    .withFailureHandler(() => { engageB = {}; tryRender(); })
+    .getPageEngagementBreakdown(G_PAGE_COMPARE.bFrom, G_PAGE_COMPARE.bTo);
+}
+
+function _metricRow(label, aVal, bVal, isSub) {
+  const d = _pctDelta(aVal, bVal);
+  const arrow = d > 0 ? '▲' : d < 0 ? '▼' : '';
+  const color = d > 0 ? '#059669' : d < 0 ? '#dc2626' : '#64748b';
+  return `<tr>
+    <td style="${isSub ? 'padding-left:24px;color:var(--muted);font-size:12px' : 'font-weight:600'}">${isSub ? '└ ' : ''}${label}</td>
+    <td style="text-align:right;font-weight:700">${fmtNum(aVal)}</td>
+    <td style="text-align:right;color:var(--muted)">${fmtNum(bVal)}</td>
+    <td style="text-align:right;color:${color};font-weight:700;white-space:nowrap">${arrow}${d>0?'+':''}${d}%</td>
+  </tr>`;
+}
+
+function _renderPageCompareTable(pages, byPageA, byPageB, paidFollowsA, paidFollowsB, postCountsA, postCountsB, engageA, engageB, dayCountA, dayCountB) {
+  const sect = document.getElementById('page-compare-section');
+  if (!sect) return;
+
+  const TIER_META = {
+    good: { label: 'Tốt hơn',    dot: '🟢', color: '#059669', bg: '#05966922' },
+    mid:  { label: 'Trung bình', dot: '🟡', color: '#d97706', bg: '#d9770622' },
+    bad:  { label: 'Xấu hơn',    dot: '🔴', color: '#dc2626', bg: '#dc262622' },
+  };
+
+  // 1) Tính toán cho từng Page trước (để vừa vẽ donut/legend, vừa vẽ bảng chi tiết)
+  const perPage = pages.map(pn => {
+    const a = byPageA[pn] || { views:0, actions:0, engage:0, newFollows:0 };
+    const b = byPageB[pn] || { views:0, actions:0, engage:0, newFollows:0 };
+    const pcA = postCountsA[pn] || 0, pcB = postCountsB[pn] || 0;
+    const paidA = paidFollowsA[pn] || 0, paidB = paidFollowsB[pn] || 0;
+    const rcsA = engageA[pn] || 0, rcsB = engageB[pn] || 0;
+
+    // Chuẩn hoá theo số bài đăng (fallback: theo số ngày nếu kỳ đó không có bài nào)
+    const norm = (val, pc, dc) => pc > 0 ? val / pc : (dc > 0 ? val / dc : 0);
+    const nViewsA = norm(a.views, pcA, dayCountA),   nViewsB = norm(b.views, pcB, dayCountB);
+    const nActA   = norm(a.actions, pcA, dayCountA), nActB   = norm(b.actions, pcB, dayCountB);
+    const nEngA   = norm(a.engage, pcA, dayCountA),  nEngB   = norm(b.engage, pcB, dayCountB);
+    const nRcsA   = norm(rcsA, pcA, dayCountA),      nRcsB   = norm(rcsB, pcB, dayCountB);
+
+    const avgScore = (_pctDelta(nViewsA, nViewsB) + _pctDelta(nActA, nActB) + _pctDelta(nEngA, nEngB)) / 3;
+    const tier = avgScore >= 10 ? 'good' : avgScore <= -10 ? 'bad' : 'mid';
+
+    return { pn, a, b, paidA, paidB, pcA, pcB, rcsA, rcsB, nRcsA, nRcsB, nViewsA, nViewsB, nActA, nActB, nEngA, nEngB, tier };
+  }).sort((x, y) => ({good:0,mid:1,bad:2}[x.tier] - {good:0,mid:1,bad:2}[y.tier]));
+
+  const tierCounts = { good:0, mid:0, bad:0 };
+  perPage.forEach(p => tierCounts[p.tier]++);
+
+  // 2) Legend: pill màu theo Page + dòng tóm tắt
+  const legendHtml = perPage.map(p => {
+    const m = TIER_META[p.tier];
+    return `<span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;margin:2px 4px 2px 0;background:${m.bg};color:${m.color}">${m.dot} ${p.pn}</span>`;
+  }).join('');
+  const summaryLine = `${tierCounts.good} Page tốt hơn · ${tierCounts.mid} trung bình · ${tierCounts.bad} xấu hơn `
+    + `(trên tổng ${perPage.length} Page, so với Kỳ B)`;
+
+  // 3) Bảng chi tiết từng Page: mỗi Page 1 khối, mỗi chỉ số 1 dòng (Kỳ A / Kỳ B / Δ)
+  const pageBlocksHtml = perPage.map(p => {
+    const m = TIER_META[p.tier];
+    const rows = [
+      _metricRow('Followers mới (gồm cả do ads)', p.a.newFollows + p.paidA, p.b.newFollows + p.paidB, false),
+      _metricRow('Số bài đăng',                   p.pcA,                    p.pcB,                    false),
+      _metricRow('Lượt xem trang (Impressions*)',  p.a.views,                p.b.views,                false),
+      _metricRow('Lượt xem / bài',                 p.nViewsA,                p.nViewsB,                true),
+      _metricRow('Hành động trang (Engaged*)',     p.a.actions,              p.b.actions,              false),
+      _metricRow('Hành động / bài',                p.nActA,                  p.nActB,                  true),
+      _metricRow('Tương tác bài viết',              p.a.engage,               p.b.engage,               false),
+      _metricRow('Tương tác / bài',                 p.nEngA,                  p.nEngB,                  true),
+      _metricRow('Tương tác (R+C+S)',               p.rcsA,                   p.rcsB,                   false),
+      _metricRow('Tương tác / bài',                 p.nRcsA,                  p.nRcsB,                  true),
+    ].join('');
+    return `<div style="margin-bottom:16px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:8px;padding:9px 14px;background:${m.bg};border-bottom:1px solid #e2e8f0">
+        <span style="width:4px;height:16px;background:${m.color};border-radius:2px;display:inline-block"></span>
+        <span style="font-weight:700;font-size:13px">${p.pn}</span>
+        <span style="margin-left:auto;font-size:12px;font-weight:700;color:${m.color}">${m.dot} ${m.label}</span>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th style="text-align:left">Chỉ số</th>
+            <th style="text-align:right">Kỳ A</th>
+            <th style="text-align:right">Kỳ B</th>
+            <th style="text-align:right">Δ</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+
+  const showDonut = perPage.length > 1;
+  sect.innerHTML = `<div class="card">
+    <div class="card-title" style="display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;justify-content:space-between">
+      <span>⚖️ So sánh 2 kỳ — Organic</span>
+      <span style="font-size:12px;font-weight:600;color:var(--muted)">Kỳ A: ${G_PAGE_DATE.from} → ${G_PAGE_DATE.to} &nbsp;·&nbsp; Kỳ B: ${G_PAGE_COMPARE.bFrom} → ${G_PAGE_COMPARE.bTo}</span>
+    </div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #f1f5f9">
+      ${showDonut ? `<div style="width:150px;height:150px;flex-shrink:0"><canvas id="chart-page-score-donut"></canvas></div>` : ''}
+      <div style="flex:1;min-width:220px">
+        <div style="font-weight:700;font-size:13px;margin-bottom:6px">📊 Đánh giá tổng thể — chuẩn hoá theo số bài đăng</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">${summaryLine}</div>
+        <div>${legendHtml || '<span style="color:var(--muted);font-size:12px">Không có Page nào</span>'}</div>
+      </div>
+    </div>
+    ${pageBlocksHtml || '<div style="text-align:center;color:var(--muted);padding:20px">Không có dữ liệu</div>'}
+    <div style="font-size:11px;color:var(--muted);margin-top:6px">
+      * Meta đã chặn metric Impressions/Engaged Users thật ở cấp Page qua API — dùng "Lượt xem trang" và
+      "Hành động trang" làm chỉ số thay thế gần nhất. "Tương tác bài viết" là số gộp do Facebook tự tính
+      (post_engagements); "Tương tác (R+C+S)" là Reactions + Comments + Shares cộng trực tiếp từ nội dung
+      từng bài — minh bạch hơn nhưng tốn thêm 1 lượt gọi API nên có thể chậm hơn vài giây.
+      Đánh giá dựa trên trung bình % thay đổi của Lượt xem/Hành động/Tương tác bài viết, đã chuẩn hoá theo
+      số bài đăng (dòng "/ bài"). 🟢 ≥ +10% · 🟡 -10%→+10% · 🔴 ≤ -10%. "Followers mới (gồm cả do ads)" và
+      "Tương tác (R+C+S)" không tính vào điểm, chỉ hiển thị tham khảo.
+    </div>
+  </div>`;
+
+  if (showDonut) {
+    const canvas = document.getElementById('chart-page-score-donut');
+    if (canvas) {
+      if (_charts['chart-page-score-donut']) _charts['chart-page-score-donut'].destroy();
+      const th = typeof getChartThemeColors === 'function' ? getChartThemeColors() : { textColor:'#0f172a' };
+      _charts['chart-page-score-donut'] = new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+          labels: ['🟢 Tốt hơn', '🟡 Trung bình', '🔴 Xấu hơn'],
+          datasets: [{ data: [tierCounts.good, tierCounts.mid, tierCounts.bad],
+            backgroundColor: ['#059669cc', '#d97706cc', '#dc2626cc'],
+            borderColor: ['#059669', '#d97706', '#dc2626'], borderWidth: 2 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '60%',
+          plugins: { legend: { display: false },
+            tooltip: { callbacks: { label: c => `${c.label}: ${c.raw}` } } }
+        }
+      });
+    }
+  }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1413,20 +1847,21 @@ function renderOverview() {
 
   // KPI cards
   document.getElementById('kpi-grid').innerHTML = [
-    { l:'Tổng chi phí',      v: fmtNum(spend),            s: dayLabel,           c:'' },
-    { l:'ROAS trung bình',   v: avgROAS.toFixed(2)+'x',   s:'Doanh thu/Chi phí', c:'green' },
-    { l:'Tổng tiếp cận',     v: fmtNum(reach),            s:'Unique users',      c:'purple' },
-    { l:'Tổng hiển thị',     v: fmtNum(impr),             s:'Impressions',       c:'' },
-    { l:'Mua hàng',          v: fmtNum(purch),            s:'Purchases',         c:'gold' },
-    { l:'Thêm giỏ hàng',     v: fmtNum(cart),             s:'Add to Cart',       c:'gold' },
-    { l:'Link Clicks',       v: fmtNum(lclicks),          s:'Lượt click link',   c:'' },
-    { l:'CTR trung bình',    v: avgCTR.toFixed(2)+'%',    s:'Click-through rate',c: avgCTR>=1?'green':'red' },
+    { l:'Tổng chi phí',      v: spend,   fmt:'num', s: dayLabel,           c:'' },
+    { l:'ROAS trung bình',   v: avgROAS, fmt:'x',   s:'Doanh thu/Chi phí', c:'green' },
+    { l:'Tổng tiếp cận',     v: reach,   fmt:'num', s:'Unique users',      c:'purple' },
+    { l:'Tổng hiển thị',     v: impr,    fmt:'num', s:'Impressions',       c:'' },
+    { l:'Mua hàng',          v: purch,   fmt:'num', s:'Purchases',         c:'gold' },
+    { l:'Thêm giỏ hàng',     v: cart,    fmt:'num', s:'Add to Cart',       c:'gold' },
+    { l:'Link Clicks',       v: lclicks, fmt:'num', s:'Lượt click link',   c:'' },
+    { l:'CTR trung bình',    v: avgCTR,  fmt:'%',   s:'Click-through rate',c: avgCTR>=1?'green':'red' },
   ].map(k => `
     <div class="kpi-card ${k.c}">
       <div class="kpi-label">${k.l}</div>
-      <div class="kpi-value">${k.v}</div>
+      <div class="kpi-value kpi-num" data-val="${k.v}" data-fmt="${k.fmt}">0</div>
       <div class="kpi-sub">${k.s}</div>
     </div>`).join('');
+  if (typeof animateKPIs === 'function') animateKPIs();
 
   // Charts — Ads Data
   const dates = Object.keys(byDate).sort();
@@ -1618,6 +2053,7 @@ function mkDoughnut(id, labels, data) {
   const total  = data.reduce((a, b) => a + b, 0);
   const colors = PAGE_COLORS.slice(0, labels.length);
   const pctLabels = labels.map((l, i) => `${l}  ${total > 0 ? (data[i]/total*100).toFixed(1) : 0}%`);
+  const th = typeof getChartThemeColors === 'function' ? getChartThemeColors() : { textColor:'#f8fafc', tooltipBg:'rgba(15,23,42,0.9)', tooltipText:'#e2e8f0', gridColor:'rgba(255,255,255,0.1)' };
   _charts[id] = new Chart(ctx, {
     type: 'doughnut',
     data: {
@@ -1627,9 +2063,9 @@ function mkDoughnut(id, labels, data) {
     options: {
       responsive: true, maintainAspectRatio: false, cutout: '65%',
       plugins: {
-        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11, family: 'Outfit' }, color: '#f8fafc' } },
+        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11, family: 'Outfit' }, color: th.textColor } },
         tooltip: {
-          backgroundColor: 'rgba(15, 23, 42, 0.9)', titleColor: '#f8fafc', bodyColor: '#e2e8f0', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
+          backgroundColor: th.tooltipBg, titleColor: th.textColor, bodyColor: th.tooltipText, borderColor: th.gridColor, borderWidth: 1,
           callbacks: { label: c => `${fmtNum(c.raw)} (${total>0?(c.raw/total*100).toFixed(1):0}%)` }
         }
       }
@@ -1642,6 +2078,7 @@ function mkBar(id, labels, dataset) {
   const ctx = document.getElementById(id);
   if (!ctx) return;
   const colors = PAGE_COLORS.slice(0, labels.length);
+  const th = typeof getChartThemeColors === 'function' ? getChartThemeColors() : { textColor:'#f8fafc', tooltipBg:'rgba(15,23,42,0.9)', tooltipText:'#e2e8f0', gridColor:'rgba(255,255,255,0.1)', axisText:'#94a3b8' };
   _charts[id] = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -1660,13 +2097,13 @@ function mkBar(id, labels, dataset) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(15, 23, 42, 0.9)', titleColor: '#f8fafc', bodyColor: '#e2e8f0', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
+          backgroundColor: th.tooltipBg, titleColor: th.textColor, bodyColor: th.tooltipText, borderColor: th.gridColor, borderWidth: 1,
           callbacks: { label: c => `${c.label}: ${fmtNum(c.raw)}` }
         }
       },
       scales: {
-        x: { ticks: { font: { size: 10, family: 'Outfit' }, color: '#94a3b8' }, grid: { display: false, color: 'rgba(255,255,255,0.05)' } },
-        y: { ticks: { font: { size: 10, family: 'Outfit' }, color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+        x: { ticks: { font: { size: 10, family: 'Outfit' }, color: th.axisText }, grid: { display: false, color: th.gridColor } },
+        y: { ticks: { font: { size: 10, family: 'Outfit' }, color: th.axisText }, grid: { color: th.gridColor } }
       }
     }
   });
@@ -1754,6 +2191,110 @@ function renderPageBreakdown(rows, h) {
 }
 
 // ══════════════════════════════════════════════════════════
+// XUẤT BÁO CÁO (Overview) — HTML tĩnh hoặc PPTX (Google Slides), kèm chart
+// ══════════════════════════════════════════════════════════
+const OVERVIEW_CHART_IDS = [
+  { id:'chart-spend',          title:'Chi phí theo ngày' },
+  { id:'chart-organic-impr',   title:'Lượt xem & Tương tác trang' },
+  { id:'chart-reach',          title:'Tiếp cận & Hiển thị (Ads)' },
+  { id:'chart-page-engage',    title:'Theo dõi & Hành động trang' },
+  { id:'chart-page-donut',     title:'Tỷ trọng Chi phí theo Page' },
+  { id:'chart-page-spend-bar', title:'Chi phí theo Page' },
+  { id:'chart-page-roas',      title:'ROAS theo Page' },
+  { id:'chart-page-ctr',       title:'CTR% theo Page' },
+  { id:'chart-page-cpc',       title:'CPC theo Page' },
+];
+
+// Thu thập ảnh PNG (base64, có prefix data:) từ các canvas Chart.js đang hiển thị
+function _collectOverviewChartImages() {
+  return OVERVIEW_CHART_IDS
+    .map(c => {
+      const canvas = document.getElementById(c.id);
+      if (!canvas || !_charts[c.id]) return null;
+      try { return { title: c.title, dataUrl: canvas.toDataURL('image/png') }; }
+      catch (e) { return null; }
+    })
+    .filter(Boolean);
+}
+
+function exportOverviewHTML() {
+  const statusEl = document.getElementById('export-status');
+  if (statusEl) statusEl.textContent = '⏳ Đang tạo HTML...';
+  try {
+    const dayLabel = document.getElementById('date-range-info')?.textContent || '';
+    const kpiHtml   = document.getElementById('kpi-grid')?.innerHTML || '';
+    const campHtml  = document.getElementById('camp-breakdown')?.closest('table')?.outerHTML || '';
+    const pageHtml  = document.getElementById('page-bd-body')?.closest('table')?.outerHTML || '';
+    const charts    = _collectOverviewChartImages();
+    const chartsHtml = charts.map(c => `
+      <div style="margin-bottom:24px">
+        <div style="font-weight:700;font-size:14px;margin-bottom:8px;color:#1e3a5f">${c.title}</div>
+        <img src="${c.dataUrl}" style="max-width:100%;border:1px solid #e2e8f0;border-radius:8px">
+      </div>`).join('');
+
+    const html = `<!doctype html><html lang="vi"><head><meta charset="utf-8">
+<title>Báo cáo Overview — Fujiwa Ads Dashboard</title>
+<style>
+  body{font-family:Arial,sans-serif;background:#f8fafc;color:#0f172a;margin:0;padding:32px}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:#64748b;font-size:13px;margin-bottom:24px}
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:28px}
+  .kpi-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px}
+  .kpi-label{font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase}
+  .kpi-value{font-size:22px;font-weight:800;margin:4px 0}
+  .kpi-sub{font-size:11px;color:#94a3b8}
+  h2{font-size:16px;margin:32px 0 12px;color:#1e3a5f}
+  table{border-collapse:collapse;width:100%;background:#fff;font-size:12px}
+  th,td{border:1px solid #e2e8f0;padding:6px 10px;text-align:left}
+  th{background:#f1f5f9;font-weight:700}
+</style></head><body>
+  <h1>📊 Báo cáo Overview — Fujiwa Ads Dashboard</h1>
+  <div class="sub">Khoảng thời gian: ${dayLabel} · Xuất lúc: ${new Date().toLocaleString('vi-VN')}</div>
+  <div class="kpi-grid">${kpiHtml}</div>
+  <h2>Biểu đồ</h2>
+  ${chartsHtml}
+  <h2>Chi tiêu theo Campaign</h2>
+  ${campHtml}
+  <h2>Phân tích theo Page</h2>
+  ${pageHtml}
+</body></html>`;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `fujiwa-overview-${fmtD(new Date())}.html`;
+    document.body.appendChild(a); a.click(); a.remove();
+    if (statusEl) statusEl.textContent = '✅ Đã tải HTML';
+  } catch (e) {
+    if (statusEl) statusEl.textContent = '❌ Lỗi: ' + e.message;
+  }
+}
+
+function exportOverviewPPTX() {
+  const statusEl = document.getElementById('export-status');
+  if (statusEl) statusEl.textContent = '⏳ Đang tạo PPTX (Google Slides)...';
+  try {
+    const dayLabel = document.getElementById('date-range-info')?.textContent || '';
+    const kpis = [...document.querySelectorAll('#kpi-grid .kpi-card')].map(el => ({
+      label: el.querySelector('.kpi-label')?.textContent || '',
+      value: el.querySelector('.kpi-value')?.textContent || '',
+      sub:   el.querySelector('.kpi-sub')?.textContent   || '',
+    }));
+    const charts = _collectOverviewChartImages().map(c => ({ title: c.title, base64: c.dataUrl.split(',')[1] }));
+
+    google.script.run
+      .withSuccessHandler(url => {
+        if (statusEl) statusEl.textContent = '✅ Đã tạo Slides — đang mở...';
+        window.open(url, '_blank');
+      })
+      .withFailureHandler(err => { if (statusEl) statusEl.textContent = '❌ Lỗi: ' + err.message; })
+      .buildOverviewSlides({ dayLabel, kpis, charts });
+  } catch (e) {
+    if (statusEl) statusEl.textContent = '❌ Lỗi: ' + e.message;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
 // 2. ADS TABLE
 // ══════════════════════════════════════════════════════════
 const ADS_VI = {
@@ -1807,6 +2348,20 @@ function applyAdsDate() {
   document.querySelectorAll('#ads-date-btns .date-btn').forEach(b => b.classList.remove('active'));
   G_ADS_DATE.from = document.getElementById('ads-from')?.value || '';
   G_ADS_DATE.to   = document.getElementById('ads-to')?.value   || '';
+  fetchAdsLive();
+}
+
+// Preset theo tháng (Tháng này/1 tháng qua/3 tháng qua/6 tháng qua/Từ đầu năm/Tất cả).
+// 'Tất cả' cần khoảng cụ thể vì Ads lấy live theo ngày từ Facebook API (không lọc rỗng như Overview).
+function setAdsPreset(btn, val) {
+  document.querySelectorAll('#ads-date-btns .date-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  let r = computeRangeForPreset(val);
+  if (val === 'all') r = { from: '2020-01-01', to: fmtD(new Date()) };
+  G_ADS_DATE.from = r.from; G_ADS_DATE.to = r.to;
+  const f = document.getElementById('ads-from'), t = document.getElementById('ads-to');
+  if (f) f.value = G_ADS_DATE.from;
+  if (t) t.value = G_ADS_DATE.to;
   fetchAdsLive();
 }
 
@@ -1912,11 +2467,11 @@ function renderPage() {
   if (G_TRANG_PAGE && pnameIdx >= 0) {
     prows = prows.filter(r => r[pnameIdx] === G_TRANG_PAGE);
   }
-  if (G_DATE.from || G_DATE.to) {
+  if (G_PAGE_DATE.from || G_PAGE_DATE.to) {
     prows = prows.filter(r => {
       const d = String(r[pci('date')] || '');
-      if (G_DATE.from && d < G_DATE.from) return false;
-      if (G_DATE.to   && d > G_DATE.to)   return false;
+      if (G_PAGE_DATE.from && d < G_PAGE_DATE.from) return false;
+      if (G_PAGE_DATE.to   && d > G_PAGE_DATE.to)   return false;
       return true;
     });
   }
@@ -1928,11 +2483,11 @@ function renderPage() {
       getPageFromCamp(campPageMap, r[aci('campaign')]||'', r[aci('adset')]||'') === G_TRANG_PAGE
     );
   }
-  if (G_DATE.from || G_DATE.to) {
+  if (G_PAGE_DATE.from || G_PAGE_DATE.to) {
     arows = arows.filter(r => {
       const d = String(r[aci('date')] || '');
-      if (G_DATE.from && d < G_DATE.from) return false;
-      if (G_DATE.to   && d > G_DATE.to)   return false;
+      if (G_PAGE_DATE.from && d < G_PAGE_DATE.from) return false;
+      if (G_PAGE_DATE.to   && d > G_PAGE_DATE.to)   return false;
       return true;
     });
   }
@@ -2041,7 +2596,7 @@ function renderPage() {
   // ══ PAID SECTION ═══════════════════════════════════════
   if (!arows.length) {
     document.getElementById('page-paid-kpi').innerHTML =
-      `<div style="grid-column:1/-1;padding:20px;text-align:center;background:#fff;border-radius:10px;color:var(--muted)">
+      `<div style="grid-column:1/-1;padding:20px;text-align:center;background:#fff;border-radius:10px;color:#64748b">
         ${G_TRANG_PAGE
           ? `Không có dữ liệu paid cho trang "<b>${G_TRANG_PAGE}</b>"`
           : 'Chưa có dữ liệu Ads. Nhấn <b>Đồng bộ ngay</b>.'}
@@ -2223,7 +2778,7 @@ function renderPostsSummary(h, rows) {
 
   const tile = (label, val, color) =>
     `<div style="flex:1;min-width:120px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px">
-       <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px">${label}</div>
+       <div style="font-size:11px;color:#374151;font-weight:600;margin-bottom:4px">${label}</div>
        <div style="font-size:22px;font-weight:800;color:${color}">${fmtNum(val)}</div>
      </div>`;
   const box = document.getElementById('posts-summary');
@@ -2275,604 +2830,137 @@ function filterPosts() {
 }
 
 // ══════════════════════════════════════════════════════════
-// 4b. TIKTOK FANPAGE
+// WEBSITE — Search Console + Google Analytics 4 (live, không qua Sheet)
 // ══════════════════════════════════════════════════════════
-let G_TT_DATE = { from:'', to:'' };
-let _ttInited = false;
+let G_WEB_DATE = { from:'', to:'' };
+let _webInited = false;
 
-function initTikTok() {
-  if (!G_TT_DATE.from) {
-    const y = new Date(); y.setDate(y.getDate()-1);          // end < hôm nay
+function initWebsite() {
+  if (!G_WEB_DATE.from) {
+    const y = new Date(); y.setDate(y.getDate()-1);
     const f = new Date(y); f.setDate(y.getDate()-29);
-    G_TT_DATE.from = fmtD(f); G_TT_DATE.to = fmtD(y);
+    G_WEB_DATE.from = fmtD(f); G_WEB_DATE.to = fmtD(y);
   }
-  const f=document.getElementById('tt-from'), t=document.getElementById('tt-to');
-  if (f) f.value=G_TT_DATE.from; if (t) t.value=G_TT_DATE.to;
-  fetchTikTok();
+  const f=document.getElementById('web-from'), t=document.getElementById('web-to');
+  if (f) f.value=G_WEB_DATE.from; if (t) t.value=G_WEB_DATE.to;
+  fetchWebsite();
 }
-function setTtRange(btn, days, offset) {
-  document.querySelectorAll('#tt-date-btns .date-btn').forEach(b=>b.classList.remove('active'));
+function setWebRange(btn, days) {
+  document.querySelectorAll('#web-date-btns .date-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  // y = ngày mới nhất TikTok có data (hôm qua theo giờ thật, do API có độ trễ dữ liệu)
-  const y=new Date(); y.setDate(y.getDate()-1-(offset||0));
+  const y=new Date(); y.setDate(y.getDate()-1);
   const from=new Date(y); from.setDate(y.getDate()-days+1);
-  G_TT_DATE.from=fmtD(from); G_TT_DATE.to=fmtD(y);
-  const f=document.getElementById('tt-from'), t=document.getElementById('tt-to');
-  if (f) f.value=G_TT_DATE.from; if (t) t.value=G_TT_DATE.to;
-  fetchTikTok();
+  G_WEB_DATE.from=fmtD(from); G_WEB_DATE.to=fmtD(y);
+  const f=document.getElementById('web-from'), t=document.getElementById('web-to');
+  if (f) f.value=G_WEB_DATE.from; if (t) t.value=G_WEB_DATE.to;
+  fetchWebsite();
 }
-function applyTtDate() {
-  document.querySelectorAll('#tt-date-btns .date-btn').forEach(b=>b.classList.remove('active'));
-  G_TT_DATE.from=document.getElementById('tt-from')?.value||'';
-  G_TT_DATE.to  =document.getElementById('tt-to')?.value||'';
-  fetchTikTok();
+function applyWebDate() {
+  document.querySelectorAll('#web-date-btns .date-btn').forEach(b=>b.classList.remove('active'));
+  G_WEB_DATE.from=document.getElementById('web-from')?.value||'';
+  G_WEB_DATE.to  =document.getElementById('web-to')?.value||'';
+  fetchWebsite();
 }
-function fetchTikTok() {
-  const badge=document.getElementById('tt-badge');
-  if (badge) badge.textContent='⏳ đang xử lý...';
-  
-  setTimeout(() => {
-    try {
-      const rows = G.ttPage?.rows || [];
-      const fromStr = G_TT_DATE.from, toStr = G_TT_DATE.to;
-      const daily = [];
-      let latestFollowers = 0;
-      
-      rows.forEach(r => {
-        const d = String(r[0]).split('T')[0];
-        if (fromStr && d < fromStr) return;
-        if (toStr && d > toStr) return;
-        
-        daily.push({
-          date: d,
-          video_views: Number(r[1]) || 0,
-          profile_views: Number(r[2]) || 0,
-          likes: Number(r[3]) || 0,
-          comments: Number(r[4]) || 0,
-          shares: Number(r[5]) || 0,
-          new_followers: Number(r[6]) || 0,
-          lost_followers: Number(r[7]) || 0,
-          total_followers: Number(r[8]) || 0,
-          net_followers: (Number(r[6]) || 0) - (Number(r[7]) || 0),
-          followers: Number(r[8]) || 0
-        });
-        
-        latestFollowers = Math.max(latestFollowers, Number(r[8])||0);
-      });
-      
-      daily.sort((a,b) => a.date.localeCompare(b.date));
-      
-      const res = {
-        summary: { followers_count: latestFollowers },
-        daily, range: { from: fromStr, to: toStr }
-      };
-      
-      renderTikTok(res);
-    } catch(e) {
-      if (badge) badge.textContent='lỗi: ' + e.message;
-    }
-  }, 10);
+function fetchWebsite() {
+  fetchGsc();
+  fetchGa4();
 }
-function renderTikTok(res) {
-  const s = res.summary||{}, daily = res.daily||[];
-  const acc=document.getElementById('tt-account');
-  if (acc) acc.textContent = '🎵 ' + (s.display_name||'') + (s.username?(' (@'+s.username+')'):'') + (s.is_verified?' ✔':'');
-  const badge=document.getElementById('tt-badge');
-  if (badge) badge.textContent = (res.range?res.range.from+' → '+res.range.to:'') + ' · ' + daily.length + ' ngày';
 
-  // Tổng theo kỳ
-  const sum = k => daily.reduce((a,d)=>a+(Number(d[k])||0),0);
-  const tVV=sum('video_views'), tPV=sum('profile_views'), tL=sum('likes'),
-        tC=sum('comments'), tSh=sum('shares'), tNew=sum('new_followers'), tLost=sum('lost_followers');
+function fetchGsc() {
+  const badge=document.getElementById('gsc-badge');
+  if (badge) badge.textContent='⏳ đang tải từ Search Console...';
+  google.script.run
+    .withSuccessHandler(res => {
+      if (!res || res.error) { if (badge) badge.textContent = '⚠️ lỗi: ' + ((res&&res.error)||'?'); return; }
+      renderGsc(res);
+    })
+    .withFailureHandler(e => { if (badge) badge.textContent = '⚠️ lỗi: ' + (e.message||e); })
+    .getSearchConsoleData(G_WEB_DATE.from, G_WEB_DATE.to);
+}
+function renderGsc(res) {
+  const s=res.summary||{}, daily=res.daily||[];
+  const badge=document.getElementById('gsc-badge');
+  if (badge) badge.textContent = (res.range?res.range.from+' → '+res.range.to:'') + ' · ' + daily.length + ' ngày (GSC thường trễ ~2-3 ngày)';
 
   const tile=(label,val,color)=>
     `<div style="flex:1;min-width:120px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px">
-       <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px">${label}</div>
-       <div style="font-size:22px;font-weight:800;color:${color}">${fmtNum(val)}</div></div>`;
-  const box=document.getElementById('tt-summary');
+       <div style="font-size:11px;color:#374151;font-weight:600;margin-bottom:4px">${label}</div>
+       <div style="font-size:22px;font-weight:800;color:${color}">${val}</div></div>`;
+  const box=document.getElementById('gsc-summary');
   if (box) box.innerHTML =
-    tile('Followers hiện tại', s.followers_count, '#111') +
-    tile('Video views (kỳ)',   tVV, '#2563eb') +
-    tile('Profile views',      tPV, '#0d9488') +
-    tile('Likes',              tL,  '#e11d48') +
-    tile('Comments',           tC,  '#0891b2') +
-    tile('Shares',             tSh, '#059669') +
-    tile('Follower mới',       tNew,'#7c3aed') +
-    tile('Follower mất',       tLost,'#f59e0b');
+    tile('Clicks',          fmtNum(s.clicks), '#2563eb') +
+    tile('Hiển thị',        fmtNum(s.impressions), '#0d9488') +
+    tile('CTR trung bình',  ((s.ctr||0)*100).toFixed(2)+'%', '#e11d48') +
+    tile('Vị trí TB',       (s.position||0).toFixed(1), '#7c3aed');
 
-  // Chart: video views + tổng followers theo ngày
-  const days = daily.map(d=>d.date);
-  mkLine('chart-tt-daily', days, [
-    { label:'Video views', data: daily.map(d=>d.video_views), color:'#2563eb' },
-    { label:'Followers',   data: daily.map(d=>d.followers),   color:'#e11d48' },
+  mkLine('chart-gsc-daily', daily.map(d=>d.date), [
+    { label:'Clicks',   data: daily.map(d=>d.clicks),      color:'#2563eb' },
+    { label:'Hiển thị', data: daily.map(d=>d.impressions), color:'#0d9488' },
   ]);
 
-  // Bảng
-  const tb=document.getElementById('tt-body');
-  if (tb) tb.innerHTML = daily.slice().reverse().map(d=>
-    `<tr>
-       <td style="font-weight:600">${d.date}</td>
-       <td style="text-align:center">${fmtNum(d.video_views)}</td>
-       <td style="text-align:center">${fmtNum(d.profile_views)}</td>
-       <td style="text-align:center">${fmtNum(d.likes)}</td>
-       <td style="text-align:center">${fmtNum(d.comments)}</td>
-       <td style="text-align:center">${fmtNum(d.shares)}</td>
-       <td style="text-align:center;color:#059669">${d.new_followers}</td>
-       <td style="text-align:center;color:#ef4444">${d.lost_followers}</td>
-       <td style="text-align:center;font-weight:600;color:${d.net_followers>=0?'#059669':'#ef4444'}">${d.net_followers>=0?'+':''}${d.net_followers}</td>
-       <td style="text-align:center">${fmtNum(d.followers)}</td>
-     </tr>`).join('');
+  const q=document.getElementById('gsc-queries');
+  if (q) q.innerHTML = (res.queries||[]).map(r=>
+    `<tr><td>${r.query}</td><td style="text-align:center">${fmtNum(r.clicks)}</td><td style="text-align:center">${fmtNum(r.impressions)}</td>
+       <td style="text-align:center">${(r.ctr*100).toFixed(2)}%</td><td style="text-align:center">${r.position.toFixed(1)}</td></tr>`
+  ).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted)">Không có dữ liệu</td></tr>';
+
+  const p=document.getElementById('gsc-pages');
+  if (p) p.innerHTML = (res.pages||[]).map(r=>
+    `<tr><td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.page}">${r.page}</td>
+       <td style="text-align:center">${fmtNum(r.clicks)}</td><td style="text-align:center">${fmtNum(r.impressions)}</td>
+       <td style="text-align:center">${(r.ctr*100).toFixed(2)}%</td><td style="text-align:center">${r.position.toFixed(1)}</td></tr>`
+  ).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted)">Không có dữ liệu</td></tr>';
 }
 
-// ══════════════════════════════════════════════════════════
-// 4c. TIKTOK SHOP
-// ══════════════════════════════════════════════════════════
-let G_TTS_DATE = { from:'', to:'' };
-let _ttsInited = false;
-let G_TTS_LAST_RESULT = null; // res gần nhất của renderTikTokShop, dùng cho modal pie chart nguồn GMV
-
-function openGmvSourceModal() {
-  const res = G_TTS_LAST_RESULT;
-  if (!res) return;
-  const src = res.bySourceGmv || {};
-  const order = ['LIVE','VIDEO','PRODUCT_CARD','AFFILIATE','OTHERS'];
-  const keys = Object.keys(src).filter(k => (src[k]||0) > 0)
-    .sort((a,b) => (order.indexOf(a)+99)%99 - (order.indexOf(b)+99)%99);
-  const labels = keys.map(k => TTS_SRC_VI[k] || k);
-  const data = keys.map(k => src[k]);
-  const total = data.reduce((a,b)=>a+b, 0) || 1;
-
-  document.getElementById('gmv-source-modal').style.display = 'flex';
-  document.getElementById('gmv-source-badge').textContent =
-    (res.range ? res.range.from + ' → ' + res.range.to : '') + ' · Tổng ' + fmtNum(total) + 'đ';
-
-  mkDoughnut('chart-gmv-source-pie', labels, data);
-  // mkDoughnut dùng màu chữ sáng (#f8fafc) cho legend, đúng cho nền tối của dashboard chính
-  // nhưng modal này nền trắng → tắt legend mặc định, dùng legend riêng bên dưới (chữ tối)
-  const chartObj = _charts['chart-gmv-source-pie'];
-  if (chartObj) { chartObj.options.plugins.legend.display = false; chartObj.update(); }
-
-  const colors = ['#e11d48','#2563eb','#059669','#f59e0b','#64748b'];
-  const legend = document.getElementById('gmv-source-legend');
-  if (legend) legend.innerHTML = keys.map((k,i) => {
-    const v = src[k]||0, pct = Math.round(v/total*100);
-    return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
-      <span style="color:#111"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${colors[i%colors.length]};margin-right:8px"></span>${TTS_SRC_VI[k]||k}</span>
-      <span style="font-weight:700;color:#111">${fmtNum(v)}đ <span style="color:#64748b;font-weight:400">(${pct}%)</span></span>
-    </div>`;
-  }).join('') || '<div style="color:#64748b;text-align:center;padding:10px">Không có dữ liệu nguồn doanh thu</div>';
+function fetchGa4() {
+  const badge=document.getElementById('ga4-badge');
+  if (badge) badge.textContent='⏳ đang tải từ Analytics...';
+  google.script.run
+    .withSuccessHandler(res => {
+      if (!res || res.error) { if (badge) badge.textContent = '⚠️ lỗi: ' + ((res&&res.error)||'?'); return; }
+      renderGa4(res);
+    })
+    .withFailureHandler(e => { if (badge) badge.textContent = '⚠️ lỗi: ' + (e.message||e); })
+    .getGA4Data(G_WEB_DATE.from, G_WEB_DATE.to);
 }
-function closeGmvSourceModal() {
-  document.getElementById('gmv-source-modal').style.display = 'none';
-}
-
-function initTikTokShop() {
-  if (!G_TTS_DATE.from) {
-    const today=new Date(), f=new Date(today); f.setDate(today.getDate()-29);
-    G_TTS_DATE.from=fmtD(f); G_TTS_DATE.to=fmtD(today);
-  }
-  const f=document.getElementById('tts-from'), t=document.getElementById('tts-to');
-  if (f) f.value=G_TTS_DATE.from; if (t) t.value=G_TTS_DATE.to;
-  fetchTikTokShop();
-}
-function setTtsRange(btn, days, offset) {
-  document.querySelectorAll('#tts-date-btns .date-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  const today=new Date(); today.setDate(today.getDate()-(offset||0));
-  const from=new Date(today); from.setDate(today.getDate()-days+1);
-  G_TTS_DATE.from=fmtD(from); G_TTS_DATE.to=fmtD(today);
-  const f=document.getElementById('tts-from'), t=document.getElementById('tts-to');
-  if (f) f.value=G_TTS_DATE.from; if (t) t.value=G_TTS_DATE.to;
-  fetchTikTokShop();
-}
-function applyTtsDate() {
-  document.querySelectorAll('#tts-date-btns .date-btn').forEach(b=>b.classList.remove('active'));
-  G_TTS_DATE.from=document.getElementById('tts-from')?.value||'';
-  G_TTS_DATE.to  =document.getElementById('tts-to')?.value||'';
-  fetchTikTokShop();
-}
-function fetchTikTokShop() {
-  const badge=document.getElementById('tts-badge');
-  if (badge) badge.textContent='⏳ đang xử lý...';
-  
-  setTimeout(() => {
-    try {
-      const rows = G.ttShop?.rows || [];
-      const fromStr = G_TTS_DATE.from, toStr = G_TTS_DATE.to;
-      
-      const bySourceGmv = {};
-      const dailyMap = {};
-      let totalGmv=0, totalOrders=0, totalRefunds=0, totalBuyers=0, totalUnits=0;
-      let totalVisitors=0, totalImpr=0, totalPageViews=0, totalCancelReturn=0;
-
-      rows.forEach(r => {
-        const d = String(r[0]).split('T')[0];
-        if (fromStr && d < fromStr) return;
-        if (toStr && d > toStr) return;
-
-        const gmv = Number(r[1])||0, orders = Number(r[2])||0, buyers = Number(r[3])||0,
-              units = Number(r[4])||0, refunds = Number(r[5])||0,
-              liveG = Number(r[6])||0, videoG = Number(r[7])||0, cardG = Number(r[8])||0, othersG = Number(r[9])||0,
-              visitors = Number(r[10])||0, impr = Number(r[11])||0, pageViews = Number(r[12])||0, cancelReturn = Number(r[13])||0;
-
-        totalGmv += gmv; totalOrders += orders; totalBuyers += buyers; totalUnits += units; totalRefunds += refunds;
-        totalVisitors += visitors; totalImpr += impr; totalPageViews += pageViews; totalCancelReturn += cancelReturn;
-        bySourceGmv['LIVE'] = (bySourceGmv['LIVE']||0) + liveG;
-        bySourceGmv['VIDEO'] = (bySourceGmv['VIDEO']||0) + videoG;
-        bySourceGmv['PRODUCT_CARD'] = (bySourceGmv['PRODUCT_CARD']||0) + cardG;
-        bySourceGmv['OTHERS'] = (bySourceGmv['OTHERS']||0) + othersG;
-
-        dailyMap[d] = { date: d, gmv, orders };
-      });
-
-      const daily = Object.values(dailyMap).sort((a,b) => a.date.localeCompare(b.date));
-      const res = {
-        summary: { gmv: totalGmv, orders: totalOrders, buyers: totalBuyers, aov: totalOrders>0 ? Math.round(totalGmv/totalOrders) : 0, units: totalUnits, refunds: totalRefunds },
-        traffic: { visitors: totalVisitors, impressions: totalImpr, pageViews: totalPageViews, cancelReturn: totalCancelReturn },
-        daily, range: { from: fromStr, to: toStr },
-        bySourceGmv
-      };
-
-      renderTikTokShop(res);
-      renderTikTokProducts(fromStr, toStr);
-      renderTikTokOrderStatusAndRoas(fromStr, toStr, totalGmv);
-    } catch(e) {
-      if (badge) badge.textContent='lỗi: ' + e.message;
-    }
-  }, 10);
-}
-
-function renderTikTokOrderStatusAndRoas(fromStr, toStr, totalGmv) {
-  // Trạng thái đơn (giao thành công / huỷ) từ sheet "TikTok Order Status"
-  const statusRows = G.ttOrderStatus?.rows || [];
-  let total=0, delivered=0, cancelled=0, other=0;
-  statusRows.forEach(r => {
-    const d = String(r[0]);
-    if (fromStr && d < fromStr) return;
-    if (toStr && d > toStr) return;
-    total += Number(r[1])||0; delivered += Number(r[2])||0; cancelled += Number(r[3])||0; other += Number(r[4])||0;
-  });
-
-  // Chi phí Ads TikTok cùng khoảng ngày (G.ttAds: ["date","advertiser","campaign_id","campaign_name",...,"spend",...])
-  const adsH = G.ttAds?.headers || [], adsR = G.ttAds?.rows || [];
-  const iDate = adsH.indexOf('date'), iSpend = adsH.indexOf('spend');
-  let totalSpend = 0;
-  if (iDate>=0 && iSpend>=0) adsR.forEach(r => {
-    const d = String(r[iDate]);
-    if (fromStr && d < fromStr) return;
-    if (toStr && d > toStr) return;
-    totalSpend += Number(r[iSpend])||0;
-  });
-  const roas = totalSpend>0 ? +(totalGmv/totalSpend).toFixed(2) : 0;
-  const roi  = totalSpend>0 ? Math.round((totalGmv-totalSpend)/totalSpend*100) : 0;
-
-  const tile=(label,val,color)=>
-    `<div style="flex:1;min-width:140px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px">
-       <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px">${label}</div>
-       <div style="font-size:22px;font-weight:800;color:${color}">${val}</div></div>`;
-  const box = document.getElementById('tts-status');
-  if (box) box.innerHTML =
-    tile('Đơn giao thành công', fmtNum(delivered), '#059669') +
-    tile('Đơn huỷ',             fmtNum(cancelled), '#ef4444') +
-    tile('Đơn khác (đang xử lý)', fmtNum(other),   '#f59e0b') +
-    tile('Chi phí Ads (cùng kỳ)', fmtNum(totalSpend)+'đ', '#dc2626') +
-    tile('ROAS',  roas+'x', '#7c3aed') +
-    tile('ROI',   roi+'%',  roi>=0 ? '#059669' : '#ef4444');
-}
-
-function renderTikTokProducts(fromStr, toStr) {
-  const rows = G.ttProducts?.rows || [];
-  const byProduct = {}; // product_id → { name, qty, gmv }
-  rows.forEach(r => {
-    const d = String(r[0]);
-    if (fromStr && d < fromStr) return;
-    if (toStr && d > toStr) return;
-    const pid = String(r[1]), name = String(r[2]), qty = Number(r[3])||0, gmv = Number(r[4])||0;
-    if (!byProduct[pid]) byProduct[pid] = { name, qty: 0, gmv: 0 };
-    byProduct[pid].qty += qty;
-    byProduct[pid].gmv += gmv;
-  });
-  const products = Object.values(byProduct).sort((a,b) => b.gmv - a.gmv);
-  const totalGmv = products.reduce((a,p) => a + p.gmv, 0) || 1;
-
-  const badge = document.getElementById('tts-prod-badge');
-  if (badge) badge.textContent = products.length + ' sản phẩm';
-  const tb = document.getElementById('tts-products');
-  if (tb) tb.innerHTML = products.map(p => {
-    const pct = Math.round(p.gmv / totalGmv * 100);
-    return `<tr>
-      <td style="max-width:320px;white-space:normal;line-height:1.4">${p.name}</td>
-      <td style="text-align:center;font-weight:600">${fmtNum(p.qty)}</td>
-      <td style="text-align:center;font-weight:700;color:#dc2626">${fmtNum(p.gmv)}</td>
-      <td style="text-align:center;color:var(--muted)">${pct}%</td>
-    </tr>`;
-  }).join('') || '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:14px">Chưa có dữ liệu — chạy Đồng bộ ngay</td></tr>';
-}
-const TTS_SRC_VI = { LIVE:'🔴 Live', VIDEO:'🎬 Video', PRODUCT_CARD:'🛍️ Thẻ sản phẩm', AFFILIATE:'🤝 Affiliate', OTHERS:'Khác' };
-const TTS_SRC_COLOR = { LIVE:'#e11d48', VIDEO:'#2563eb', PRODUCT_CARD:'#059669', OTHERS:'#64748b' };
-
-function renderTikTokShop(res) {
+function renderGa4(res) {
   const s=res.summary||{}, daily=res.daily||[];
-  const acc=document.getElementById('tts-account');
-  if (acc) acc.textContent='🛒 '+(res.seller_name||'TikTok Shop');
-  const badge=document.getElementById('tts-badge');
-  if (badge) badge.textContent=(res.range?res.range.from+' → '+res.range.to:'')+' · '+fmtNum(s.orders)+' đơn';
-
-  const tile=(label,val,color,onclick)=>
-    `<div onclick="${onclick||''}" style="flex:1;min-width:130px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px;${onclick?'cursor:pointer' : ''}">
-       <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px">${label}${onclick?' 📊':''}</div>
-       <div style="font-size:22px;font-weight:800;color:${color}">${val}</div></div>`;
-  const box=document.getElementById('tts-summary');
-  if (box) box.innerHTML=
-    tile('Doanh thu (GMV)', fmtNum(s.gmv)+'đ', '#dc2626', 'openGmvSourceModal()') +
-    tile('Số đơn',          fmtNum(s.orders), '#2563eb') +
-    tile('Người mua',       fmtNum(s.buyers), '#0891b2') +
-    tile('Giá trị TB/đơn',  fmtNum(s.aov)+'đ', '#7c3aed') +
-    tile('SP đã bán',       fmtNum(s.units), '#059669') +
-    tile('Hoàn tiền',       fmtNum(s.refunds)+'đ', '#f59e0b');
-
-  // Lưu bySourceGmv + range để modal pie chart dùng khi bấm vào ô GMV
-  G_TTS_LAST_RESULT = res;
-
-  // Lưu lượng truy cập + số lượng sản phẩm
-  const tf = res.traffic || {};
-  const cat = G.ttCatalog || {};
-  const shopCtr = tf.impressions>0 ? (tf.pageViews/tf.impressions*100) : 0;
-  const convRate = tf.pageViews>0 ? (s.orders/tf.pageViews*100) : 0;
-  const tfBox = document.getElementById('tts-traffic');
-  if (tfBox) tfBox.innerHTML =
-    tile('Lượt xem SP (Impressions)', fmtNum(tf.impressions), '#2563eb') +
-    tile('Lượt truy cập trang SP',    fmtNum(tf.pageViews),    '#0891b2') +
-    tile('CTR (Xem → Truy cập)',      shopCtr.toFixed(2)+'%',  '#f59e0b') +
-    tile('Tỉ lệ chuyển đổi (→ Đơn)',  convRate.toFixed(2)+'%', '#10b981') +
-    tile('Khách ghé thăm (TB/ngày)',  fmtNum(tf.visitors),     '#7c3aed') +
-    tile('Huỷ/Hoàn (đơn)',            fmtNum(tf.cancelReturn), '#ef4444') +
-    tile('Tổng số sản phẩm',          cat.total!=null ? fmtNum(cat.total) : '—', '#059669');
-
-  // Doanh thu theo nguồn (Live/Video/Card)
-  const src=res.bySourceGmv||{};
-  const totalSrc=Object.values(src).reduce((a,b)=>a+b,0)||1;
-  const srcBox=document.getElementById('tts-source');
-  if (srcBox) {
-    const order=['LIVE','VIDEO','PRODUCT_CARD','OTHERS'];
-    const keys=Object.keys(src).sort((a,b)=>(order.indexOf(a)+99)%99-(order.indexOf(b)+99)%99);
-    srcBox.innerHTML=(keys.length?keys:['LIVE','VIDEO','PRODUCT_CARD']).map(k=>{
-      const v=src[k]||0, pct=Math.round(v/totalSrc*100);
-      const c=TTS_SRC_COLOR[k]||'#64748b';
-      return `<div style="flex:1;min-width:180px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:14px 16px">
-        <div style="font-size:13px;font-weight:700;margin-bottom:6px">${TTS_SRC_VI[k]||k}</div>
-        <div style="font-size:20px;font-weight:800;color:${c}">${fmtNum(v)}đ</div>
-        <div style="font-size:12px;color:var(--muted);margin:4px 0 6px">${pct}% tổng GMV</div>
-        <div style="height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden">
-          <div style="height:100%;width:${pct}%;background:${c}"></div></div>
-      </div>`;
-    }).join('');
-  }
-
-  mkLine('chart-tts-daily', daily.map(d=>d.date), [
-    { label:'Doanh thu', data: daily.map(d=>d.gmv),    color:'#dc2626' },
-    { label:'Số đơn',    data: daily.map(d=>d.orders), color:'#2563eb' },
-  ]);
-}
-
-// ══════════════════════════════════════════════════════════
-// 4d. TIKTOK ADS
-// ══════════════════════════════════════════════════════════
-let G_TTA_DATE = { from:'', to:'' };
-let G_TTA_ADV  = '';
-let _ttaInited = false;
-
-function initTikTokAds() {
-  if (!G_TTA_DATE.from) {
-    const y=new Date(); y.setDate(y.getDate()-1);
-    const f=new Date(y); f.setDate(y.getDate()-29);
-    G_TTA_DATE.from=fmtD(f); G_TTA_DATE.to=fmtD(y);
-  }
-  const f=document.getElementById('tta-from'), t=document.getElementById('tta-to');
-  if (f) f.value=G_TTA_DATE.from; if (t) t.value=G_TTA_DATE.to;
-
-  const advs = Array.from(new Set((G.ttAds?.rows||[]).map(r=>String(r[1]).trim()))).filter(Boolean);
-  const sel=document.getElementById('tta-adv-sel');
-  if (sel && advs.length > 0) {
-    sel.innerHTML=advs.map(a=>`<option value="${a}">${a}</option>`).join('');
-    if (!G_TTA_ADV || !advs.includes(G_TTA_ADV)) G_TTA_ADV = advs[0];
-    sel.value=G_TTA_ADV;
-  }
-  fetchTikTokAds();
-}
-function onTtaAdvChange(){ G_TTA_ADV=document.getElementById('tta-adv-sel').value; fetchTikTokAds(); }
-function setTtaRange(btn, days, offset) {
-  document.querySelectorAll('#tta-date-btns .date-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  const y=new Date(); y.setDate(y.getDate()-1-(offset||0));
-  const from=new Date(y); from.setDate(y.getDate()-days+1);
-  G_TTA_DATE.from=fmtD(from); G_TTA_DATE.to=fmtD(y);
-  const f=document.getElementById('tta-from'), t=document.getElementById('tta-to');
-  if (f) f.value=G_TTA_DATE.from; if (t) t.value=G_TTA_DATE.to;
-  fetchTikTokAds();
-}
-function applyTtaDate() {
-  document.querySelectorAll('#tta-date-btns .date-btn').forEach(b=>b.classList.remove('active'));
-  G_TTA_DATE.from=document.getElementById('tta-from')?.value||'';
-  G_TTA_DATE.to  =document.getElementById('tta-to')?.value||'';
-  fetchTikTokAds();
-}
-function fetchTikTokAds() {
-  if (!G_TTA_ADV) return;
-  const badge=document.getElementById('tta-badge');
-  if (badge) badge.textContent='⏳ đang xử lý...';
-  
-  setTimeout(() => {
-    try {
-      const rows = G.ttAds?.rows || [];
-      const fromStr = G_TTA_DATE.from, toStr = G_TTA_DATE.to;
-      const campMap = {};
-      
-      let tSpend=0,tImpr=0,tClicks=0,tConv=0,tGmv=0,tShopConv=0;
-      let gmvSpend=0, gmvGmv=0, gmvOrders=0;
-      
-      rows.forEach(r => {
-        const d = String(r[0]).split('T')[0];
-        if (fromStr && d < fromStr) return;
-        if (toStr && d > toStr) return;
-        
-        const rAdv = String(r[1]).trim();
-        if (rAdv !== G_TTA_ADV) return;
-        
-        const cid = r[2], cname = r[3], isSmart = r[6], spend = Number(r[7])||0, imp = Number(r[8])||0, clk = Number(r[9])||0, conv = Number(r[10])||0, orders = Number(r[11])||0, gmv = Number(r[12])||0, isGmvMax = Number(r[13])||0;
-        
-        if (!campMap[cid]) campMap[cid] = { id: cid, name: cname, spend: 0, impressions: 0, clicks: 0, conversion: 0, gmv: 0, shopOrders: 0, daily: [], gmvMax: !!isGmvMax };
-        
-        campMap[cid].spend += spend;
-        campMap[cid].impressions += imp;
-        campMap[cid].clicks += clk;
-        campMap[cid].conversion += conv;
-        campMap[cid].gmv += gmv;
-        campMap[cid].shopOrders += orders;
-        
-        campMap[cid].daily.push({ date: d, spend, gmv });
-      });
-      
-      const campaigns = Object.values(campMap).map(c => {
-        c.ctr = c.impressions > 0 ? (c.clicks / c.impressions) * 100 : 0;
-        c.roas = c.spend > 0 ? +(c.gmv / c.spend).toFixed(2) : 0;
-        c.daily.sort((a,b) => a.date.localeCompare(b.date));
-        
-        tSpend += c.spend;
-        tImpr += c.impressions;
-        tClicks += c.clicks;
-        tConv += c.conversion;
-        tGmv += c.gmv;
-        tShopConv += c.shopOrders;
-        
-        if (c.gmvMax) { gmvSpend += c.spend; gmvGmv += c.gmv; gmvOrders += c.shopOrders; }
-        return c;
-      }).sort((a,b) => b.spend - a.spend);
-      
-      const res = {
-        summary: { spend:tSpend, impressions:tImpr, clicks:tClicks, conversion:tConv,
-                   gmv:tGmv, shopOrders:tShopConv, roas: tSpend>0 ? +(tGmv/tSpend).toFixed(2) : 0 },
-        gmvMax: { spend:gmvSpend, gmv:gmvGmv, orders:gmvOrders,
-                  roas: gmvSpend>0 ? +(gmvGmv/gmvSpend).toFixed(2) : 0 },
-        campaigns, range: { from: fromStr, to: toStr },
-        advertiser: G_TTA_ADV
-      };
-      
-      renderTikTokAds(res);
-    } catch(e) {
-      if (badge) badge.textContent='lỗi: ' + e.message;
-    }
-  }, 10);
-}
-function renderTikTokAds(res) {
-  const s=res.summary||{}, gm=res.gmvMax||{}, camps=res.campaigns||[];
-  const badge=document.getElementById('tta-badge');
-  if (badge) badge.textContent=(res.range?res.range.from+' → '+res.range.to:'')+' · '+camps.length+' campaign';
+  const badge=document.getElementById('ga4-badge');
+  if (badge) badge.textContent = (res.range?res.range.from+' → '+res.range.to:'') + ' · ' + daily.length + ' ngày';
 
   const tile=(label,val,color)=>
-    `<div style="flex:1;min-width:130px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px">
-       <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px">${label}</div>
+    `<div style="flex:1;min-width:120px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+       <div style="font-size:11px;color:#374151;font-weight:600;margin-bottom:4px">${label}</div>
        <div style="font-size:22px;font-weight:800;color:${color}">${val}</div></div>`;
-  const ctr = s.impressions>0 ? (s.clicks/s.impressions*100) : 0;
-  const cpc = s.clicks>0 ? Math.round(s.spend/s.clicks) : 0;
-  const box=document.getElementById('tta-summary');
-  if (box) box.innerHTML=
-    tile('Chi phí', fmtNum(s.spend)+'đ', '#dc2626') +
-    tile('Hiển thị', fmtNum(s.impressions), '#2563eb') +
-    tile('Clicks', fmtNum(s.clicks), '#0891b2') +
-    tile('CTR', ctr.toFixed(2)+'%', '#f59e0b') +
-    tile('CPC', fmtNum(cpc)+'đ', '#64748b') +
-    tile('Conversion', fmtNum(s.conversion), '#059669') +
-    tile('GMV (Shop)', fmtNum(s.gmv)+'đ', '#7c3aed') +
-    tile('ROAS', (s.roas||0)+'x', '#f59e0b');
+  const box=document.getElementById('ga4-summary');
+  if (box) box.innerHTML =
+    tile('Sessions',              fmtNum(s.sessions), '#2563eb') +
+    tile('Users',                 fmtNum(s.users), '#0d9488') +
+    tile('User mới',              fmtNum(s.newUsers), '#7c3aed') +
+    tile('Pageviews',             fmtNum(s.pageviews), '#059669') +
+    tile('Bounce rate',           ((s.bounceRate||0)*100).toFixed(1)+'%', '#f59e0b') +
+    tile('TG TB/phiên',           fmtDuration(s.avgDuration), '#e11d48');
 
-  const gbox=document.getElementById('tta-gmvmax');
-  if (gbox) {
-    if (gm.spend>0 || gm.gmv>0) {
-      gbox.innerHTML=
-        tile('Chi phí GMV Max', fmtNum(gm.spend)+'đ', '#dc2626') +
-        tile('GMV từ GMV Max',  fmtNum(gm.gmv)+'đ', '#059669') +
-        tile('Đơn hàng',        fmtNum(gm.orders), '#2563eb') +
-        tile('ROAS GMV Max',    (gm.roas||0)+'x', '#7c3aed');
-    } else {
-      gbox.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px">Không có campaign GMV Max đang chạy trong kỳ này.</div>`;
-    }
-  }
+  mkLine('chart-ga4-daily', daily.map(d=>d.date), [
+    { label:'Sessions',  data: daily.map(d=>d.sessions),  color:'#2563eb' },
+    { label:'Pageviews', data: daily.map(d=>d.pageviews), color:'#059669' },
+  ]);
 
-  const tb=document.getElementById('tta-body');
-  if (tb) tb.innerHTML = camps.map(c=>
-    `<tr>
-       <td style="max-width:280px;white-space:normal;line-height:1.4">
-         <div style="font-weight:600;margin-bottom:4px">${c.name}</div>
-         <div style="height:30px;width:100%"><canvas class="sparkline-canvas" data-cid="${c.id}"></canvas></div>
-       </td>
-       <td style="text-align:center">${c.gmvMax?'<span style=\"color:#dc2626;font-weight:700\">GMV Max</span>':'Khác'}</td>
-       <td style="text-align:center;font-weight:600;color:#dc2626">${fmtNum(c.spend)}</td>
-       <td style="text-align:center">${fmtNum(c.impressions)}</td>
-       <td style="text-align:center">${fmtNum(c.clicks)}</td>
-       <td style="text-align:center">${(c.ctr||0).toFixed(2)}%</td>
-       <td style="text-align:center">${fmtNum(c.conversion)}</td>
-       <td style="text-align:center">${fmtNum(c.shopOrders)}</td>
-       <td style="text-align:center;color:#64748b">${c.shopOrders>0?fmtNum(c.spend/c.shopOrders):'—'}</td>
-       <td style="text-align:center;color:#7c3aed">${c.gmv>0?fmtNum(c.gmv):'—'}</td>
-       <td style="text-align:center;font-weight:600">${c.roas>0?c.roas+'x':'—'}</td>
-     </tr>`).join('') || '<tr><td colspan="11" style="text-align:center;color:#94a3b8;padding:14px">Không có campaign trong kỳ</td></tr>';
-     
-  // Render charts
-  const dateSet = new Set();
-  camps.forEach(c => (c.daily||[]).forEach(d => dateSet.add(d.date)));
-  const allDates = Array.from(dateSet).sort();
-  renderTtaMainChart(camps, allDates);
-  setTimeout(() => renderTtaSparklines(camps, allDates), 50);
+  const ch=document.getElementById('ga4-channels');
+  if (ch) ch.innerHTML = (res.channels||[]).map(r=>
+    `<tr><td>${r.channel}</td><td style="text-align:center">${fmtNum(r.sessions)}</td><td style="text-align:center">${fmtNum(r.users)}</td></tr>`
+  ).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--muted)">Không có dữ liệu</td></tr>';
+
+  const pg=document.getElementById('ga4-pages');
+  if (pg) pg.innerHTML = (res.pages||[]).map(r=>
+    `<tr><td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.page}">${r.page}</td>
+       <td style="text-align:center">${fmtNum(r.pageviews)}</td><td style="text-align:center">${fmtNum(r.users)}</td></tr>`
+  ).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--muted)">Không có dữ liệu</td></tr>';
 }
-
-let ttaMainChartInst = null;
-const sparklineInsts = {};
-
-function renderTtaMainChart(camps, allDates) {
-  const ctx = document.getElementById('tta-chart-gmv');
-  if (!ctx) return;
-  const gmvByDate = {};
-  const spendByDate = {};
-  allDates.forEach(d => { gmvByDate[d]=0; spendByDate[d]=0; });
-  camps.forEach(c => {
-    (c.daily||[]).forEach(d => { gmvByDate[d.date] += d.gmv; spendByDate[d.date] += d.spend; });
-  });
-  if (ttaMainChartInst) ttaMainChartInst.destroy();
-  ttaMainChartInst = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: allDates,
-      datasets: [
-        { label: 'Tổng GMV', data: allDates.map(d=>gmvByDate[d]), borderColor: '#059669', backgroundColor: '#05966933', fill: true, tension: 0.4, yAxisID: 'y' },
-        { label: 'Chi phí', data: allDates.map(d=>spendByDate[d]), borderColor: '#dc2626', borderDash: [5, 5], tension: 0.4, yAxisID: 'y1' }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-      scales: {
-        y: { type: 'linear', display: true, position: 'left' },
-        y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false } }
-      }
-    }
-  });
-}
-
-function renderTtaSparklines(camps, allDates) {
-  document.querySelectorAll('.sparkline-canvas').forEach(canvas => {
-    const cid = canvas.getAttribute('data-cid');
-    const camp = camps.find(c => c.id === cid);
-    if (!camp) return;
-    const gmvMap = {};
-    (camp.daily||[]).forEach(d => { gmvMap[d.date] = d.gmv; });
-    const gmvData = allDates.map(d => gmvMap[d] || 0);
-    if (sparklineInsts[cid]) sparklineInsts[cid].destroy();
-    sparklineInsts[cid] = new Chart(canvas, {
-      type: 'line',
-      data: { labels: allDates, datasets: [{ data: gmvData, borderColor: camp.gmvMax ? '#dc2626' : '#2563eb', borderWidth: 1.5, tension: 0.3, pointRadius: 0 }] },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, scales: { x: { display: false }, y: { display: false } }, layout: { padding: 0 } }
-    });
-  });
+function fmtDuration(sec) {
+  sec = Math.round(sec||0);
+  const m = Math.floor(sec/60), s = sec%60;
+  return m + 'p ' + (s<10?'0':'') + s + 's';
 }
 
 // ══════════════════════════════════════════════════════════
@@ -3000,7 +3088,7 @@ function renderAdsConvByAccount() {
       <td style="text-align:center;font-weight:700;color:#2563eb">${v.toLocaleString('vi-VN')}</td></tr>`;
   }).join('');
   tbody.innerHTML = rowsHtml + `<tr style="background:#f8fafc;font-weight:700">
-      <td style="text-align:left">Tổng cộng (2 tài khoản)</td>
+      <td style="text-align:left;color:#0f172a">Tổng cộng (2 tài khoản)</td>
       <td style="text-align:center;color:#1e40af">${total.toLocaleString('vi-VN')}</td></tr>`;
   if (badge) badge.textContent = G_MSG_DATE.from + ' → ' + G_MSG_DATE.to;
 }
@@ -3260,8 +3348,8 @@ function renderMessages() {
         d3RateStr    = o.c > 0 ? Math.round(o.d/o.c*100) + '%' : '—';
       }
       return `<tr style="${bold?'background:#f8fafc':''}">
-        <td style="font-weight:600;${w}">${nameCell}</td>
-        <td style="text-align:center;${w}">${s.total}</td>
+        <td style="font-weight:600;${w}${bold?';color:#0f172a':''}">${nameCell}</td>
+        <td style="text-align:center;${w}${bold?';color:#0f172a':''}">${s.total}</td>
         <td style="text-align:center;font-weight:700;color:${costColor}">${spendStr}</td>
         <td style="text-align:center;font-weight:700;color:#0d9488">${mcStr}</td>
         <td style="text-align:center;font-weight:600;color:#dc2626">${mcCostStr}</td>
@@ -3303,8 +3391,7 @@ function renderMessages() {
 
   // ── Conversation list ──────────────────────────────────
   G._msgFiltRows = filtRows;
-  document.getElementById('msg-count').textContent = filtRows.length + ' trong kỳ';
-  renderMsgList(filtRows);
+  filterMsg();
 }
 
 function renderMsgList(rows) {
@@ -3327,27 +3414,51 @@ function renderMsgList(rows) {
     customerName: r[ci('from')]       || 'Người dùng',
   }));
 
-  el.innerHTML = rows.map((r, i) => {
-    const unread = +r[ci('unread')]        || 0;
-    const count  = +r[ci('message_count')] || 0;
-    const rt     = r[ci('response_time_hrs')];
-    const rtStr  = (rt !== '' && rt !== null && rt !== undefined && !isNaN(+rt) && +rt >= 0)
-      ? `· ⏱ ${+rt < 1 ? Math.round(+rt*60)+'p' : (+rt).toFixed(1)+'h'}`
+  const byPage = {};
+  rows.forEach((r, i) => {
+    const page = r[ci('page_name')] || 'Chưa xác định';
+    if (!byPage[page]) byPage[page] = [];
+    byPage[page].push({ r, i });
+  });
+
+  const sortedPages = Object.keys(byPage).sort();
+  
+  el.innerHTML = sortedPages.map(page => {
+    const pageHeader = sortedPages.length > 1
+      ? `<div style="padding:10px 14px;background:#f8fafc;border-bottom:1px solid var(--border);border-top:1px solid var(--border);font-weight:700;color:var(--primary);font-size:13px;display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+           <div style="display:flex;align-items:center;gap:8px">
+             <span style="font-size:16px">📄</span> 
+             <span>${page}</span>
+           </div>
+           <span class="badge-pill">${byPage[page].length} hội thoại</span>
+         </div>`
       : '';
-    const page   = r[ci('page_name')] || '';
-    const phone  = +r[ci('has_phone')] === 1;
-    return `<div class="msg-item" onclick="openConv(${i})">
-      <div class="msg-head">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          <span class="msg-from">${r[ci('from')]||'Người dùng'}</span>
-          ${page ? `<span style="font-size:11px;color:var(--muted);background:#f1f5f9;padding:2px 8px;border-radius:10px">${page}</span>` : ''}
-          ${unread > 0 ? `<span class="unread-dot">${unread} mới</span>` : ''}
-          ${phone ? `<span style="font-size:11px;background:#f3e8ff;color:#7c3aed;padding:2px 8px;border-radius:10px;font-weight:600">📞 SĐT</span>` : ''}
+    
+    const itemsHtml = byPage[page].map(item => {
+      const r = item.r;
+      const i = item.i;
+      const unread = +r[ci('unread')]        || 0;
+      const count  = +r[ci('message_count')] || 0;
+      const rt     = r[ci('response_time_hrs')];
+      const rtStr  = (rt !== '' && rt !== null && rt !== undefined && !isNaN(+rt) && +rt >= 0)
+        ? `· ⏱ ${+rt < 1 ? Math.round(+rt*60)+'p' : (+rt).toFixed(1)+'h'}`
+        : '';
+      const phone  = +r[ci('has_phone')] === 1;
+      return `<div class="msg-item" onclick="openConv(${i})">
+        <div class="msg-head">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span class="msg-from">${r[ci('from')]||'Người dùng'}</span>
+            ${sortedPages.length === 1 && page ? `<span style="font-size:11px;color:#64748b;background:#f1f5f9;padding:2px 8px;border-radius:10px">${page}</span>` : ''}
+            ${unread > 0 ? `<span class="unread-dot">${unread} mới</span>` : ''}
+            ${phone ? `<span style="font-size:11px;background:#f3e8ff;color:#7c3aed;padding:2px 8px;border-radius:10px;font-weight:600">📞 SĐT</span>` : ''}
+          </div>
+          <span class="msg-meta">${r[ci('updated_date')]||''} · ${count} tin ${rtStr}</span>
         </div>
-        <span class="msg-meta">${r[ci('updated_date')]||''} · ${count} tin ${rtStr}</span>
-      </div>
-      <div class="msg-snippet">${r[ci('snippet')]||''}</div>
-    </div>`;
+        <div class="msg-snippet">${r[ci('snippet')]||''}</div>
+      </div>`;
+    }).join('');
+    
+    return pageHeader + itemsHtml;
   }).join('');
 }
 
@@ -3371,8 +3482,10 @@ function filterMsg() {
     if (page && r[ci('page_name')] !== page) return false;
     if (phoneOnly && +r[ci('has_phone')] !== 1) return false;
     if (q && !r.some(v => str(v).includes(q))) return false;
+    if (typeof G_MSG_HIDDEN !== 'undefined' && G_MSG_HIDDEN.has(r[ci('page_name')])) return false;
     return true;
   });
+  document.getElementById('msg-count').textContent = rows.length + ' trong kỳ';
   renderMsgList(rows);
 }
 
@@ -3483,6 +3596,7 @@ function mkLine(id, labels, datasets) {
     existing.update('none');
     return;
   }
+  const th = typeof getChartThemeColors === 'function' ? getChartThemeColors() : { textColor:'#f8fafc', tooltipBg:'rgba(15,23,42,0.9)', tooltipText:'#e2e8f0', gridColor:'rgba(255,255,255,0.05)', axisText:'#94a3b8' };
   _charts[id] = new Chart(canvas, {
     type: 'line',
     data: { labels, datasets: dsConfig },
@@ -3491,19 +3605,19 @@ function mkLine(id, labels, datasets) {
       maintainAspectRatio: false,
       interaction: { mode:'index', intersect:false },
       plugins: {
-        legend: { position:'top', labels:{ boxWidth:12, font:{size:11, family: 'Outfit'}, color:'#f8fafc' } },
+        legend: { position:'top', labels:{ boxWidth:12, font:{size:11, family: 'Outfit'}, color: th.textColor } },
         tooltip: {
-          backgroundColor: 'rgba(15, 23, 42, 0.9)',
-          titleColor: '#f8fafc',
-          bodyColor: '#e2e8f0',
-          borderColor: 'rgba(255,255,255,0.1)',
+          backgroundColor: th.tooltipBg,
+          titleColor: th.textColor,
+          bodyColor: th.tooltipText,
+          borderColor: th.gridColor,
           borderWidth: 1,
           callbacks: { label: c => `${c.dataset.label}: ${fmtNum(c.raw)}` }
         }
       },
       scales: {
-        x: { ticks:{ maxTicksLimit:10, font:{size:10, family: 'Outfit'}, color:'#94a3b8' }, grid:{display:false, color:'rgba(255,255,255,0.05)'} },
-        y: { ticks:{ font:{size:10, family: 'Outfit'}, color:'#94a3b8' }, grid:{color:'rgba(255,255,255,0.05)'} }
+        x: { ticks:{ maxTicksLimit:10, font:{size:10, family: 'Outfit'}, color: th.axisText }, grid:{display:false, color: th.gridColor} },
+        y: { ticks:{ font:{size:10, family: 'Outfit'}, color: th.axisText }, grid:{color: th.gridColor} }
       }
     }
   });
@@ -3591,7 +3705,14 @@ function onConvLoaded(data) {
     const isPage = m.from && m.from.id === pageId;
     const dt = m.created_time ? new Date(m.created_time) : null;
     const timeStr = dt ? dt.toLocaleString('vi-VN', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
-    const text = (m.message || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    let text = (m.message || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    text = text.replace(/(0|\+84)[\d\s\.\-]{8,15}/g, match => {
+      const digits = match.replace(/\D/g, '');
+      if (digits.length >= 10 && digits.length <= 12) {
+        return `<span style="color:#ef4444;text-decoration:underline;font-weight:700">${match}</span>`;
+      }
+      return match;
+    });
     return `<div class="chat-bubble ${isPage ? 'page' : 'user'}">
       <div class="chat-text">${text}</div>
       <div class="chat-time">${isPage ? (m.from.name||'Page') + ' · ' : ''}${timeStr}</div>
@@ -3670,7 +3791,7 @@ function closeTokenConfig() {
 
 function loadTokenStatus() {
   const list = document.getElementById('token-page-list');
-  list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)"><div class="spinner" style="margin:0 auto 8px"></div>Đang tải...</div>';
+  list.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b"><div class="spinner" style="margin:0 auto 8px"></div>Đang tải...</div>';
   google.script.run
     .withSuccessHandler(renderTokenList)
     .withFailureHandler(e => {
@@ -3682,14 +3803,14 @@ function loadTokenStatus() {
 function renderTokenList(pages) {
   const list = document.getElementById('token-page-list');
   if (!pages || !pages.length) {
-    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">Chưa có trang nào. Hãy đồng bộ Ad Creatives trước.</div>';
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b">Chưa có trang nào. Hãy đồng bộ Ad Creatives trước.</div>';
     return;
   }
   list.innerHTML = pages.map(p => `
     <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <span style="font-weight:700;font-size:13px">${p.name}</span>
-        <span style="font-size:11px;color:var(--muted)">ID: ${p.id}</span>
+        <span style="font-weight:700;font-size:13px;color:#0f172a">${p.name}</span>
+        <span style="font-size:11px;color:#64748b">ID: ${p.id}</span>
         <span id="tok-status-${p.id}" style="margin-left:auto;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;${
           p.hasToken
             ? 'background:#dcfce7;color:#16a34a'
@@ -3699,7 +3820,7 @@ function renderTokenList(pages) {
       <div style="display:flex;gap:8px">
         <input id="tok-inp-${p.id}" type="password"
           placeholder="${p.hasToken ? 'Nhập token mới để cập nhật...' : 'Dán Page Access Token vào đây...'}"
-          style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:monospace">
+          style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:monospace;background:#fff;color:#0f172a">
         <button onclick="savePageToken('${p.id}','${p.name}')"
           style="padding:7px 14px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
           Lưu
@@ -3765,10 +3886,10 @@ document.addEventListener('keydown', e => {
     <!-- Header -->
     <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
       <div style="flex:1">
-        <div style="font-weight:700;font-size:15px">⚙️ Token Nhắn tin</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">Cấu hình Page Access Token có quyền <code>pages_messaging</code> cho từng trang</div>
+        <div style="font-weight:700;font-size:15px;color:#0f172a">⚙️ Token Nhắn tin</div>
+        <div style="font-size:12px;color:#64748b;margin-top:2px">Cấu hình Page Access Token có quyền <code>pages_messaging</code> cho từng trang</div>
       </div>
-      <button onclick="closeTokenConfig()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted);padding:4px">✕</button>
+      <button onclick="closeTokenConfig()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#64748b;padding:4px">✕</button>
     </div>
     <!-- Hướng dẫn -->
     <div style="padding:12px 22px;background:#f0f9ff;border-bottom:1px solid #bae6fd;font-size:12px;color:#0369a1;line-height:1.7">
@@ -3779,10 +3900,10 @@ document.addEventListener('keydown', e => {
     </div>
     <!-- Danh sách trang -->
     <div id="token-page-list" style="flex:1;overflow-y:auto;padding:16px 22px;display:flex;flex-direction:column;gap:14px">
-      <div style="text-align:center;padding:20px;color:var(--muted)">Đang tải...</div>
+      <div style="text-align:center;padding:20px;color:#64748b">Đang tải...</div>
     </div>
     <!-- Footer -->
-    <div style="padding:12px 22px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);text-align:right">
+    <div style="padding:12px 22px;border-top:1px solid var(--border);font-size:12px;color:#64748b;text-align:right">
       Token được lưu trong Script Properties của GAS, không xuất hiện trong code
     </div>
   </div>
@@ -3827,6 +3948,181 @@ document.addEventListener('keydown', e => {
     </div>
   </div>
 </div>
+
+<!-- ══ FULLSCREEN CHART ══════════════════════════════════════════ -->
+<div id="chart-fullscreen" onclick="if(event.target===this)closeFullscreen()">
+  <div class="fs-card">
+    <button class="fs-close" onclick="closeFullscreen()">✕</button>
+    <div class="fs-title" id="fs-title"></div>
+    <div style="height:calc(100% - 50px)"><canvas id="fs-canvas"></canvas></div>
+  </div>
+</div>
+
+<!-- Scroll to top -->
+<button id="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// NEW FEATURES — Theme, Scroll, Export, Fullscreen, Debounce, Notif
+// ══════════════════════════════════════════════════════════
+
+// ── DARK/LIGHT MODE ────────────────────────────────────────
+;(function initTheme() {
+  const saved = localStorage.getItem('dashboard-theme');
+  if (saved === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    const btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = '☀️';
+  }
+})();
+function toggleTheme() {
+  const html = document.documentElement;
+  const isLight = html.getAttribute('data-theme') === 'light';
+  html.setAttribute('data-theme', isLight ? 'dark' : 'light');
+  localStorage.setItem('dashboard-theme', isLight ? 'dark' : 'light');
+  document.getElementById('theme-toggle').textContent = isLight ? '🌙' : '☀️';
+  updateChartTheme();
+}
+
+function getChartThemeColors() {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  return {
+    textColor: isLight ? '#1e293b' : '#f8fafc',
+    gridColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.05)',
+    tooltipBg: isLight ? 'rgba(255,255,255,0.95)' : 'rgba(15,23,42,0.9)',
+    tooltipText: isLight ? '#475569' : '#e2e8f0',
+    axisText: isLight ? '#64748b' : '#94a3b8'
+  };
+}
+
+function updateChartTheme() {
+  const th = getChartThemeColors();
+  Object.values(_charts).forEach(chart => {
+    if (!chart || !chart.options) return;
+    if (chart.options.plugins?.legend?.labels) chart.options.plugins.legend.labels.color = th.textColor;
+    if (chart.options.plugins?.tooltip) {
+      chart.options.plugins.tooltip.backgroundColor = th.tooltipBg;
+      chart.options.plugins.tooltip.titleColor = th.textColor;
+      chart.options.plugins.tooltip.bodyColor = th.tooltipText;
+      chart.options.plugins.tooltip.borderColor = th.gridColor;
+    }
+    if (chart.options.scales?.x) {
+      if (chart.options.scales.x.ticks) chart.options.scales.x.ticks.color = th.axisText;
+      if (chart.options.scales.x.grid) chart.options.scales.x.grid.color = th.gridColor;
+    }
+    if (chart.options.scales?.y) {
+      if (chart.options.scales.y.ticks) chart.options.scales.y.ticks.color = th.axisText;
+      if (chart.options.scales.y.grid) chart.options.scales.y.grid.color = th.gridColor;
+    }
+    chart.update();
+  });
+}
+
+// ── SCROLL TO TOP ──────────────────────────────────────────
+window.addEventListener('scroll', function() {
+  const btn = document.getElementById('scroll-top');
+  if (btn) btn.classList.toggle('show', window.scrollY > 400);
+}, { passive: true });
+
+// ── CSV EXPORT ─────────────────────────────────────────────
+function exportTableCSV(tableId, filename) {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  const rows = [];
+  table.querySelectorAll('tr').forEach(tr => {
+    const cells = [];
+    tr.querySelectorAll('th, td').forEach(td => {
+      let text = td.textContent.trim().replace(/"/g, '""');
+      cells.push('"' + text + '"');
+    });
+    rows.push(cells.join(','));
+  });
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = (filename || 'export') + '.csv';
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+// ── FULLSCREEN CHART ───────────────────────────────────────
+let _fsChart = null;
+function openFullscreen(chartKey, title) {
+  const src = _charts[chartKey];
+  if (!src) return;
+  const modal = document.getElementById('chart-fullscreen');
+  document.getElementById('fs-title').textContent = title || '';
+  modal.classList.add('open');
+  const ctx = document.getElementById('fs-canvas').getContext('2d');
+  if (_fsChart) _fsChart.destroy();
+  // Clone config
+  const cfg = JSON.parse(JSON.stringify(src.config));
+  cfg.options = cfg.options || {};
+  cfg.options.maintainAspectRatio = false;
+  cfg.options.responsive = true;
+  _fsChart = new Chart(ctx, cfg);
+}
+function closeFullscreen() {
+  document.getElementById('chart-fullscreen').classList.remove('open');
+  if (_fsChart) { _fsChart.destroy(); _fsChart = null; }
+}
+
+// ── NOTIFICATION BADGE ─────────────────────────────────────
+function updateNotifBadge() {
+  if (!G || !G.messages) return;
+  const h = G.messages.headers || [], rows = G.messages.rows || [];
+  const unreadIdx = h.indexOf('unread');
+  if (unreadIdx < 0) return;
+  const total = rows.reduce((sum, r) => sum + (+r[unreadIdx] || 0), 0);
+  const badge = document.getElementById('notif-badge');
+  if (badge) {
+    badge.textContent = total > 99 ? '99+' : total;
+    badge.classList.toggle('show', total > 0);
+  }
+}
+
+// ── DEBOUNCE UTILITY ───────────────────────────────────────
+function debounce(fn, ms) {
+  let t; return function(...args) { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), ms); };
+}
+// ── KPI ANIMATION ──────────────────────────────────────────
+function animateKPIs() {
+  document.querySelectorAll('.kpi-num').forEach(el => {
+    const target = parseFloat(el.getAttribute('data-val')) || 0;
+    const fmt = el.getAttribute('data-fmt');
+    const duration = 1000;
+    const start = performance.now();
+    function update(time) {
+      const p = Math.min((time - start) / duration, 1);
+      const ease = p === 1 ? 1 : 1 - Math.pow(2, -10 * p);
+      const current = target * ease;
+      let txt = '';
+      if (fmt === 'num') txt = fmtNum(current);
+      else if (fmt === 'x') txt = current.toFixed(2) + 'x';
+      else if (fmt === '%') txt = current.toFixed(2) + '%';
+      el.textContent = txt;
+      if (p < 1) requestAnimationFrame(update);
+      else el.textContent = fmt === 'num' ? fmtNum(target) : (target.toFixed(2) + (fmt === 'x' ? 'x' : '%'));
+    }
+    requestAnimationFrame(update);
+  });
+}
+
+// Apply debounce to search inputs after DOM ready
+document.addEventListener('DOMContentLoaded', function() {
+  const debounceInput = (id, handler) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.removeAttribute('oninput');
+    el.addEventListener('input', debounce(handler, 200));
+  };
+  if (typeof filterAds === 'function')   debounceInput('ads-q', filterAds);
+  if (typeof filterMsg === 'function')   debounceInput('msg-q', filterMsg);
+  if (typeof filterCr === 'function')    debounceInput('cr-q', filterCr);
+  if (typeof filterPosts === 'function') debounceInput('posts-q', filterPosts);
+});
+</script>
 
 </body>
 </html>
