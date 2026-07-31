@@ -1030,6 +1030,42 @@ tr:last-child td { border-bottom: none; }
   </div>
 
   <div id="cp-workflow-section"></div>
+
+  <div id="cp-form-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(15,23,42,.5);align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;padding:24px;width:520px;max-width:92vw;max-height:86vh;overflow-y:auto">
+      <div style="display:flex;align-items:center;margin-bottom:16px">
+        <span style="font-size:16px;font-weight:800;color:#0f172a">+ Thêm bài mới</span>
+        <span onclick="closeContentPlanForm()" style="margin-left:auto;cursor:pointer;font-size:20px;color:#94a3b8">✕</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <label style="font-size:12px;font-weight:700;color:#374151">Ngày đăng
+          <input type="date" id="cp-f-pubdate" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box">
+        </label>
+        <label style="font-size:12px;font-weight:700;color:#374151">Page
+          <input type="text" id="cp-f-page" placeholder="vd: Fujiwa Speed" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box">
+        </label>
+        <label style="font-size:12px;font-weight:700;color:#374151">Format
+          <select id="cp-f-format" onchange="onCpFormatChange()" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box">
+            <option value="">— Chọn Format —</option>
+          </select>
+        </label>
+        <label style="font-size:12px;font-weight:700;color:#374151">Pillar
+          <select id="cp-f-pillar" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box">
+            <option value="">— Không chọn —</option>
+          </select>
+        </label>
+        <label style="font-size:12px;font-weight:700;color:#374151">Mô tả
+          <textarea id="cp-f-desc" rows="2" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;resize:vertical"></textarea>
+        </label>
+        <label style="font-size:12px;font-weight:700;color:#374151">Người phụ trách chính
+          <input type="text" id="cp-f-owner" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box">
+        </label>
+        <div id="cp-f-stages"></div>
+        <div id="cp-f-msg" style="font-size:12px;font-weight:600"></div>
+        <button id="cp-f-submit" onclick="submitContentPlanForm()" style="padding:10px;background:#059669;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer">Lưu</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 </main>
@@ -2938,6 +2974,91 @@ function renderContentPlanList(rows) {
       <td style="text-align:center">${r.progress.done}/${r.progress.total} (${progressPct}%)</td>
     </tr>`;
   }).join('');
+}
+
+function openContentPlanForm() {
+  const fmtSel = document.getElementById('cp-f-format');
+  const pillarSel = document.getElementById('cp-f-pillar');
+  fmtSel.innerHTML = '<option value="">— Chọn Format —</option>' +
+    Object.keys((G_CP_CONFIG && G_CP_CONFIG.templates) || {}).map(f => `<option value="${f}">${f}</option>`).join('');
+  pillarSel.innerHTML = '<option value="">— Không chọn —</option>' +
+    Object.keys(CP_PILLAR_COLORS).map(p => `<option value="${p}">${p}</option>`).join('');
+  document.getElementById('cp-f-stages').innerHTML = '';
+  document.getElementById('cp-f-msg').textContent = '';
+  document.getElementById('cp-form-modal').style.display = 'flex';
+}
+
+function closeContentPlanForm() {
+  document.getElementById('cp-form-modal').style.display = 'none';
+}
+
+// Khi chọn Format, hiện 1 dropdown chọn người cho mỗi giai đoạn trong template —
+// tự chọn sẵn nếu chỉ có đúng 1 người khớp Role+Page, để trống nếu nhiều người khớp.
+function onCpFormatChange() {
+  const format = document.getElementById('cp-f-format').value;
+  const page = document.getElementById('cp-f-page').value.trim();
+  const container = document.getElementById('cp-f-stages');
+  const template = (G_CP_CONFIG && G_CP_CONFIG.templates[format]) || [];
+  const roster = (G_CP_CONFIG && G_CP_CONFIG.roster) || [];
+
+  container.innerHTML = template.map(stage => {
+    const matches = roster.filter(p => p.role === stage.role && (!page || p.pages.includes(page)));
+    const preselect = matches.length === 1 ? matches[0].name : '';
+    const options = ['<option value="">— Chưa gán —</option>']
+      .concat(roster.filter(p => p.role === stage.role)
+        .map(p => `<option value="${p.name}" ${p.name === preselect ? 'selected' : ''}>${p.name}</option>`));
+    return `<label style="font-size:12px;font-weight:700;color:#374151">${stage.stage} (${stage.role})
+      <select data-stage="${stage.stage}" class="cp-f-stage-assignee" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box">
+        ${options.join('')}
+      </select>
+    </label>`;
+  }).join('');
+}
+
+function submitContentPlanForm() {
+  const btn = document.getElementById('cp-f-submit');
+  const msg = document.getElementById('cp-f-msg');
+  const assignments = {};
+  document.querySelectorAll('.cp-f-stage-assignee').forEach(sel => {
+    if (sel.value) assignments[sel.dataset.stage] = sel.value;
+  });
+  const data = {
+    pubDate: document.getElementById('cp-f-pubdate').value,
+    page: document.getElementById('cp-f-page').value.trim(),
+    format: document.getElementById('cp-f-format').value,
+    pillar: document.getElementById('cp-f-pillar').value,
+    desc: document.getElementById('cp-f-desc').value.trim(),
+    ownerName: document.getElementById('cp-f-owner').value.trim(),
+    assignments: assignments,
+  };
+  if (!data.pubDate || !data.page || !data.format) {
+    msg.style.color = '#dc2626';
+    msg.textContent = 'Thiếu Ngày đăng / Page / Format.';
+    return;
+  }
+  btn.disabled = true;
+  msg.style.color = '#374151';
+  msg.textContent = 'Đang lưu...';
+  google.script.run
+    .withSuccessHandler(res => {
+      btn.disabled = false;
+      if (!res.ok) { msg.style.color = '#dc2626'; msg.textContent = res.message; return; }
+      msg.style.color = '#059669';
+      msg.textContent = `✅ Đã tạo ${res.postId} (${res.tasks.length} nhiệm vụ)`;
+      G_CP_ROWS.push({
+        postId: res.postId, pubDate: data.pubDate, page: data.page, format: data.format,
+        pillar: data.pillar, desc: data.desc, owner: data.ownerName, status: 'Planned', link: '',
+        progress: { done: 0, total: res.tasks.length },
+      });
+      renderContentPlanList(G_CP_ROWS);
+      setTimeout(closeContentPlanForm, 1200);
+    })
+    .withFailureHandler(err => {
+      btn.disabled = false;
+      msg.style.color = '#dc2626';
+      msg.textContent = 'Lỗi: ' + err.message;
+    })
+    .addContentPlanItem(data);
 }
 
 function initWebsite() {
