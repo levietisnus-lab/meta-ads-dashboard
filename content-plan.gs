@@ -181,3 +181,77 @@ function addContentPlanItem(data) {
 
   return { ok: true, postId: postId, tasks: generatedTasks };
 }
+
+// Đọc Workflow theo khoảng Deadline [from,to], kèm Page/Mô tả join từ Kế hoạch nội dung
+function getWorkflowTasks(from, to) {
+  _ensureContentPlanSheets();
+  const wfSh = SS.getSheetByName('Workflow');
+  const wfLastRow = wfSh.getLastRow();
+  const tasks = [];
+  if (wfLastRow > 1) {
+    wfSh.getRange(2, 1, wfLastRow - 1, 11).getValues().forEach(r => {
+      const taskId = String(r[0] || '').trim();
+      if (!taskId) return;
+      const deadline = r[7] instanceof Date
+        ? Utilities.formatDate(r[7], 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd')
+        : String(r[7] || '');
+      if (from && deadline < from) return;
+      if (to && deadline > to) return;
+      tasks.push({
+        taskId: taskId, postId: String(r[1] || ''), order: r[2], stage: String(r[3] || ''),
+        assignee: String(r[4] || ''), email: String(r[5] || ''), role: String(r[6] || ''),
+        deadline: deadline, status: String(r[8] || ''),
+        doneDate: r[9] instanceof Date ? Utilities.formatDate(r[9], 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd') : String(r[9] || ''),
+        note: String(r[10] || ''),
+      });
+    });
+  }
+
+  const cpSh = SS.getSheetByName('Kế hoạch nội dung');
+  const cpLastRow = cpSh.getLastRow();
+  const postInfo = {};
+  if (cpLastRow > 1) {
+    cpSh.getRange(2, 1, cpLastRow - 1, 6).getValues().forEach(r => {
+      const postId = String(r[0] || '').trim();
+      if (!postId) return;
+      postInfo[postId] = { page: String(r[2] || ''), desc: String(r[5] || '') };
+    });
+  }
+  tasks.forEach(t => {
+    const info = postInfo[t.postId] || { page: '', desc: '' };
+    t.page = info.page; t.desc = info.desc;
+  });
+  return tasks;
+}
+
+// Tìm dòng Workflow theo Task ID (cột A) — trả về {sheet, row} hoặc null nếu không thấy
+function _findWorkflowRow(taskId) {
+  const wfSh = SS.getSheetByName('Workflow');
+  const lastRow = wfSh.getLastRow();
+  if (lastRow < 2) return null;
+  const ids = wfSh.getRange(2, 1, lastRow - 1, 1).getValues();
+  for (let i = 0; i < ids.length; i++) {
+    if (String(ids[i][0] || '').trim() === taskId) return { sheet: wfSh, row: i + 2 };
+  }
+  return null;
+}
+
+function markWorkflowTaskDone(taskId, note) {
+  _ensureContentPlanSheets();
+  const found = _findWorkflowRow(taskId);
+  if (!found) return { ok: false, message: 'Không tìm thấy nhiệm vụ, có thể đã bị xoá — tải lại trang.' };
+  const today = new Date();
+  found.sheet.getRange(found.row, 9).setValue('Done');   // I: Status
+  found.sheet.getRange(found.row, 10).setValue(today);    // J: Ngày hoàn thành
+  if (note) found.sheet.getRange(found.row, 11).setValue(String(note)); // K: Ghi chú
+  return { ok: true, taskId: taskId, doneDate: Utilities.formatDate(today, 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd') };
+}
+
+function reopenWorkflowTask(taskId) {
+  _ensureContentPlanSheets();
+  const found = _findWorkflowRow(taskId);
+  if (!found) return { ok: false, message: 'Không tìm thấy nhiệm vụ, có thể đã bị xoá — tải lại trang.' };
+  found.sheet.getRange(found.row, 9).setValue('To Do'); // I: Status
+  found.sheet.getRange(found.row, 10).setValue('');      // J: Ngày hoàn thành
+  return { ok: true, taskId: taskId };
+}
