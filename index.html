@@ -1015,19 +1015,29 @@ tr:last-child td { border-bottom: none; }
     <button onclick="openContentPlanForm()" style="margin-left:auto;padding:6px 16px;background:#059669;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">+ Thêm bài mới</button>
   </div>
 
+  <div id="cp-config-err" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 16px;margin-bottom:14px;font-size:12px;color:#dc2626;font-weight:600"></div>
+
   <div id="cp-person-banner" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 16px;margin-bottom:14px;font-size:12px;color:#1e3a5f;align-items:center;gap:8px">
     <span>👤 Đang xem với tư cách: <strong id="cp-person-name"></strong></span>
     <span onclick="showCpPersonPicker()" style="margin-left:auto;cursor:pointer;color:var(--primary);font-weight:700">Đổi người</span>
   </div>
 
-  <div id="cp-person-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(15,23,42,.5);align-items:center;justify-content:center">
+  <div id="cp-person-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(15,23,42,.5);align-items:center;justify-content:center" onclick="if (event.target === this) closeCpPersonPicker()">
     <div style="background:#fff;border-radius:12px;padding:24px;width:340px;max-width:90vw">
-      <div style="font-size:15px;font-weight:800;color:#0f172a;margin-bottom:12px">Bạn là ai?</div>
-      <div style="font-size:12px;color:#64748b;margin-bottom:12px">Dùng để lọc "Việc của tôi" — chỉ lưu trên trình duyệt này, không cần đăng nhập.</div>
-      <select id="cp-person-select" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;margin-bottom:14px">
-        <option value="">— Chọn tên —</option>
-      </select>
-      <button onclick="confirmCpPerson()" style="width:100%;padding:9px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer">Xác nhận</button>
+      <div style="display:flex;align-items:center;margin-bottom:12px">
+        <span style="font-size:15px;font-weight:800;color:#0f172a">Bạn là ai?</span>
+        <span onclick="closeCpPersonPicker()" style="margin-left:auto;cursor:pointer;font-size:20px;color:#94a3b8">✕</span>
+      </div>
+      <div id="cp-person-msg" style="font-size:12px;color:#64748b;margin-bottom:12px">Dùng để lọc "Việc của tôi" — chỉ lưu trên trình duyệt này, không cần đăng nhập.</div>
+      <div id="cp-person-picker-fields">
+        <select id="cp-person-select" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;margin-bottom:14px">
+          <option value="">— Chọn tên —</option>
+        </select>
+        <button onclick="confirmCpPerson()" style="width:100%;padding:9px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer">Xác nhận</button>
+      </div>
+      <div style="text-align:center;margin-top:10px">
+        <span onclick="closeCpPersonPicker()" style="font-size:12px;color:#64748b;cursor:pointer;text-decoration:underline">Bỏ qua</span>
+      </div>
     </div>
   </div>
 
@@ -2955,11 +2965,20 @@ function initContentPlan() {
   document.getElementById('cp-to').value = G_CP_DATE.to;
   fetchContentPlan();
   fetchWorkflowTasks();
-  google.script.run.withSuccessHandler(cfg => {
-    G_CP_CONFIG = cfg;
-    renderCpPersonBanner();
-    if (!getCpPerson()) showCpPersonPicker();
-  }).getConfigND();
+  google.script.run
+    .withSuccessHandler(cfg => {
+      G_CP_CONFIG = cfg;
+      renderCpPersonBanner();
+      if (!getCpPerson()) showCpPersonPicker();
+    })
+    .withFailureHandler(err => {
+      const el = document.getElementById('cp-config-err');
+      if (el) {
+        el.style.display = 'block';
+        el.textContent = `⚠️ Không tải được cấu hình nhân sự (Config ND): ${err.message}. Danh sách Format và người phụ trách sẽ trống — tải lại trang hoặc kiểm tra sheet Config ND.`;
+      }
+    })
+    .getConfigND();
 }
 
 function setCpPreset(btn, val) {
@@ -2970,6 +2989,7 @@ function setCpPreset(btn, val) {
   document.getElementById('cp-from').value = G_CP_DATE.from;
   document.getElementById('cp-to').value = G_CP_DATE.to;
   fetchContentPlan();
+  fetchWorkflowTasks();
 }
 
 function applyCpDate() {
@@ -2977,6 +2997,7 @@ function applyCpDate() {
   G_CP_DATE.from = document.getElementById('cp-from')?.value || '';
   G_CP_DATE.to   = document.getElementById('cp-to')?.value   || '';
   fetchContentPlan();
+  fetchWorkflowTasks();
 }
 
 function fetchContentPlan() {
@@ -3122,17 +3143,31 @@ function renderCpPersonBanner() {
 
 function showCpPersonPicker() {
   const sel = document.getElementById('cp-person-select');
+  const msg = document.getElementById('cp-person-msg');
+  const fields = document.getElementById('cp-person-picker-fields');
   const roster = (G_CP_CONFIG && G_CP_CONFIG.roster) || [];
-  sel.innerHTML = '<option value="">— Chọn tên —</option>' +
-    roster.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+  if (!roster.length) {
+    if (msg) msg.textContent = 'Chưa có ai trong Config ND — vào Google Sheet để thêm nhân sự trước.';
+    if (fields) fields.style.display = 'none';
+  } else {
+    if (msg) msg.textContent = 'Dùng để lọc "Việc của tôi" — chỉ lưu trên trình duyệt này, không cần đăng nhập.';
+    if (fields) fields.style.display = '';
+    sel.innerHTML = '<option value="">— Chọn tên —</option>' +
+      roster.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+  }
   document.getElementById('cp-person-modal').style.display = 'flex';
+}
+
+function closeCpPersonPicker() {
+  const modal = document.getElementById('cp-person-modal');
+  if (modal) modal.style.display = 'none';
 }
 
 function confirmCpPerson() {
   const name = document.getElementById('cp-person-select').value;
   if (!name) return;
   setCpPerson(name);
-  document.getElementById('cp-person-modal').style.display = 'none';
+  closeCpPersonPicker();
   if (typeof renderWorkflowTasks === 'function') fetchWorkflowTasks();
 }
 
@@ -3192,6 +3227,10 @@ function markTaskDone(taskId, btnEl) {
       const task = G_WF_TASKS.find(t => t.taskId === taskId);
       if (task) { task.status = 'Done'; task.doneDate = res.doneDate; }
       renderWorkflowTasks(G_WF_TASKS);
+      if (task) {
+        const post = G_CP_ROWS.find(r => r.postId === task.postId);
+        if (post) { post.progress.done++; renderContentPlanList(G_CP_ROWS); }
+      }
     })
     .withFailureHandler(err => {
       if (btnEl) { btnEl.disabled = false; btnEl.textContent = '✓ Done'; }
@@ -4237,7 +4276,7 @@ function showTokMsg(pageId, msg, color) {
 
 // Ctrl+Enter để gửi
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeConv(); closeTokenConfig(); }
+  if (e.key === 'Escape') { closeConv(); closeTokenConfig(); closeCpPersonPicker(); closeContentPlanForm(); }
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) &&
       document.getElementById('conv-modal').classList.contains('open')) {
     sendMsg();

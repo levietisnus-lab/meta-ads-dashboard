@@ -143,41 +143,50 @@ function addContentPlanItem(data) {
     return { ok: false, message: 'Thiếu Ngày đăng / Page / Format.' };
   }
 
-  const postId = _nextContentPlanPostId();
   const pillar = String((data && data.pillar) || '').trim();
   const desc = String((data && data.desc) || '').trim();
   const owner = String((data && data.ownerName) || '').trim();
   const assignments = (data && data.assignments) || {};
 
-  SS.getSheetByName('Kế hoạch nội dung')
-    .appendRow([postId, pubDate, page, format, pillar, desc, owner, 'Planned', '']);
+  const lock = LockService.getScriptLock();
+  let postId, generatedTasks;
+  try {
+    lock.waitLock(10000);
 
-  const cfg = getConfigND();
-  const template = cfg.templates[format] || [];
-  const rosterByName = {};
-  cfg.roster.forEach(p => { rosterByName[p.name] = p; });
+    postId = _nextContentPlanPostId();
 
-  const wfSh = SS.getSheetByName('Workflow');
-  const generatedTasks = [];
-  template.forEach(stage => {
-    const deadline = _computeDeadline(pubDate, stage.offsetDays);
-    const assignedName = String(assignments[stage.stage] || '').trim();
-    const person = rosterByName[assignedName];
-    const taskId = postId + '-' + stage.order;
+    SS.getSheetByName('Kế hoạch nội dung')
+      .appendRow([postId, pubDate, page, format, pillar, desc, owner, 'Planned', '']);
 
-    wfSh.appendRow([
-      taskId, postId, stage.order, stage.stage,
-      person ? person.name : '', person ? person.email : '', stage.role,
-      deadline, 'To Do', '', '',
-    ]);
+    const cfg = getConfigND();
+    const template = cfg.templates[format] || [];
+    const rosterByName = {};
+    cfg.roster.forEach(p => { rosterByName[p.name] = p; });
 
-    generatedTasks.push({
-      taskId: taskId, postId: postId, order: stage.order, stage: stage.stage,
-      assignee: person ? person.name : '', email: person ? person.email : '', role: stage.role,
-      deadline: Utilities.formatDate(deadline, 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd'),
-      status: 'To Do',
+    const wfSh = SS.getSheetByName('Workflow');
+    generatedTasks = [];
+    template.forEach(stage => {
+      const deadline = _computeDeadline(pubDate, stage.offsetDays);
+      const assignedName = String(assignments[stage.stage] || '').trim();
+      const person = rosterByName[assignedName];
+      const taskId = postId + '-' + stage.order;
+
+      wfSh.appendRow([
+        taskId, postId, stage.order, stage.stage,
+        person ? person.name : '', person ? person.email : '', stage.role,
+        deadline, 'To Do', '', '',
+      ]);
+
+      generatedTasks.push({
+        taskId: taskId, postId: postId, order: stage.order, stage: stage.stage,
+        assignee: person ? person.name : '', email: person ? person.email : '', role: stage.role,
+        deadline: Utilities.formatDate(deadline, 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd'),
+        status: 'To Do',
+      });
     });
-  });
+  } finally {
+    lock.releaseLock();
+  }
 
   return { ok: true, postId: postId, tasks: generatedTasks };
 }
