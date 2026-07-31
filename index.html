@@ -1001,7 +1001,35 @@ tr:last-child td { border-bottom: none; }
 </div>
 
 <div id="tab-content-plan" class="tab-panel">
-  <div class="card" style="text-align:center;padding:30px;color:var(--muted)">Đang tải...</div>
+  <div class="filter-bar-light" style="background:#fff;border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:#374151">Khoảng:</span>
+    <div id="cp-date-btns" style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="date-btn" onclick="setCpPreset(this,'thisMonth')">Tháng này</button>
+      <button class="date-btn active" onclick="setCpPreset(this,'lastMonth')">Tháng trước</button>
+      <button class="date-btn" onclick="setCpPreset(this,'all')">Tất cả</button>
+    </div>
+    <input type="date" id="cp-from" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
+    <span style="color:#94a3b8">→</span>
+    <input type="date" id="cp-to" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
+    <button onclick="applyCpDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
+    <button onclick="openContentPlanForm()" style="margin-left:auto;padding:6px 16px;background:#059669;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">+ Thêm bài mới</button>
+  </div>
+
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-title">📋 Danh sách bài <span class="badge-pill" id="cp-count"></span></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th style="text-align:left">Ngày đăng</th><th style="text-align:left">Page</th>
+          <th>Format</th><th style="text-align:left">Pillar</th>
+          <th style="text-align:left">Mô tả</th><th>Status</th><th>Tiến độ</th>
+        </tr></thead>
+        <tbody id="cp-list-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="cp-workflow-section"></div>
 </div>
 
 </main>
@@ -2840,8 +2868,76 @@ function filterPosts() {
 let G_WEB_DATE = { from:'', to:'' };
 let _webInited = false;
 let _cpInited = false;
+const CP_PILLAR_COLORS = {
+  'Brand Authority': '#0066CC', 'Product Science': '#00A86B', 'Lifestyle Reset': '#FF6B35',
+  'Industry Insight': '#8B5CF6', 'Holiday': '#10B981', 'PR / Event': '#F59E0B',
+  'PR / Sales': '#EF4444', 'Product / Edu': '#3B82F6', 'Engage / Meme': '#EC4899',
+  'Corporate Brand': '#6366F1', 'Livestream': '#DC2626', 'Engage': '#14B8A6',
+};
+
+let G_CP_DATE = { from: '', to: '' };
+let G_CP_CONFIG = null; // cache của getConfigND() — nạp 1 lần khi mở tab
+let G_CP_ROWS = [];     // cache danh sách bài hiện tại (để cập nhật lạc quan sau khi thêm bài)
+
 function initContentPlan() {
-  document.getElementById('tab-content-plan').innerHTML = '<div class="card" style="text-align:center;padding:30px;color:var(--muted)">Đang xây dựng — sẽ hoàn thiện ở task tiếp theo.</div>';
+  const today = new Date();
+  const from = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const to = new Date(today.getFullYear(), today.getMonth(), 0);
+  G_CP_DATE.from = fmtD(from); G_CP_DATE.to = fmtD(to);
+  document.getElementById('cp-from').value = G_CP_DATE.from;
+  document.getElementById('cp-to').value = G_CP_DATE.to;
+  fetchContentPlan();
+  google.script.run.withSuccessHandler(cfg => { G_CP_CONFIG = cfg; }).getConfigND();
+}
+
+function setCpPreset(btn, val) {
+  document.querySelectorAll('#cp-date-btns .date-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const r = computeRangeForPreset(val);
+  G_CP_DATE.from = r.from; G_CP_DATE.to = r.to;
+  document.getElementById('cp-from').value = G_CP_DATE.from;
+  document.getElementById('cp-to').value = G_CP_DATE.to;
+  fetchContentPlan();
+}
+
+function applyCpDate() {
+  document.querySelectorAll('#cp-date-btns .date-btn').forEach(b => b.classList.remove('active'));
+  G_CP_DATE.from = document.getElementById('cp-from')?.value || '';
+  G_CP_DATE.to   = document.getElementById('cp-to')?.value   || '';
+  fetchContentPlan();
+}
+
+function fetchContentPlan() {
+  const body = document.getElementById('cp-list-body');
+  if (body) body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted)">⏳ Đang tải...</td></tr>';
+  google.script.run
+    .withSuccessHandler(rows => { G_CP_ROWS = rows || []; renderContentPlanList(G_CP_ROWS); })
+    .withFailureHandler(err => { if (body) body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#dc2626">Lỗi: ${err.message}</td></tr>`; })
+    .getContentPlan(G_CP_DATE.from, G_CP_DATE.to);
+}
+
+function renderContentPlanList(rows) {
+  const body = document.getElementById('cp-list-body');
+  const count = document.getElementById('cp-count');
+  if (count) count.textContent = rows.length + ' bài';
+  if (!body) return;
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted)">Chưa có bài nào trong khoảng này</td></tr>';
+    return;
+  }
+  body.innerHTML = rows.map(r => {
+    const pillarColor = CP_PILLAR_COLORS[r.pillar] || '#64748b';
+    const progressPct = r.progress.total > 0 ? Math.round(r.progress.done / r.progress.total * 100) : 0;
+    return `<tr>
+      <td>${r.pubDate}</td>
+      <td>${r.page}</td>
+      <td style="text-align:center">${r.format}</td>
+      <td><span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;background:${pillarColor}22;color:${pillarColor}">${r.pillar || '—'}</span></td>
+      <td>${r.desc}</td>
+      <td style="text-align:center">${r.status}</td>
+      <td style="text-align:center">${r.progress.done}/${r.progress.total} (${progressPct}%)</td>
+    </tr>`;
+  }).join('');
 }
 
 function initWebsite() {
