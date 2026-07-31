@@ -72,3 +72,112 @@ function getConfigND() {
 
   return { roster: roster, templates: templates };
 }
+
+// Post ID kế tiếp dạng P001, P002... — quét cột A tìm số lớn nhất
+function _nextContentPlanPostId() {
+  const sh = SS.getSheetByName('Kế hoạch nội dung');
+  const lastRow = sh.getLastRow();
+  let maxNum = 0;
+  if (lastRow > 1) {
+    sh.getRange(2, 1, lastRow - 1, 1).getValues().forEach(r => {
+      const m = String(r[0] || '').match(/^P(\d+)$/);
+      if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
+    });
+  }
+  return 'P' + String(maxNum + 1).padStart(3, '0');
+}
+
+// Deadline = ngày đăng + offsetDays (offsetDays thường âm — vd -7 = 7 ngày trước publish)
+function _computeDeadline(pubDateStr, offsetDays) {
+  const d = new Date(pubDateStr + 'T00:00:00+07:00');
+  d.setDate(d.getDate() + offsetDays);
+  return d;
+}
+
+// Đọc Kế hoạch nội dung trong khoảng Ngày đăng [from,to], kèm tiến độ Workflow của mỗi bài
+function getContentPlan(from, to) {
+  _ensureContentPlanSheets();
+  const cpSh = SS.getSheetByName('Kế hoạch nội dung');
+  const cpLastRow = cpSh.getLastRow();
+  const rows = [];
+  if (cpLastRow > 1) {
+    cpSh.getRange(2, 1, cpLastRow - 1, 9).getValues().forEach(r => {
+      const postId = String(r[0] || '').trim();
+      if (!postId) return;
+      const pubDate = r[1] instanceof Date
+        ? Utilities.formatDate(r[1], 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd')
+        : String(r[1] || '');
+      if (from && pubDate < from) return;
+      if (to && pubDate > to) return;
+      rows.push({
+        postId: postId, pubDate: pubDate, page: String(r[2] || ''), format: String(r[3] || ''),
+        pillar: String(r[4] || ''), desc: String(r[5] || ''), owner: String(r[6] || ''),
+        status: String(r[7] || ''), link: String(r[8] || ''),
+      });
+    });
+  }
+
+  const wfSh = SS.getSheetByName('Workflow');
+  const wfLastRow = wfSh.getLastRow();
+  const progress = {};
+  if (wfLastRow > 1) {
+    wfSh.getRange(2, 1, wfLastRow - 1, 9).getValues().forEach(r => {
+      const postId = String(r[1] || '').trim();
+      if (!postId) return;
+      if (!progress[postId]) progress[postId] = { done: 0, total: 0 };
+      progress[postId].total++;
+      if (String(r[8] || '').trim() === 'Done') progress[postId].done++;
+    });
+  }
+  rows.forEach(r => { r.progress = progress[r.postId] || { done: 0, total: 0 }; });
+  return rows;
+}
+
+// Thêm 1 bài vào Kế hoạch nội dung + tự sinh các dòng Workflow theo template Format đã chọn
+function addContentPlanItem(data) {
+  _ensureContentPlanSheets();
+  const pubDate = String((data && data.pubDate) || '').trim();
+  const page = String((data && data.page) || '').trim();
+  const format = String((data && data.format) || '').trim();
+  if (!pubDate || !page || !format) {
+    return { ok: false, message: 'Thiếu Ngày đăng / Page / Format.' };
+  }
+
+  const postId = _nextContentPlanPostId();
+  const pillar = String((data && data.pillar) || '').trim();
+  const desc = String((data && data.desc) || '').trim();
+  const owner = String((data && data.ownerName) || '').trim();
+  const assignments = (data && data.assignments) || {};
+
+  SS.getSheetByName('Kế hoạch nội dung')
+    .appendRow([postId, pubDate, page, format, pillar, desc, owner, 'Planned', '']);
+
+  const cfg = getConfigND();
+  const template = cfg.templates[format] || [];
+  const rosterByName = {};
+  cfg.roster.forEach(p => { rosterByName[p.name] = p; });
+
+  const wfSh = SS.getSheetByName('Workflow');
+  const generatedTasks = [];
+  template.forEach(stage => {
+    const deadline = _computeDeadline(pubDate, stage.offsetDays);
+    const assignedName = String(assignments[stage.stage] || '').trim();
+    const person = rosterByName[assignedName];
+    const taskId = postId + '-' + stage.order;
+
+    wfSh.appendRow([
+      taskId, postId, stage.order, stage.stage,
+      person ? person.name : '', person ? person.email : '', stage.role,
+      deadline, 'To Do', '', '',
+    ]);
+
+    generatedTasks.push({
+      taskId: taskId, postId: postId, order: stage.order, stage: stage.stage,
+      assignee: person ? person.name : '', email: person ? person.email : '', role: stage.role,
+      deadline: Utilities.formatDate(deadline, 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd'),
+      status: 'To Do',
+    });
+  });
+
+  return { ok: true, postId: postId, tasks: generatedTasks };
+}
