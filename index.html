@@ -1015,6 +1015,22 @@ tr:last-child td { border-bottom: none; }
     <button onclick="openContentPlanForm()" style="margin-left:auto;padding:6px 16px;background:#059669;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">+ Thêm bài mới</button>
   </div>
 
+  <div id="cp-person-banner" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 16px;margin-bottom:14px;font-size:12px;color:#1e3a5f;display:flex;align-items:center;gap:8px">
+    <span>👤 Đang xem với tư cách: <strong id="cp-person-name"></strong></span>
+    <span onclick="showCpPersonPicker()" style="margin-left:auto;cursor:pointer;color:var(--primary);font-weight:700">Đổi người</span>
+  </div>
+
+  <div id="cp-person-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(15,23,42,.5);align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;padding:24px;width:340px;max-width:90vw">
+      <div style="font-size:15px;font-weight:800;color:#0f172a;margin-bottom:12px">Bạn là ai?</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:12px">Dùng để lọc "Việc của tôi" — chỉ lưu trên trình duyệt này, không cần đăng nhập.</div>
+      <select id="cp-person-select" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;margin-bottom:14px">
+        <option value="">— Chọn tên —</option>
+      </select>
+      <button onclick="confirmCpPerson()" style="width:100%;padding:9px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer">Xác nhận</button>
+    </div>
+  </div>
+
   <div class="card" style="margin-bottom:18px">
     <div class="card-title">📋 Danh sách bài <span class="badge-pill" id="cp-count"></span></div>
     <div class="tbl-wrap">
@@ -2923,7 +2939,11 @@ function initContentPlan() {
   document.getElementById('cp-from').value = G_CP_DATE.from;
   document.getElementById('cp-to').value = G_CP_DATE.to;
   fetchContentPlan();
-  google.script.run.withSuccessHandler(cfg => { G_CP_CONFIG = cfg; }).getConfigND();
+  google.script.run.withSuccessHandler(cfg => {
+    G_CP_CONFIG = cfg;
+    renderCpPersonBanner();
+    if (!getCpPerson()) showCpPersonPicker();
+  }).getConfigND();
 }
 
 function setCpPreset(btn, val) {
@@ -3059,6 +3079,45 @@ function submitContentPlanForm() {
       msg.textContent = 'Lỗi: ' + err.message;
     })
     .addContentPlanItem(data);
+}
+
+const CP_PERSON_KEY = 'fujiwa_cp_person';
+
+function getCpPerson() {
+  try { return localStorage.getItem(CP_PERSON_KEY) || ''; } catch (e) { return ''; }
+}
+
+function setCpPerson(name) {
+  try { localStorage.setItem(CP_PERSON_KEY, name); } catch (e) {}
+  renderCpPersonBanner();
+}
+
+function renderCpPersonBanner() {
+  const name = getCpPerson();
+  const banner = document.getElementById('cp-person-banner');
+  if (!banner) return;
+  if (name) {
+    banner.style.display = 'flex';
+    document.getElementById('cp-person-name').textContent = name;
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+function showCpPersonPicker() {
+  const sel = document.getElementById('cp-person-select');
+  const roster = (G_CP_CONFIG && G_CP_CONFIG.roster) || [];
+  sel.innerHTML = '<option value="">— Chọn tên —</option>' +
+    roster.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+  document.getElementById('cp-person-modal').style.display = 'flex';
+}
+
+function confirmCpPerson() {
+  const name = document.getElementById('cp-person-select').value;
+  if (!name) return;
+  setCpPerson(name);
+  document.getElementById('cp-person-modal').style.display = 'none';
+  if (typeof renderWorkflowTasks === 'function') fetchWorkflowTasks();
 }
 
 function initWebsite() {
