@@ -1045,7 +1045,22 @@ tr:last-child td { border-bottom: none; }
     </div>
   </div>
 
-  <div id="cp-workflow-section"></div>
+  <div id="cp-workflow-section" class="card">
+    <div class="card-title" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span>🔄 Việc của tôi</span>
+      <span class="badge-pill" id="wf-count"></span>
+      <button id="wf-toggle-btn" onclick="toggleWfOnlyMine()" style="margin-left:auto;padding:5px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Xem tất cả</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th style="text-align:left">Bài</th><th>Giai đoạn</th><th>Deadline</th>
+          <th>Người phụ trách</th><th>Status</th><th></th>
+        </tr></thead>
+        <tbody id="wf-body"></tbody>
+      </table>
+    </div>
+  </div>
 
   <div id="cp-form-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(15,23,42,.5);align-items:center;justify-content:center">
     <div style="background:#fff;border-radius:12px;padding:24px;width:520px;max-width:92vw;max-height:86vh;overflow-y:auto">
@@ -2939,6 +2954,7 @@ function initContentPlan() {
   document.getElementById('cp-from').value = G_CP_DATE.from;
   document.getElementById('cp-to').value = G_CP_DATE.to;
   fetchContentPlan();
+  fetchWorkflowTasks();
   google.script.run.withSuccessHandler(cfg => {
     G_CP_CONFIG = cfg;
     renderCpPersonBanner();
@@ -3118,6 +3134,70 @@ function confirmCpPerson() {
   setCpPerson(name);
   document.getElementById('cp-person-modal').style.display = 'none';
   if (typeof renderWorkflowTasks === 'function') fetchWorkflowTasks();
+}
+
+let G_WF_ONLY_MINE = true;
+let G_WF_TASKS = [];
+
+function toggleWfOnlyMine() {
+  G_WF_ONLY_MINE = !G_WF_ONLY_MINE;
+  document.getElementById('wf-toggle-btn').textContent = G_WF_ONLY_MINE ? 'Xem tất cả' : 'Chỉ của tôi';
+  renderWorkflowTasks(G_WF_TASKS);
+}
+
+function fetchWorkflowTasks() {
+  const body = document.getElementById('wf-body');
+  if (body) body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted)">⏳ Đang tải...</td></tr>';
+  google.script.run
+    .withSuccessHandler(tasks => { G_WF_TASKS = tasks || []; renderWorkflowTasks(G_WF_TASKS); })
+    .withFailureHandler(err => { if (body) body.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#dc2626">Lỗi: ${err.message}</td></tr>`; })
+    .getWorkflowTasks(G_CP_DATE.from, G_CP_DATE.to);
+}
+
+function renderWorkflowTasks(tasks) {
+  const body = document.getElementById('wf-body');
+  const count = document.getElementById('wf-count');
+  const person = getCpPerson();
+  const filtered = G_WF_ONLY_MINE && person ? tasks.filter(t => t.assignee === person) : tasks;
+  if (count) count.textContent = filtered.length + ' việc';
+  if (!body) return;
+  if (!filtered.length) {
+    body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted)">Không có việc nào</td></tr>';
+    return;
+  }
+  const today = fmtD(new Date());
+  body.innerHTML = filtered.map(t => {
+    const overdue = t.status !== 'Done' && t.deadline && t.deadline < today;
+    const rowStyle = overdue ? 'background:#fef2f2' : '';
+    const assigneeCell = t.assignee || '<span style="color:#f59e0b">⚠️ Chưa gán</span>';
+    const actionCell = t.status === 'Done'
+      ? '<span style="color:#059669;font-weight:700">✓ Xong</span>'
+      : `<button onclick="markTaskDone('${t.taskId}', this)" style="padding:4px 10px;background:#059669;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">✓ Done</button>`;
+    return `<tr id="wf-row-${t.taskId}" style="${rowStyle}">
+      <td>${t.desc || t.postId}</td>
+      <td style="text-align:center">${t.stage}</td>
+      <td style="text-align:center;${overdue ? 'color:#dc2626;font-weight:700' : ''}">${t.deadline}</td>
+      <td style="text-align:center">${assigneeCell}</td>
+      <td style="text-align:center">${t.status}</td>
+      <td style="text-align:center">${actionCell}</td>
+    </tr>`;
+  }).join('');
+}
+
+function markTaskDone(taskId, btnEl) {
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '...'; }
+  google.script.run
+    .withSuccessHandler(res => {
+      if (!res.ok) { if (btnEl) { btnEl.disabled = false; btnEl.textContent = '✓ Done'; } alert(res.message); return; }
+      const task = G_WF_TASKS.find(t => t.taskId === taskId);
+      if (task) { task.status = 'Done'; task.doneDate = res.doneDate; }
+      renderWorkflowTasks(G_WF_TASKS);
+    })
+    .withFailureHandler(err => {
+      if (btnEl) { btnEl.disabled = false; btnEl.textContent = '✓ Done'; }
+      alert('Lỗi: ' + err.message);
+    })
+    .markWorkflowTaskDone(taskId);
 }
 
 function initWebsite() {
