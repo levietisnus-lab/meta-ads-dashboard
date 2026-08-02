@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hahaha — Trình xem tài liệu</title>
+    <style>
+      :root { --grad: linear-gradient(135deg, #ff3355, #c2102c 55%, #6c0819); }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; height: 100vh; display: flex; flex-direction: column; color: #fdeef1;
+        font-family: "Segoe UI", Roboto, system-ui, sans-serif;
+        background: radial-gradient(700px 500px at 20% -10%, rgba(255,51,85,.18), transparent 60%), #0a0206;
+        -webkit-user-select: none; user-select: none;
+      }
+      header {
+        display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+        border-bottom: 1px solid rgba(255,92,122,.16); font-size: 13px;
+      }
+      header strong { font-size: 13.5px; }
+      header .meta { color: #8d6773; font-size: 11.5px; }
+      .spacer { flex: 1; }
+      .zoom { display: flex; gap: 6px; }
+      .zoom button, .pager button {
+        width: 30px; height: 30px; border-radius: 9px; border: 1px solid rgba(255,92,122,.18);
+        background: rgba(255,255,255,.04); color: #fdeef1; cursor: pointer;
+      }
+      .pager { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+      #stage {
+        flex: 1; overflow: auto; padding: 18px; display: flex; flex-direction: column;
+        align-items: center; gap: 14px; position: relative;
+      }
+      canvas, img, video { max-width: 100%; border-radius: 10px; box-shadow: 0 14px 40px rgba(0,0,0,.5); background: #fff; }
+      img, video { pointer-events: none; }
+      pre {
+        white-space: pre-wrap; word-break: break-word; width: min(900px, 100%); padding: 20px;
+        border-radius: 12px; background: rgba(0,0,0,.35); border: 1px solid rgba(255,92,122,.14);
+        font-size: 13px; line-height: 1.6; color: #f3dde2;
+      }
+      .watermark {
+        position: fixed; inset: 0; pointer-events: none; z-index: 5; opacity: .1;
+        font-size: 15px; font-weight: 700; color: #fff; overflow: hidden;
+      }
+      .watermark span { position: absolute; transform: rotate(-30deg); white-space: nowrap; }
+      .notice { max-width: 480px; text-align: center; margin: auto; color: #c69aa5; font-size: 13.5px; line-height: 1.6; }
+      .notice .ico { font-size: 42px; display: block; margin-bottom: 10px; }
+      .lock { padding: 4px 9px; border-radius: 20px; background: var(--grad); font-size: 10.5px; font-weight: 800; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span class="lock">CHỈ XEM</span>
+      <div><strong id="fname">…</strong><div class="meta" id="fmeta"></div></div>
+      <div class="spacer"></div>
+      <div class="pager" id="pager" hidden>
+        <button id="prev">‹</button><span id="pageInfo">1/1</span><button id="next">›</button>
+      </div>
+      <div class="zoom" id="zoom" hidden><button id="zoomOut">−</button><button id="zoomIn">+</button></div>
+    </header>
+    <div id="stage"></div>
+    <div class="watermark" id="watermark"></div>
+
+    <script type="module">
+      const params = new URLSearchParams(location.search);
+      const id = params.get('id');
+      const stage = document.getElementById('stage');
+      const raw = '/api/file/' + encodeURIComponent(id) + '/raw';
+
+      // Chặn các thao tác sao chép nhanh (biện pháp hạn chế, không phải DRM).
+      document.addEventListener('contextmenu', (e) => e.preventDefault());
+      document.addEventListener('dragstart', (e) => e.preventDefault());
+      document.addEventListener('keydown', (e) => {
+        const k = (e.key || '').toLowerCase();
+        if ((e.ctrlKey || e.metaKey) && ['s', 'p', 'u'].includes(k)) e.preventDefault();
+      });
+
+      function watermark(text) {
+        const box = document.getElementById('watermark');
+        let html = '';
+        for (let r = 0; r < 12; r++) {
+          for (let c = 0; c < 5; c++) {
+            html += `<span style="top:${r * 11}%;left:${c * 24 - 5}%">${text}</span>`;
+          }
+        }
+        box.innerHTML = html;
+      }
+
+      function notice(icon, text) {
+        stage.innerHTML = `<div class="notice"><span class="ico">${icon}</span>${text}</div>`;
+      }
+
+      fetch('/api/file/' + encodeURIComponent(id) + '/meta', { credentials: 'same-origin' })
+        .then((r) => (r.ok ? r.json() : r.text().then((t) => Promise.reject(new Error(t)))))
+        .then((meta) => {
+          document.getElementById('fname').textContent = meta.name;
+          document.getElementById('fmeta').textContent =
+            meta.ownerName + ' • ' + new Date(meta.ts).toLocaleString('vi-VN');
+          watermark(meta.viewerName + ' • ' + new Date().toLocaleString('vi-VN'));
+          return render(meta);
+        })
+        .catch((err) => notice('🚫', err.message || 'Không mở được tài liệu'));
+
+      async function render(meta) {
+        if (meta.kind === 'pdf') return renderPdf();
+        if (meta.kind === 'image') {
+          const img = new Image();
+          img.src = raw;
+          stage.appendChild(img);
+          return;
+        }
+        if (meta.kind === 'video' || meta.kind === 'audio') {
+          const el = document.createElement(meta.kind === 'video' ? 'video' : 'audio');
+          el.src = raw;
+          el.controls = true;
+          el.controlsList = 'nodownload noplaybackrate';
+          el.style.pointerEvents = 'auto';
+          stage.appendChild(el);
+          return;
+        }
+        if (meta.kind === 'text') {
+          const text = await fetch(raw, { credentials: 'same-origin' }).then((r) => r.text());
+          const pre = document.createElement('pre');
+          pre.textContent = text;
+          stage.appendChild(pre);
+          return;
+        }
+        notice(
+          '📦',
+          'Định dạng này chưa xem trực tiếp được trong Hahaha.<br/>Hãy xuất tài liệu sang <strong>PDF</strong> rồi chia sẻ lại để mọi người xem mà không tải về được.'
+        );
+      }
+
+      async function renderPdf() {
+        const pdfjs = await import('/vendor/pdfjs/pdf.mjs');
+        pdfjs.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.mjs';
+        const doc = await pdfjs.getDocument({
+          url: raw,
+          withCredentials: true,
+          cMapUrl: '/vendor/pdfjs/cmaps/',
+          cMapPacked: true,
+          standardFontDataUrl: '/vendor/pdfjs/standard_fonts/',
+          wasmUrl: '/vendor/pdfjs/wasm/'
+        }).promise;
+
+        let scale = 1.3;
+        let page = 1;
+        const pager = document.getElementById('pager');
+        const zoom = document.getElementById('zoom');
+        pager.hidden = false;
+        zoom.hidden = false;
+        const info = document.getElementById('pageInfo');
+
+        async function draw() {
+          stage.innerHTML = '';
+          const p = await doc.getPage(page);
+          const viewport = p.getViewport({ scale: scale * (window.devicePixelRatio || 1) });
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          canvas.style.width = viewport.width / (window.devicePixelRatio || 1) + 'px';
+          stage.appendChild(canvas);
+          await p.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          info.textContent = page + '/' + doc.numPages;
+        }
+
+        document.getElementById('prev').onclick = () => { if (page > 1) { page--; draw(); } };
+        document.getElementById('next').onclick = () => { if (page < doc.numPages) { page++; draw(); } };
+        document.getElementById('zoomIn').onclick = () => { scale = Math.min(3, scale + 0.2); draw(); };
+        document.getElementById('zoomOut').onclick = () => { scale = Math.max(0.5, scale - 0.2); draw(); };
+        draw();
+      }
+    </script>
+  </body>
+</html>

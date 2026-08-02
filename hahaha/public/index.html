@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#12040a" />
+    <title>Hahaha — Nội bộ công ty</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23b3122b'/%3E%3Ctext x='16' y='23' font-size='18' font-family='sans-serif' font-weight='bold' fill='white' text-anchor='middle'%3EH%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/css/app.css" />
+  </head>
+  <body>
+    <!-- ĐĂNG NHẬP -->
+    <div id="auth" class="auth hidden">
+      <div class="auth-glow"></div>
+      <div class="auth-card">
+        <div class="brand">
+          <div class="brand-mark">H</div>
+          <div>
+            <h1>Hahaha</h1>
+            <p>Nhắn tin • Gọi điện • Tài liệu nội bộ</p>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <button class="tab active" data-auth-tab="login">Đăng nhập</button>
+          <button class="tab" data-auth-tab="register">Tạo tài khoản</button>
+        </div>
+
+        <form id="loginForm" class="auth-form">
+          <label>Tên đăng nhập<input name="username" autocomplete="username" placeholder="vd: an.nguyen" required /></label>
+          <label>Mật khẩu<input name="password" type="password" autocomplete="current-password" required /></label>
+          <button class="btn-primary" type="submit">Vào Hahaha</button>
+        </form>
+
+        <form id="registerForm" class="auth-form hidden">
+          <label>Họ và tên<input name="name" placeholder="Nguyễn Văn An" required /></label>
+          <label>Tên đăng nhập<input name="username" autocomplete="username" placeholder="an.nguyen" required /></label>
+          <label>Mật khẩu<input name="password" type="password" autocomplete="new-password" minlength="6" required /></label>
+          <label>Mã công ty<input name="joinCode" placeholder="Do quản trị viên cấp" required /></label>
+          <button class="btn-primary" type="submit">Tạo tài khoản</button>
+        </form>
+
+        <p id="authError" class="auth-error"></p>
+        <p class="auth-note">🔒 Máy chủ chạy trong mạng LAN của công ty. Dữ liệu không rời khỏi hệ thống nội bộ.</p>
+      </div>
+    </div>
+
+    <!-- ỨNG DỤNG -->
+    <div id="app" class="app hidden">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-head">
+          <div class="brand small">
+            <div class="brand-mark">H</div>
+            <h1>Hahaha</h1>
+          </div>
+          <button class="icon-btn" id="btnCloseSidebar" title="Đóng">✕</button>
+        </div>
+
+        <div class="search-box"><input id="searchBox" placeholder="Tìm kênh, đồng nghiệp…" /></div>
+
+        <nav class="nav-scroll">
+          <div class="nav-section">
+            <div class="nav-title"><span>Kênh chung</span><button class="mini-btn" id="btnNewChannel">+</button></div>
+            <ul id="channelList" class="nav-list"></ul>
+          </div>
+          <div class="nav-section">
+            <div class="nav-title"><span>Tin nhắn riêng</span></div>
+            <ul id="dmList" class="nav-list"></ul>
+          </div>
+          <div class="nav-section">
+            <div class="nav-title"><span>Nhân sự</span></div>
+            <ul id="peopleList" class="nav-list"></ul>
+          </div>
+        </nav>
+
+        <div class="sidebar-foot">
+          <button class="ghost-btn wide" id="btnDocs">📁 Kho tài liệu</button>
+          <div class="me-row">
+            <div class="avatar" id="meAvatar">?</div>
+            <div class="me-info"><strong id="meName">…</strong><span id="meRole"></span></div>
+            <button class="icon-btn" id="btnLogout" title="Đăng xuất">⏻</button>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="chat-head">
+          <button class="icon-btn only-mobile" id="btnOpenSidebar">☰</button>
+          <div class="chat-title">
+            <h2 id="convName">Chọn một cuộc trò chuyện</h2>
+            <p id="convTopic"></p>
+          </div>
+          <div class="head-actions">
+            <button class="call-btn" id="btnAudioCall" title="Gọi thoại" disabled>📞</button>
+            <button class="call-btn" id="btnVideoCall" title="Gọi video" disabled>🎥</button>
+          </div>
+        </header>
+
+        <div id="callBanner" class="call-banner hidden">
+          <span id="callBannerText">Đang có cuộc gọi</span>
+          <button class="btn-primary tiny" id="btnJoinCall">Tham gia</button>
+        </div>
+
+        <div id="messages" class="messages">
+          <div class="empty-state">
+            <div class="empty-mark">H</div>
+            <h3>Chào mừng đến Hahaha</h3>
+            <p>Chọn một kênh bên trái để bắt đầu trò chuyện, gọi điện hoặc chia sẻ tài liệu.</p>
+          </div>
+        </div>
+
+        <div id="typing" class="typing"></div>
+
+        <form id="composer" class="composer">
+          <button type="button" class="icon-btn" id="btnAttach" title="Gửi tài liệu (chỉ xem)">📎</button>
+          <input type="file" id="fileInput" hidden />
+          <textarea id="msgInput" rows="1" placeholder="Nhập tin nhắn… (Enter để gửi)" disabled></textarea>
+          <button class="send-btn" type="submit" disabled>➤</button>
+        </form>
+        <div id="uploadBar" class="upload-bar hidden"><div class="upload-fill"></div><span></span></div>
+      </main>
+    </div>
+
+    <!-- CUỘC GỌI -->
+    <div id="callOverlay" class="call-overlay hidden">
+      <div class="call-top">
+        <div><strong id="callTitle">Cuộc gọi</strong><span id="callTimer">00:00</span></div>
+        <button class="icon-btn" id="btnMinimizeCall" title="Thu nhỏ">▁</button>
+      </div>
+      <div id="videoGrid" class="video-grid"></div>
+      <div class="call-controls">
+        <button class="ctrl" id="btnMic" title="Tắt/bật micro">🎙️</button>
+        <button class="ctrl" id="btnCam" title="Tắt/bật camera">🎥</button>
+        <button class="ctrl" id="btnShare" title="Chia sẻ màn hình">🖥️</button>
+        <button class="ctrl danger" id="btnHangup" title="Kết thúc">✕</button>
+      </div>
+    </div>
+
+    <!-- CHUÔNG GỌI ĐẾN -->
+    <div id="ringModal" class="modal hidden">
+      <div class="modal-card ring">
+        <div class="avatar big" id="ringAvatar">?</div>
+        <h3 id="ringTitle">Cuộc gọi đến</h3>
+        <p id="ringSub"></p>
+        <div class="ring-actions">
+          <button class="btn-danger" id="btnDecline">Từ chối</button>
+          <button class="btn-primary" id="btnAccept">Trả lời</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KHO TÀI LIỆU -->
+    <div id="docsModal" class="modal hidden">
+      <div class="modal-card wide">
+        <div class="modal-head">
+          <h3>📁 Kho tài liệu nội bộ</h3>
+          <button class="icon-btn" data-close-modal>✕</button>
+        </div>
+        <p class="modal-sub">Tài liệu chỉ mở ở chế độ xem, có đóng dấu tên người xem. Không có nút tải xuống.</p>
+        <input id="docsSearch" class="modal-search" placeholder="Tìm theo tên tài liệu…" />
+        <div id="docsList" class="docs-list"></div>
+      </div>
+    </div>
+
+    <!-- TRÌNH XEM TÀI LIỆU -->
+    <div id="viewerModal" class="modal hidden">
+      <div class="modal-card viewer">
+        <div class="modal-head">
+          <h3 id="viewerTitle">Tài liệu</h3>
+          <div>
+            <span class="badge">CHỈ XEM</span>
+            <button class="icon-btn" data-close-modal>✕</button>
+          </div>
+        </div>
+        <iframe id="viewerFrame" class="viewer-frame" src="about:blank"></iframe>
+      </div>
+    </div>
+
+    <!-- TẠO KÊNH -->
+    <div id="channelModal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-head">
+          <h3>Tạo kênh mới</h3>
+          <button class="icon-btn" data-close-modal>✕</button>
+        </div>
+        <form id="channelForm" class="auth-form">
+          <label>Tên kênh<input name="name" placeholder="vd: Phòng Marketing" required /></label>
+          <label>Mô tả<input name="topic" placeholder="Nội dung trao đổi của kênh" /></label>
+          <button class="btn-primary" type="submit">Tạo kênh</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/call.js"></script>
+    <script src="/js/app.js"></script>
+  </body>
+</html>

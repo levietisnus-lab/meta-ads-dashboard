@@ -1,0 +1,21 @@
+{
+  "name": "hahaha",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Hahaha - ung dung nhan tin, goi dien va chia se tai lieu noi bo chay trong mang LAN cong ty",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "express": "^5.2.1",
+    "multer": "^2.2.0",
+    "pdfjs-dist": "^6.2.108",
+    "selfsigned": "^5.5.0",
+    "socket.io": "^4.8.3"
+  }
+}
