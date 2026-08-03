@@ -19,7 +19,8 @@
 :root{
   --bg:#f8f9fa; --surface:#ffffff; --surface2:#f1f3f4;
   --border:#e8eaed; --border2:#dadce0;
-  --sidebar:#ffffff; --sidebar-w:252px;
+  --sidebar:#ffffff; --sidebar-w:252px; --sidebar-w-collapsed:76px;
+  --sidebar-grad:linear-gradient(165deg,#3b8bf0 0%,#1a73e8 45%,#0f4fb0 100%);
   --accent:#1a73e8; --accent-soft:#e8f0fe; --accent-text:#1967d2;
   --blue:#1a73e8; --gold:#f9ab00; --green:#1e8e3e; --red:#d93025; --purple:#a142f4; --cyan:#12a4af;
   --text:#202124; --text2:#5f6368; --text3:#80868b;
@@ -56,19 +57,54 @@ button{cursor:pointer;font-family:inherit}
 /* ══ SHELL ═══════════════════════════════════════════════ */
 #app{display:flex;height:100vh;width:100vw;overflow:hidden}
 
-.nav{width:var(--sidebar-w);min-width:var(--sidebar-w);background:var(--sidebar);display:flex;flex-direction:column;border-right:1px solid var(--border);height:100vh;overflow-y:auto;overflow-x:hidden;z-index:10;transition:transform .25s ease}
-.sb-logo{padding:18px 16px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px}
-.sb-logo .logo-mark{flex-shrink:0;width:40px;height:40px;background:var(--accent-soft);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
-.sb-logo strong{display:block;font-size:13px;font-weight:700;letter-spacing:.4px;color:var(--text);line-height:1.15;font-family:var(--font-head)}
-.sb-logo span{display:block;font-size:10px;color:var(--text2);margin-top:1px}
-.sb-section{padding:15px 16px 5px;font-size:11px;font-weight:500;letter-spacing:.8px;color:var(--text3);text-transform:uppercase;font-family:var(--font-head)}
-.sb-nav{list-style:none;padding:0 10px 8px}
-.sb-nav li{margin-bottom:1px}
-.nav-tab{display:flex;align-items:center;gap:11px;padding:8px 14px;border-radius:99px;color:var(--text2);font-size:13.5px;font-weight:500;font-family:var(--font-head);transition:var(--transition);white-space:nowrap;cursor:pointer;user-select:none}
-.nav-tab:hover{background:var(--surface2);color:var(--text)}
-.nav-tab.active{background:var(--accent-soft);color:var(--accent-text);font-weight:500}
-.sb-footer{margin-top:auto;padding:13px 12px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)}
-.sb-footer strong{color:var(--text2);font-weight:600}
+.nav{
+  width:var(--sidebar-w);min-width:var(--sidebar-w);
+  background:var(--sidebar-grad);
+  display:flex;flex-direction:column;
+  margin:14px 0 14px 14px;height:calc(100vh - 28px);
+  border-radius:24px;position:relative;z-index:10;
+  overflow-y:auto;overflow-x:hidden;
+  box-shadow:0 16px 34px -12px rgba(15,79,176,.5),0 4px 10px rgba(15,79,176,.18);
+  transition:width .38s cubic-bezier(.34,1.24,.44,1),transform .25s ease;
+}
+.nav.collapsed{width:var(--sidebar-w-collapsed);min-width:var(--sidebar-w-collapsed)}
+.sb-toggle{
+  position:absolute;top:22px;right:-14px;width:28px;height:28px;border-radius:50%;
+  background:#fff;color:var(--accent-text);border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;
+  box-shadow:0 3px 8px rgba(15,79,176,.28);z-index:11;transition:transform .38s cubic-bezier(.34,1.24,.44,1),background .2s;
+}
+.sb-toggle:hover{background:var(--accent-soft)}
+.sb-toggle:active{transform:translateX(0) scale(.88)}
+.nav.collapsed .sb-toggle{transform:rotate(180deg)}
+.sb-logo{padding:20px 18px 16px;display:flex;align-items:center;gap:11px;flex-shrink:0}
+.sb-logo .logo-mark{flex-shrink:0;width:40px;height:40px;background:rgba(255,255,255,.22);backdrop-filter:blur(6px);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px}
+.sb-logo strong{display:block;font-size:13px;font-weight:700;letter-spacing:.4px;color:#fff;line-height:1.15;font-family:var(--font-head);white-space:nowrap}
+.sb-logo span{display:block;font-size:10px;color:rgba(255,255,255,.72);margin-top:1px;white-space:nowrap}
+.nav.collapsed .sb-logo{padding:20px 0 16px;justify-content:center}
+.nav.collapsed .sb-logo>div{display:none}
+.sb-section{padding:14px 18px 6px;font-size:10.5px;font-weight:600;letter-spacing:.9px;color:rgba(255,255,255,.55);text-transform:uppercase;font-family:var(--font-head);white-space:nowrap;overflow:hidden;transition:opacity .18s ease}
+.nav.collapsed .sb-section{opacity:0;height:14px;padding-top:8px;padding-bottom:0}
+.sb-nav{list-style:none;padding:0 12px 6px}
+.sb-nav li{margin-bottom:3px}
+.nav-tab{
+  display:flex;align-items:center;gap:13px;padding:10px 14px;border-radius:16px;
+  color:rgba(255,255,255,.82);font-size:13.5px;font-weight:500;font-family:var(--font-head);
+  white-space:nowrap;cursor:pointer;user-select:none;position:relative;
+  transition:background .22s ease,color .22s ease,transform .12s cubic-bezier(.34,1.24,.44,1),box-shadow .22s ease;
+}
+.nav-tab:hover{background:rgba(255,255,255,.14);color:#fff;transform:translateX(2px)}
+.nav-tab:active{transform:scale(.95)}
+.nav-tab.active{background:#ffffff;color:var(--accent-text);font-weight:700;box-shadow:0 6px 16px -4px rgba(10,40,100,.35);transform:none}
+.nav-tab.active:hover{transform:none}
+.nav-ico{flex-shrink:0;width:22px;text-align:center;font-size:16px}
+.nav-label{overflow:hidden;text-overflow:clip;transition:opacity .16s ease}
+.nav.collapsed .sb-nav{padding:0 10px 6px}
+.nav.collapsed .nav-tab{justify-content:center;padding:11px 0;gap:0}
+.nav.collapsed .nav-label{display:none}
+.sb-footer{margin-top:auto;padding:14px 16px;font-size:11px;color:rgba(255,255,255,.6);white-space:nowrap;overflow:hidden;flex-shrink:0}
+.sb-footer strong{color:#fff;font-weight:600}
+.nav.collapsed .sb-footer{opacity:0;padding-top:0;padding-bottom:0;height:0}
 
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);min-width:0}
 .header{height:62px;min-height:62px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 22px;gap:12px;flex-shrink:0}
@@ -247,8 +283,11 @@ html[data-theme="dark"] .s-archived{background:rgba(242,139,130,.16);color:#f28b
 /* ══ RESPONSIVE ══════════════════════════════════════════ */
 @media(max-width:1024px){
   #mob-tog{display:block}
-  .nav{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);box-shadow:4px 0 24px rgba(0,0,0,.25)}
+  .nav,.nav.collapsed{position:fixed;left:0;top:0;bottom:0;margin:0;height:100vh;border-radius:0;width:var(--sidebar-w);min-width:var(--sidebar-w);transform:translateX(-100%);box-shadow:4px 0 24px rgba(0,0,0,.25)}
   .nav.open{transform:translateX(0)}
+  .nav.collapsed .nav-label,.nav.collapsed .sb-logo>div,.nav.collapsed .sb-section,.nav.collapsed .sb-footer{display:block;opacity:1;height:auto;padding:revert}
+  .nav.collapsed .nav-tab{justify-content:flex-start;padding:10px 14px;gap:13px}
+  .sb-toggle{display:none}
   #content{padding:18px 16px}
   .header{padding:0 14px}
   .header h1{font-size:16px}
@@ -287,6 +326,7 @@ html[data-theme="dark"] .s-archived{background:rgba(242,139,130,.16);color:#f28b
 
 <!-- ── SIDEBAR ────────────────────────────────────────── -->
 <nav class="nav" id="sidebar">
+  <div class="sb-toggle" id="sb-toggle" onclick="toggleSidebarCollapse()" title="Thu gọn/mở rộng">‹</div>
   <div class="sb-logo">
     <div class="logo-mark">📊</div>
     <div>
@@ -1294,6 +1334,43 @@ function toggleSidebar() {
   sb.classList.toggle('open', open);
   if (bk) bk.classList.toggle('show', open);
 }
+
+// Thu gọn/mở rộng sidebar trên desktop (chỉ icon vs có chữ) — khác với toggleSidebar()
+// (ẩn/hiện hoàn toàn trên di động). Nhớ lựa chọn bằng localStorage.
+const SB_COLLAPSE_KEY = 'fujiwa_sb_collapsed';
+
+function toggleSidebarCollapse() {
+  const sb = document.getElementById('sidebar');
+  if (!sb) return;
+  const collapsed = !sb.classList.contains('collapsed');
+  sb.classList.toggle('collapsed', collapsed);
+  try { localStorage.setItem(SB_COLLAPSE_KEY, collapsed ? '1' : '0'); } catch (e) {}
+}
+
+// Bọc phần chữ của mỗi nav-tab vào <span class="nav-label"> để CSS có thể ẩn/hiện
+// riêng chữ khi thu gọn, giữ nguyên icon — chạy 1 lần lúc trang tải.
+function initSidebarLabels() {
+  document.querySelectorAll('.nav-tab').forEach(tab => {
+    if (tab.querySelector('.nav-label')) return; // đã bọc rồi
+    const ico = tab.querySelector('.nav-ico');
+    const label = document.createElement('span');
+    label.className = 'nav-label';
+    let node = ico ? ico.nextSibling : tab.firstChild;
+    while (node) {
+      const next = node.nextSibling;
+      label.appendChild(node);
+      node = next;
+    }
+    tab.appendChild(label);
+  });
+  const sb = document.getElementById('sidebar');
+  if (sb) {
+    let collapsed = false;
+    try { collapsed = localStorage.getItem(SB_COLLAPSE_KEY) === '1'; } catch (e) {}
+    sb.classList.toggle('collapsed', collapsed);
+  }
+}
+initSidebarLabels();
 
 function switchTab(el) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
