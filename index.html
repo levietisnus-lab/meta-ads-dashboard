@@ -9,364 +9,342 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root {
-  --primary:   #0f172a;
-  --blue:      #3b82f6;
-  --gold:      #f59e0b;
-  --green:     #10b981;
-  --red:       #ef4444;
-  --purple:    #8b5cf6;
-  --cyan:      #06b6d4;
-  
-  --bg:        #0B0F19;
-  --bg-glow:   radial-gradient(circle at 50% -20%, #1e3a8a 0%, #0B0F19 50%);
-  --card:      rgba(30, 41, 59, 0.4);
-  --card-hover: rgba(30, 41, 59, 0.7);
-  --text:      #f8fafc;
-  --muted:     #b8c2d6;
-  --border:    rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+/* ══════════════════════════════════════════════════════════
+   DESIGN TOKENS — Material (Google Workspace)
+   Nền sáng mặc định; nền tối tự bật theo giờ mặt trời lặn (xem _applySunTheme).
+   --muted/--primary/--card là bí danh cũ, giữ lại để HTML/JS sẵn có không vỡ.
+══════════════════════════════════════════════════════════ */
+:root{
+  --bg:#f8f9fa; --surface:#ffffff; --surface2:#f1f3f4;
+  --border:#e8eaed; --border2:#dadce0;
+  --sidebar:#ffffff; --sidebar-w:252px;
+  --accent:#1a73e8; --accent-soft:#e8f0fe; --accent-text:#1967d2;
+  --blue:#1a73e8; --gold:#f9ab00; --green:#1e8e3e; --red:#d93025; --purple:#a142f4; --cyan:#12a4af;
+  --text:#202124; --text2:#5f6368; --text3:#80868b;
+  --muted:#5f6368; --primary:#1a73e8; --card:#ffffff;
+  --radius:12px; --radius-sm:8px;
+  --shadow:0 1px 2px 0 rgba(60,64,67,.30),0 2px 6px 2px rgba(60,64,67,.15);
+  --shadow-sm:0 1px 2px 0 rgba(60,64,67,.30),0 1px 3px 1px rgba(60,64,67,.15);
+  --transition:.2s ease;
+  --font-head:'Google Sans','Roboto',Arial,sans-serif;
+}
+html[data-theme="dark"]{
+  --bg:#202124; --surface:#292a2d; --surface2:#35363a;
+  --border:#3c4043; --border2:#5f6368;
+  --sidebar:#292a2d;
+  --accent:#8ab4f8; --accent-soft:rgba(138,180,248,.16); --accent-text:#8ab4f8;
+  --blue:#8ab4f8; --gold:#fdd663; --green:#81c995; --red:#f28b82; --purple:#d7aefb; --cyan:#78d9ec;
+  --text:#e8eaed; --text2:#9aa0a6; --text3:#80868b;
+  --muted:#9aa0a6; --primary:#8ab4f8; --card:#292a2d;
+  --shadow:0 1px 2px 0 rgba(0,0,0,.55),0 2px 6px 2px rgba(0,0,0,.35);
+  --shadow-sm:0 1px 2px 0 rgba(0,0,0,.55),0 1px 3px 1px rgba(0,0,0,.35);
 }
 
-/* ── LIGHT MODE ──────────────────────────────────────── */
-[data-theme="light"] {
-  --bg: #f0f2f5;
-  --bg-glow: linear-gradient(135deg, #e8edf5 0%, #f0f2f5 100%);
-  --card: rgba(255, 255, 255, 0.85);
-  --card-hover: rgba(255, 255, 255, 0.95);
-  --text: #1e293b;
-  --muted: #64748b;
-  --border: rgba(0, 0, 0, 0.08);
-  --glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.04);
-  --primary: #1e293b;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Roboto',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;overflow:hidden;transition:background .3s,color .3s}
+h1,h2,h3,h4,.card-title,.kpi-value,.topbar-title{font-family:var(--font-head)}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;font-family:inherit}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px;border:2px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:var(--text3);background-clip:padding-box}
+
+/* ══ SHELL ═══════════════════════════════════════════════ */
+#app{display:flex;height:100vh;width:100vw;overflow:hidden}
+
+.nav{width:var(--sidebar-w);min-width:var(--sidebar-w);background:var(--sidebar);display:flex;flex-direction:column;border-right:1px solid var(--border);height:100vh;overflow-y:auto;overflow-x:hidden;z-index:10;transition:transform .25s ease}
+.sb-logo{padding:18px 16px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px}
+.sb-logo .logo-mark{flex-shrink:0;width:40px;height:40px;background:var(--accent-soft);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.sb-logo strong{display:block;font-size:13px;font-weight:700;letter-spacing:.4px;color:var(--text);line-height:1.15;font-family:var(--font-head)}
+.sb-logo span{display:block;font-size:10px;color:var(--text2);margin-top:1px}
+.sb-section{padding:15px 16px 5px;font-size:11px;font-weight:500;letter-spacing:.8px;color:var(--text3);text-transform:uppercase;font-family:var(--font-head)}
+.sb-nav{list-style:none;padding:0 10px 8px}
+.sb-nav li{margin-bottom:1px}
+.nav-tab{display:flex;align-items:center;gap:11px;padding:8px 14px;border-radius:99px;color:var(--text2);font-size:13.5px;font-weight:500;font-family:var(--font-head);transition:var(--transition);white-space:nowrap;cursor:pointer;user-select:none}
+.nav-tab:hover{background:var(--surface2);color:var(--text)}
+.nav-tab.active{background:var(--accent-soft);color:var(--accent-text);font-weight:500}
+.sb-footer{margin-top:auto;padding:13px 12px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)}
+.sb-footer strong{color:var(--text2);font-weight:600}
+
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);min-width:0}
+.header{height:62px;min-height:62px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 22px;gap:12px;flex-shrink:0}
+.header h1{font-size:19px;font-weight:700;color:var(--text);letter-spacing:-.2px}
+.sync-info{font-size:12px;color:var(--text2);background:var(--surface2);padding:6px 13px;border-radius:99px;white-space:nowrap}
+.header-right{display:flex;align-items:center;gap:10px;margin-left:auto}
+#mob-tog{display:none;background:transparent;border:none;font-size:20px;color:var(--text2);padding:4px 8px;border-radius:8px}
+#mob-back{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9}
+#mob-back.show{display:block}
+
+#content{flex:1;overflow-y:auto;padding:24px 28px}
+
+/* ══ BUTTONS ═════════════════════════════════════════════ */
+.btn{padding:7px 17px;border:1px solid var(--border2);border-radius:99px;cursor:pointer;font-size:13px;font-weight:500;font-family:var(--font-head);background:var(--surface);color:var(--text2);transition:var(--transition)}
+.btn:hover{background:var(--surface2);color:var(--text)}
+.btn-sync{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-sync:hover{background:var(--accent-text);border-color:var(--accent-text);color:#fff;box-shadow:var(--shadow-sm)}
+.btn-sync:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+.theme-toggle,.notif-bell{position:relative;background:var(--surface);border:1px solid var(--border2);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;transition:var(--transition);flex-shrink:0}
+.theme-toggle:hover,.notif-bell:hover{background:var(--surface2)}
+.notif-badge{position:absolute;top:-3px;right:-3px;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:10px;min-width:16px;text-align:center;display:none;animation:notifPop .3s ease}
+.notif-badge.show{display:block}
+@keyframes notifPop{0%{transform:scale(0)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+.export-btn{padding:5px 13px;background:var(--surface);color:var(--accent-text);border:1px solid var(--border2);border-radius:99px;font-size:12px;font-weight:500;font-family:var(--font-head);cursor:pointer;transition:var(--transition);white-space:nowrap}
+.export-btn:hover{background:var(--accent-soft);border-color:var(--accent-soft)}
+.ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.55);transform:scale(0);animation:rippleAnim .55s ease-out;pointer-events:none}
+@keyframes rippleAnim{to{transform:scale(2.6);opacity:0}}
+html[data-theme="dark"] .ripple{background:rgba(255,255,255,.22)}
+.btn,.date-btn,.export-btn{position:relative;overflow:hidden}
+
+/* ══ PAGES + MOTION ══════════════════════════════════════ */
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.tab-panel.active>.card,.tab-panel.active>*>.card,.tab-panel.active .kpi-card{animation:fadeInUp .45s cubic-bezier(.2,.8,.2,1) both}
+.tab-panel.active .kpi-card:nth-of-type(1),.tab-panel.active .card:nth-of-type(1){animation-delay:.02s}
+.tab-panel.active .kpi-card:nth-of-type(2),.tab-panel.active .card:nth-of-type(2){animation-delay:.06s}
+.tab-panel.active .kpi-card:nth-of-type(3),.tab-panel.active .card:nth-of-type(3){animation-delay:.10s}
+.tab-panel.active .kpi-card:nth-of-type(4),.tab-panel.active .card:nth-of-type(4){animation-delay:.14s}
+.tab-panel.active .kpi-card:nth-of-type(5){animation-delay:.18s}
+@media(prefers-reduced-motion:reduce){
+  .card,.kpi-card,.tab-panel.active .card,.tab-panel.active .kpi-card{animation:none!important;transition:none!important}
+  .card:hover,.kpi-card:hover{transform:none!important}
 }
-[data-theme="light"] .header { background: rgba(255,255,255,.85); color: var(--text); }
-[data-theme="light"] .header h1 { color: var(--text); }
-[data-theme="light"] .nav { background: rgba(255,255,255,.7); }
-[data-theme="light"] .nav-tab { color: var(--muted); }
-[data-theme="light"] .nav-tab.active { color: var(--blue); }
-[data-theme="light"] .nav-tab:hover { color: var(--text); }
-[data-theme="light"] th { background: #f1f5f9; color: #334155; border-bottom-color: #e2e8f0; }
-[data-theme="light"] th:hover { background: #e2e8f0; }
-[data-theme="light"] td { color: var(--text); border-bottom-color: #e2e8f0; }
-[data-theme="light"] tr:hover td { background: rgba(59,130,246,.04); }
-[data-theme="light"] .kpi-value { color: var(--text); }
-[data-theme="light"] .card-title { color: var(--text); }
-[data-theme="light"] .search-row input, [data-theme="light"] .search-row select { background: #fff; color: var(--text); border-color: #e2e8f0; }
-[data-theme="light"] .search-row select option { background: #fff; color: var(--text); }
-[data-theme="light"] .msg-from { color: var(--text); }
-[data-theme="light"] .chat-bubble.user .chat-text { background: #f1f5f9; color: var(--text); border-color: #e2e8f0; }
-[data-theme="light"] .cr-name, [data-theme="light"] .cr-title { color: var(--text); }
-[data-theme="light"] .cr-text { color: #475569; }
-[data-theme="light"] .tbl-wrap { background: rgba(255,255,255,.9); }
-[data-theme="light"] .badge-pill { background: rgba(6,182,212,.08); }
-[data-theme="light"] .btn-sync { box-shadow: 0 4px 15px rgba(245,158,11,.15); }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Outfit', sans-serif; background: var(--bg); background-image: var(--bg-glow); background-attachment: fixed; color: var(--text); font-size: 14px; min-height: 100vh; transition: background .3s, color .3s; }
+/* ══ LAYOUT GRIDS ════════════════════════════════════════ */
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:1200px){.grid-3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr}}
 
-/* ── HEADER ───────────────────────────────────────────── */
-.header {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: #fff;
-  padding: 14px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 200;
-  border-bottom: 1px solid var(--border);
+/* ══ CARD ════════════════════════════════════════════════ */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:18px;transform-origin:center center;transition:border-color .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s cubic-bezier(.2,.8,.2,1),transform .28s cubic-bezier(.2,.8,.2,1)}
+.card:hover{border-color:var(--border2);box-shadow:var(--shadow);transform:scale(1.008)}
+.card-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;letter-spacing:.1px}
+
+/* ══ KPI ═════════════════════════════════════════════════ */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:22px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:19px 21px;position:relative;overflow:hidden;transform-origin:center center;color:var(--accent);transition:transform .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s cubic-bezier(.2,.8,.2,1)}
+.kpi-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:currentColor;opacity:.9;border-radius:4px 0 0 4px}
+.kpi-card::after{content:'';position:absolute;top:-28px;right:-28px;width:96px;height:96px;border-radius:50%;background:currentColor;opacity:.045}
+.kpi-card:hover{box-shadow:var(--shadow);transform:scale(1.02)}
+.kpi-card.gold{color:var(--gold)}.kpi-card.green{color:var(--green)}.kpi-card.red{color:var(--red)}
+.kpi-card.purple{color:var(--purple)}.kpi-card.blue{color:var(--blue)}.kpi-card.teal{color:var(--cyan)}
+.kpi-card>*{color:initial}
+.kpi-label{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.7px;text-transform:uppercase;margin-bottom:8px;font-family:var(--font-head)}
+.kpi-value{font-size:31px;font-weight:500;color:var(--text);line-height:1.15;letter-spacing:-.3px}
+.kpi-sub{font-size:12px;font-style:italic;color:var(--text3);margin-top:7px}
+
+/* ══ FILTER BAR / DATE BUTTONS ═══════════════════════════ */
+.filter-bar-light{background:var(--surface)!important;border:1px solid var(--border);box-shadow:none!important;border-radius:var(--radius)!important}
+.filter-bar-light,.filter-bar-light span{color:var(--text2)}
+.date-btn{padding:6px 14px;border:1px solid var(--border2);border-radius:99px;background:var(--surface);cursor:pointer;font-size:12.5px;font-weight:500;font-family:var(--font-head);color:var(--text2);transition:var(--transition);white-space:nowrap}
+.date-btn:hover{background:var(--surface2);color:var(--text)}
+.date-btn.active{background:var(--accent-soft);color:var(--accent-text);border-color:var(--accent-soft);font-weight:700}
+input[type=date],input[type=text],textarea,select{font-family:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border2);border-radius:8px;outline:none;transition:var(--transition)}
+input[type=date]:focus,input[type=text]:focus,textarea:focus,select:focus{border-color:var(--accent)}
+html[data-theme="dark"] input[type=date]{color-scheme:dark}
+
+/* ══ CHARTS ══════════════════════════════════════════════ */
+.chart-box{position:relative;height:290px;width:100%}
+
+/* ══ TABLE ═══════════════════════════════════════════════ */
+.tbl-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{background:var(--surface);color:var(--text2);padding:13px 15px;text-align:left;font-weight:700;font-size:12px;letter-spacing:.3px;white-space:nowrap;cursor:pointer;user-select:none;border-bottom:1px solid var(--border2);font-family:var(--font-head)}
+th:hover{background:var(--surface2)}
+td{padding:12px 15px;border-bottom:1px solid var(--border);white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis;color:var(--text);vertical-align:middle}
+tr:hover td{background:var(--surface2)}
+tr:last-child td{border-bottom:none}
+
+/* ══ SEARCH ROW ══════════════════════════════════════════ */
+.search-row{display:flex;gap:11px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.search-row input,.search-row select{padding:8px 13px;font-size:13px}
+.search-row input{flex:1;min-width:180px}
+.search-row input::placeholder{color:var(--text3)}
+
+/* ══ BADGES ══════════════════════════════════════════════ */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 11px;border-radius:99px;font-size:12px;font-weight:500;white-space:nowrap;font-family:var(--font-head)}
+.badge-pill{font-size:11px;color:var(--accent-text);background:var(--accent-soft);padding:4px 12px;border-radius:99px;font-weight:500;font-family:var(--font-head)}
+.s-active{background:#e6f4ea;color:#137333}
+.s-paused{background:#fef7e0;color:#b06000}
+.s-archived{background:#fce8e6;color:#c5221f}
+html[data-theme="dark"] .s-active{background:rgba(129,201,149,.16);color:#81c995}
+html[data-theme="dark"] .s-paused{background:rgba(253,214,99,.16);color:#fdd663}
+html[data-theme="dark"] .s-archived{background:rgba(242,139,130,.16);color:#f28b82}
+
+/* ══ MESSAGES ════════════════════════════════════════════ */
+.msg-list{display:flex;flex-direction:column;gap:10px}
+.msg-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:15px;transition:var(--transition);cursor:pointer}
+.msg-item:hover{border-color:var(--accent);background:var(--accent-soft)}
+.msg-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;gap:8px}
+.msg-from{font-weight:700;font-size:14px;color:var(--text)}
+.msg-meta{font-size:12px;color:var(--text3);white-space:nowrap}
+.msg-snippet{font-size:13px;color:var(--text2);line-height:1.6}
+.unread-dot{background:var(--accent);color:#fff;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:700}
+
+/* ══ CONVERSATION MODAL ══════════════════════════════════ */
+#conv-modal{display:none;position:fixed;inset:0;z-index:1000}
+#conv-modal.open{display:flex}
+#conv-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.5)}
+#conv-panel{position:relative;margin-left:auto;width:440px;max-width:100vw;height:100vh;background:var(--surface);display:flex;flex-direction:column;box-shadow:-6px 0 30px rgba(0,0,0,.25);animation:slideIn .3s cubic-bezier(.16,1,.3,1);border-left:1px solid var(--border)}
+@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+#conv-header{padding:15px 19px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;color:var(--text);flex-shrink:0;font-weight:600;font-family:var(--font-head)}
+#conv-header button{background:var(--surface2);border:none;color:var(--text2);width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:var(--transition)}
+#conv-header button:hover{background:var(--border)}
+#conv-body{flex:1;overflow-y:auto;padding:19px;display:flex;flex-direction:column;gap:14px}
+.chat-bubble{display:flex;flex-direction:column}
+.chat-bubble.page{align-items:flex-end}
+.chat-bubble.user{align-items:flex-start}
+.chat-text{max-width:85%;padding:11px 15px;font-size:13px;line-height:1.5;word-break:break-word;white-space:pre-wrap}
+.chat-bubble.page .chat-text{background:var(--accent);color:#fff;border-radius:18px 18px 4px 18px}
+.chat-bubble.user .chat-text{background:var(--surface2);color:var(--text);border-radius:18px 18px 18px 4px;border:1px solid var(--border)}
+.chat-time{font-size:11px;color:var(--text3);margin-top:5px}
+#conv-input-row{padding:15px 19px;border-top:1px solid var(--border);display:flex;gap:11px;background:var(--surface);flex-shrink:0}
+#conv-reply{flex:1;resize:none;border-radius:var(--radius);padding:11px 13px;font-size:13px;height:70px}
+#conv-reply::placeholder{color:var(--text3)}
+#conv-send-btn{padding:0 20px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-size:13px;font-weight:700;font-family:var(--font-head);cursor:pointer;transition:var(--transition);white-space:nowrap}
+#conv-send-btn:hover{background:var(--accent-text)}
+#conv-send-btn:disabled{background:var(--border2);color:var(--text3);cursor:not-allowed}
+
+/* ══ CREATIVES ═══════════════════════════════════════════ */
+.cr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+.cr-card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--surface);transition:var(--transition)}
+.cr-card:hover{box-shadow:var(--shadow);border-color:var(--border2);transform:translateY(-2px)}
+.cr-img{width:100%;height:180px;object-fit:cover;display:block;border-bottom:1px solid var(--border)}
+.cr-img-placeholder{width:100%;height:180px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--text3)}
+.cr-body{padding:15px}
+.cr-camp{font-size:11px;color:var(--accent-text);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.cr-name{font-weight:700;font-size:14px;margin-bottom:7px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--text)}
+.cr-title{font-size:14px;font-weight:700;margin-bottom:6px;color:var(--text)}
+.cr-text{font-size:13px;color:var(--text2);line-height:1.6;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.cr-cta{margin-top:13px;display:inline-block;background:var(--accent-soft);color:var(--accent-text);border:1px solid transparent;padding:6px 14px;border-radius:99px;font-size:12px;font-weight:500;transition:var(--transition)}
+.cr-cta:hover{background:var(--accent);color:#fff}
+
+/* ══ LOADING / EMPTY / SKELETON ══════════════════════════ */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:280px;color:var(--text3);gap:14px}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:50px 24px;color:var(--text3);background:var(--surface);border-radius:var(--radius);border:1px dashed var(--border2)}
+.empty p{margin-top:10px;font-size:14px;color:var(--text3)}
+.skeleton{background:linear-gradient(90deg,var(--surface2) 25%,var(--border) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ══ SCROLL TOP + FULLSCREEN CHART ═══════════════════════ */
+#scroll-top{position:fixed;bottom:26px;right:26px;width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:19px;cursor:pointer;box-shadow:var(--shadow);z-index:900;opacity:0;transform:translateY(20px);transition:all .3s;display:flex;align-items:center;justify-content:center}
+#scroll-top.show{opacity:1;transform:translateY(0)}
+#scroll-top:hover{background:var(--accent-text)}
+#chart-fullscreen{display:none;position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,.6);align-items:center;justify-content:center}
+#chart-fullscreen.open{display:flex}
+#chart-fullscreen .fs-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:90vw;max-width:1100px;height:70vh;padding:22px;position:relative}
+#chart-fullscreen .fs-close{position:absolute;top:13px;right:13px;background:var(--surface2);border:none;color:var(--text2);width:36px;height:36px;border-radius:50%;font-size:17px;cursor:pointer;transition:var(--transition)}
+#chart-fullscreen .fs-close:hover{background:var(--border)}
+#chart-fullscreen .fs-title{font-size:16px;font-weight:700;margin-bottom:15px;color:var(--text);font-family:var(--font-head)}
+
+/* ══ RESPONSIVE ══════════════════════════════════════════ */
+@media(max-width:1024px){
+  #mob-tog{display:block}
+  .nav{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);box-shadow:4px 0 24px rgba(0,0,0,.25)}
+  .nav.open{transform:translateX(0)}
+  #content{padding:18px 16px}
+  .header{padding:0 14px}
+  .header h1{font-size:16px}
+  .sync-info{display:none}
 }
-.header h1 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; letter-spacing: 0.5px; }
-.header-right { display: flex; align-items: center; gap: 14px; }
-.sync-info { font-size: 11px; opacity: .7; }
-.btn { padding: 8px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s ease; }
-.btn-sync { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); }
-.btn-sync:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4); }
-.btn-sync:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
-
-/* ── NAV ──────────────────────────────────────────────── */
-.nav {
-  background: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
-  padding: 0 24px;
-  display: flex;
-  overflow-x: auto;
-  scrollbar-width: none;
+@media(max-width:768px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+  .card{padding:16px}
+  .chart-box{height:230px}
+  #conv-panel{width:100%;border-left:none}
+  .search-row{flex-direction:column;align-items:stretch}
+  .search-row input,.search-row select{width:100%}
 }
-.nav::-webkit-scrollbar { display: none; }
-.nav-tab {
-  padding: 14px 20px;
-  cursor: pointer;
-  border-bottom: 3px solid transparent;
-  color: var(--muted);
-  font-weight: 500;
-  white-space: nowrap;
-  transition: all .2s ease;
-  user-select: none;
-}
-.nav-tab:hover { color: #fff; }
-.nav-tab.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 700; text-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+@media(max-width:480px){.kpi-grid{grid-template-columns:1fr}}
 
-/* ── LAYOUT ───────────────────────────────────────────── */
-.main { padding: 22px; max-width: 1440px; margin: 0 auto; }
-.tab-panel { display: none; opacity: 0; transform: translateY(8px); }
-.tab-panel.active { display: block; animation: tabFadeIn .35s ease forwards; }
-@keyframes tabFadeIn { to { opacity: 1; transform: translateY(0); } }
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
-@media (max-width: 900px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
-
-/* ── KPI CARDS ────────────────────────────────────────── */
-.kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 16px; margin-bottom: 24px; }
-.kpi-card {
-  background: var(--card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: var(--glass-shadow);
-  border-left: 4px solid var(--primary);
-  transition: transform 0.2s, background 0.2s;
-}
-.kpi-card:hover { transform: translateY(-4px); background: var(--card-hover); box-shadow: 0 8px 30px rgba(0,0,0,.15); }
-.kpi-card.gold   { border-left-color: var(--gold); box-shadow: -4px 0 20px rgba(245,158,11,0.15); }
-.kpi-card.green  { border-left-color: var(--green); box-shadow: -4px 0 20px rgba(16,185,129,0.15); }
-.kpi-card.red    { border-left-color: var(--red); box-shadow: -4px 0 20px rgba(239,68,68,0.15); }
-.kpi-card.purple { border-left-color: var(--purple); box-shadow: -4px 0 20px rgba(139,92,246,0.15); }
-.kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 10px; }
-.kpi-value { font-size: 28px; font-weight: 800; color: #fff; line-height: 1; letter-spacing: -0.5px; }
-.kpi-sub { font-size: 12px; color: var(--muted); margin-top: 8px; }
-
-/* ── CARD ─────────────────────────────────────────────── */
-.card { background: var(--card); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--border); border-radius: 16px; padding: 22px; box-shadow: var(--glass-shadow); margin-bottom: 20px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-.card:hover { background: var(--card-hover); border-color: rgba(255,255,255,0.15); box-shadow: 0 8px 40px rgba(0,0,0,.2), 0 0 20px rgba(59,130,246,0.1); transform: translateY(-2px); }
-
-/* ── RESPONSIVE ───────────────────────────────────────── */
-@media (max-width: 768px) {
-  .header { flex-direction: column; align-items: flex-start; gap: 12px; padding: 12px 16px; }
-  .header-right { width: 100%; justify-content: space-between; }
-  .nav { overflow-x: auto; padding: 0 16px; margin-bottom: 16px; }
-  .main { padding: 16px; }
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
-  .card { padding: 16px; border-radius: 12px; margin-bottom: 16px; }
-  .chart-box { height: 240px; }
-  #conv-panel { width: 100%; border-left: none; }
-  .search-row { flex-direction: column; align-items: stretch; }
-  .search-row input, .search-row select { width: 100%; }
-  #chart-fullscreen .fs-card { padding: 16px; height: 80vh; width: 95vw; }
-}
-@media (max-width: 480px) {
-  .kpi-grid { grid-template-columns: 1fr; }
-}
-.card-title { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-.badge-pill { font-size: 11px; color: var(--cyan); background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.2); padding: 4px 12px; border-radius: 20px; font-weight: 600; }
-.date-btn { padding: 6px 14px; border: 1px solid var(--border); border-radius: 8px; background: transparent; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--muted); transition: all .2s; white-space: nowrap; }
-.date-btn:hover { border-color: var(--blue); color: var(--blue); background: rgba(59, 130, 246, 0.05); }
-.date-btn.active { background: rgba(59, 130, 246, 0.15); color: var(--blue); border-color: var(--blue); text-shadow: 0 0 8px rgba(59, 130, 246, 0.4); }
-/* Thanh lọc nền trắng (Overview/Trang/Tin nhắn) — chữ tối để đọc được trên nền sáng */
-.filter-bar-light, .filter-bar-light .date-btn { color: #374151; }
-.filter-bar-light .date-btn:hover { color: var(--blue); }
-.filter-bar-light .date-btn.active { color: var(--blue); }
-
-/* ── CHARTS ───────────────────────────────────────────── */
-.chart-box { position: relative; height: 300px; width: 100%; }
-
-/* ── TABLE ────────────────────────────────────────────── */
-.tbl-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--card); }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th { background: rgba(15, 23, 42, 0.8); color: #fff; padding: 12px 14px; text-align: left; font-weight: 600; white-space: nowrap; cursor: pointer; user-select: none; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
-th:hover { background: rgba(30, 58, 138, 0.8); }
-td { padding: 10px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
-tr:hover td { background: rgba(255, 255, 255, 0.03); }
-tr:last-child td { border-bottom: none; }
-
-/* ── SEARCH ROW ───────────────────────────────────────── */
-.search-row { display: flex; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
-.search-row input, .search-row select {
-  padding: 8px 14px;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 13px;
-  outline: none;
-  color: #fff;
-  transition: all 0.2s;
-}
-.search-row input:focus, .search-row select:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
-.search-row input { flex: 1; min-width: 180px; }
-.search-row input::placeholder { color: var(--muted); }
-.search-row select option { background: #0f172a; color: #fff; }
-
-/* ── STATUS BADGES ────────────────────────────────────── */
-.badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
-.s-active   { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }
-.s-paused   { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.2); }
-.s-archived { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
-
-/* ── MESSAGES ─────────────────────────────────────────── */
-.msg-list { display: flex; flex-direction: column; gap: 12px; }
-.msg-item { background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 12px; padding: 16px; transition: all .2s; }
-.msg-item:hover { border-color: var(--blue); background: rgba(59, 130, 246, 0.05); transform: translateX(2px); }
-.msg-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
-.msg-from { font-weight: 700; font-size: 14px; color: #fff; }
-.msg-meta { font-size: 12px; color: var(--muted); white-space: nowrap; }
-.msg-snippet { font-size: 13px; color: var(--muted); line-height: 1.6; }
-.unread-dot { background: var(--blue); color: #fff; border-radius: 12px; padding: 2px 8px; font-size: 11px; font-weight: 700; box-shadow: 0 0 10px rgba(59,130,246,0.5); }
-.msg-item { cursor: pointer; }
-
-/* ── CONV MODAL ───────────────────────────────────────── */
-#conv-modal { display:none; position:fixed; inset:0; z-index:1000; }
-#conv-modal.open { display:flex; }
-#conv-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.7); backdrop-filter: blur(4px); }
-#conv-panel { position:relative; margin-left:auto; width:440px; max-width:100vw; height:100vh;
-  background:rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); display:flex; flex-direction:column;
-  box-shadow:-6px 0 30px rgba(0,0,0,.5);
-  animation: slideIn .3s cubic-bezier(0.16, 1, 0.3, 1); border-left: 1px solid var(--border); }
-@keyframes slideIn { from { transform:translateX(100%); } to { transform:translateX(0); } }
-#conv-header { padding:16px 20px; border-bottom:1px solid var(--border);
-  display:flex; align-items:center; gap:10px;
-  background:transparent; color:#fff; flex-shrink:0; font-weight:600; }
-#conv-header button { background:rgba(255,255,255,.1); border:none; color:#fff;
-  width:32px; height:32px; border-radius:50%; font-size:16px; cursor:pointer;
-  display:flex; align-items:center; justify-content:center; flex-shrink:0; transition: background .2s; }
-#conv-header button:hover { background:rgba(255,255,255,.2); }
-#conv-body { flex:1; overflow-y:auto; padding:20px;
-  display:flex; flex-direction:column; gap:16px; }
-.chat-bubble { display:flex; flex-direction:column; }
-.chat-bubble.page { align-items:flex-end; }
-.chat-bubble.user { align-items:flex-start; }
-.chat-text { max-width:85%; padding:12px 16px; font-size:13px; line-height:1.5;
-  word-break:break-word; white-space:pre-wrap; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-.chat-bubble.page .chat-text { background:linear-gradient(135deg, #3b82f6, #2563eb); color:#fff;
-  border-radius:20px 20px 4px 20px; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-.chat-bubble.user .chat-text { background:rgba(255,255,255,0.05); color:#e2e8f0;
-  border-radius:20px 20px 20px 4px;
-  border:1px solid var(--border); }
-.chat-time { font-size:11px; color:#64748b; margin-top:5px; }
-#conv-input-row { padding:16px 20px; border-top:1px solid var(--border);
-  display:flex; gap:12px; background:rgba(15,23,42,0.8); flex-shrink:0; }
-#conv-reply { flex:1; resize:none; border:1px solid var(--border); border-radius:12px;
-  padding:12px 14px; font-size:13px; font-family:inherit; height:72px;
-  background: rgba(0,0,0,0.2); color: #fff; outline:none; transition:border-color .2s; }
-#conv-reply:focus { border-color:var(--blue); box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
-#conv-reply::placeholder { color: var(--muted); }
-#conv-send-btn { padding:0 20px; background:linear-gradient(135deg, #3b82f6, #2563eb); color:#fff; border:none;
-  border-radius:12px; font-size:13px; font-weight:700; cursor:pointer;
-  transition:all .2s; white-space:nowrap; box-shadow: 0 4px 15px rgba(37,99,235,0.3); }
-#conv-send-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(37,99,235,0.4); }
-#conv-send-btn:disabled { background:#334155; color:#94a3b8; cursor:not-allowed; transform: none; box-shadow: none; }
-
-/* ── CREATIVES ────────────────────────────────────────── */
-.cr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
-.cr-card { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(16px); transition: all .2s; }
-.cr-card:hover { box-shadow: 0 8px 30px rgba(0,0,0,.3); transform: translateY(-3px); border-color: rgba(255,255,255,0.15); }
-.cr-img { width: 100%; height: 180px; object-fit: cover; display: block; border-bottom: 1px solid rgba(255,255,255,0.05); }
-.cr-img-placeholder { width: 100%; height: 180px; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; font-size: 36px; color: var(--muted); }
-.cr-body { padding: 16px; }
-.cr-camp { font-size: 11px; color: var(--blue); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-.cr-name { font-weight: 700; font-size: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: #fff; }
-.cr-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; color: #fff; }
-.cr-text { font-size: 13px; color: #cbd5e1; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-.cr-cta { margin-top: 14px; display: inline-block; background: rgba(59, 130, 246, 0.15); color: var(--blue); border: 1px solid rgba(59,130,246,0.3); padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; transition: all .2s; }
-.cr-cta:hover { background: var(--blue); color: #fff; box-shadow: 0 4px 15px rgba(59,130,246,0.3); }
-
-/* ── LOADING / EMPTY ──────────────────────────────────── */
-.loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; color: var(--muted); gap: 16px; }
-.spinner { width: 44px; height: 44px; border: 4px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin .75s linear infinite; box-shadow: 0 0 15px rgba(59,130,246,0.2); }
-@keyframes spin { to { transform: rotate(360deg); } }
-.empty { text-align: center; padding: 60px 24px; color: var(--muted); background: var(--card); border-radius: 16px; border: 1px dashed rgba(255,255,255,0.15); }
-.empty p { margin-top: 12px; font-size: 14px; color: #94a3b8; }
-
-/* ── SHIMMER SKELETON ────────────────────────────────── */
-.skeleton { background: linear-gradient(90deg, rgba(255,255,255,.04) 25%, rgba(255,255,255,.08) 50%, rgba(255,255,255,.04) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
-@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-[data-theme="light"] .skeleton { background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%); background-size: 200% 100%; }
-
-/* ── SCROLL TO TOP ───────────────────────────────────── */
-#scroll-top { position: fixed; bottom: 28px; right: 28px; width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--blue), #2563eb); color: #fff; border: none; font-size: 20px; cursor: pointer; box-shadow: 0 4px 20px rgba(59,130,246,.4); z-index: 900; opacity: 0; transform: translateY(20px); transition: all .3s; display: flex; align-items: center; justify-content: center; }
-#scroll-top.show { opacity: 1; transform: translateY(0); }
-#scroll-top:hover { transform: translateY(-3px); box-shadow: 0 6px 25px rgba(59,130,246,.5); }
-
-/* ── THEME TOGGLE ────────────────────────────────────── */
-.theme-toggle { background: rgba(255,255,255,.1); border: 1px solid var(--border); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; transition: all .2s; }
-.theme-toggle:hover { background: rgba(255,255,255,.2); transform: rotate(15deg); }
-[data-theme="light"] .theme-toggle { background: rgba(0,0,0,.06); }
-[data-theme="light"] .theme-toggle:hover { background: rgba(0,0,0,.1); }
-
-/* ── NOTIFICATION BELL ───────────────────────────────── */
-.notif-bell { position: relative; background: rgba(255,255,255,.1); border: 1px solid var(--border); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; transition: all .2s; }
-.notif-bell:hover { background: rgba(255,255,255,.2); }
-[data-theme="light"] .notif-bell { background: rgba(0,0,0,.06); }
-.notif-badge { position: absolute; top: -4px; right: -4px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 10px; min-width: 16px; text-align: center; display: none; animation: notifPop .3s ease; }
-.notif-badge.show { display: block; }
-@keyframes notifPop { 0% { transform: scale(0); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
-
-/* ── FULLSCREEN CHART MODAL ──────────────────────────── */
-#chart-fullscreen { display: none; position: fixed; inset: 0; z-index: 1500; background: rgba(0,0,0,.8); backdrop-filter: blur(8px); align-items: center; justify-content: center; }
-#chart-fullscreen.open { display: flex; }
-#chart-fullscreen .fs-card { background: var(--card); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 20px; width: 90vw; max-width: 1100px; height: 70vh; padding: 24px; position: relative; }
-#chart-fullscreen .fs-close { position: absolute; top: 14px; right: 14px; background: rgba(255,255,255,.1); border: none; color: #fff; width: 36px; height: 36px; border-radius: 50%; font-size: 18px; cursor: pointer; transition: all .2s; }
-#chart-fullscreen .fs-close:hover { background: rgba(255,255,255,.2); }
-#chart-fullscreen .fs-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: #fff; }
-
-/* ── EXPORT BTN ──────────────────────────────────────── */
-.export-btn { padding: 5px 12px; background: rgba(16,185,129,.15); color: var(--green); border: 1px solid rgba(16,185,129,.3); border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all .2s; white-space: nowrap; }
-.export-btn:hover { background: var(--green); color: #fff; box-shadow: 0 4px 15px rgba(16,185,129,.3); }
-
-/* ── PRINT STYLES ────────────────────────────────────── */
-@media print {
-  body { background: #fff !important; color: #000 !important; }
-  .header, .nav, #scroll-top, .btn-sync, .theme-toggle, .notif-bell, .search-row, .date-btn, .refresh-btn, #chart-fullscreen { display: none !important; }
-  .tab-panel { display: block !important; opacity: 1 !important; transform: none !important; page-break-inside: avoid; }
-  .card { background: #fff !important; border: 1px solid #ddd !important; box-shadow: none !important; break-inside: avoid; }
-  .kpi-card { border: 1px solid #ddd !important; background: #fff !important; }
-  .kpi-value, .card-title { color: #000 !important; }
-  table { font-size: 11px !important; }
-  th { background: #f3f4f6 !important; color: #000 !important; }
-  td { color: #000 !important; }
+/* ══ PRINT ═══════════════════════════════════════════════ */
+@media print{
+  body{background:#fff!important;color:#000!important;overflow:visible}
+  #app{display:block;height:auto}
+  .nav,#scroll-top,.btn-sync,.theme-toggle,.notif-bell,.search-row,.date-btn,.export-btn,#chart-fullscreen,#mob-tog{display:none!important}
+  .main,#content{overflow:visible;height:auto;padding:0}
+  .tab-panel{display:block!important;page-break-inside:avoid}
+  .card{background:#fff!important;border:1px solid #ddd!important;box-shadow:none!important;break-inside:avoid;animation:none!important}
+  .kpi-card{border:1px solid #ddd!important;background:#fff!important;animation:none!important}
+  .kpi-value,.card-title{color:#000!important}
+  table{font-size:11px!important}
+  th{background:#f3f4f6!important;color:#000!important}
+  td{color:#000!important}
 }
 </style>
 </head>
 <body>
 
-<!-- ── HEADER ─────────────────────────────────────────── -->
-<header class="header">
-  <h1>📊 Meta Ads Dashboard</h1>
-  <div class="header-right">
-    <span class="sync-info" id="sync-time">Đang tải...</span>
-    <div class="notif-bell" id="notif-bell" onclick="switchTab(document.querySelector('[data-tab=messages]'))" title="Tin nhắn chưa đọc">
-      🔔
-      <span class="notif-badge" id="notif-badge">0</span>
+<div id="app">
+<div id="mob-back" onclick="toggleSidebar()"></div>
+
+<!-- ── SIDEBAR ────────────────────────────────────────── -->
+<nav class="nav" id="sidebar">
+  <div class="sb-logo">
+    <div class="logo-mark">📊</div>
+    <div>
+      <strong>FUJIWA VIETNAM</strong>
+      <span>Marketing Dashboard</span>
     </div>
-    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Đổi giao diện">🌙</button>
-    <button class="btn btn-sync" id="btn-sync" onclick="triggerSync()">⟳ Đồng bộ ngay</button>
   </div>
-</header>
 
-<!-- ── TABS ───────────────────────────────────────────── -->
-<nav class="nav">
-  <div class="nav-tab active"  data-tab="overview"   onclick="switchTab(this)">📈 Tổng quan</div>
-  <div class="nav-tab"         data-tab="ads"         onclick="switchTab(this)">💰 Quảng cáo</div>
-  <div class="nav-tab"         data-tab="page"        onclick="switchTab(this)">📄 Trang</div>
-  <div class="nav-tab"         data-tab="posts"       onclick="switchTab(this)">📝 Bài đăng</div>
-  <div class="nav-tab"         data-tab="messages"    onclick="switchTab(this)">💬 Tin nhắn</div>
-  <div class="nav-tab"         data-tab="phones"      onclick="switchTab(this)">📱 SĐT khách</div>
-  <div class="nav-tab"         data-tab="creatives"   onclick="switchTab(this)">🎨 Nội dung QC</div>
+  <div class="sb-section">Tổng quan</div>
+  <ul class="sb-nav">
+    <li><div class="nav-tab active" data-tab="overview" onclick="switchTab(this)"><span class="nav-ico">📈</span>Tổng quan</div></li>
+  </ul>
 
-  <div class="nav-tab"         data-tab="website"     onclick="switchTab(this)">🌐 Website</div>
-  <div class="nav-tab"         data-tab="content-plan" onclick="switchTab(this)">📅 Kế hoạch ND</div>
+  <div class="sb-section">Hiệu suất</div>
+  <ul class="sb-nav">
+    <li><div class="nav-tab" data-tab="ads"  onclick="switchTab(this)"><span class="nav-ico">💰</span>Quảng cáo</div></li>
+    <li><div class="nav-tab" data-tab="page" onclick="switchTab(this)"><span class="nav-ico">📄</span>Trang</div></li>
+  </ul>
+
+  <div class="sb-section">Nội dung</div>
+  <ul class="sb-nav">
+    <li><div class="nav-tab" data-tab="posts"        onclick="switchTab(this)"><span class="nav-ico">📝</span>Bài đăng</div></li>
+    <li><div class="nav-tab" data-tab="creatives"    onclick="switchTab(this)"><span class="nav-ico">🎨</span>Nội dung QC</div></li>
+    <li><div class="nav-tab" data-tab="content-plan" onclick="switchTab(this)"><span class="nav-ico">📅</span>Kế hoạch ND</div></li>
+  </ul>
+
+  <div class="sb-section">Khách hàng</div>
+  <ul class="sb-nav">
+    <li><div class="nav-tab" data-tab="messages" onclick="switchTab(this)"><span class="nav-ico">💬</span>Tin nhắn</div></li>
+    <li><div class="nav-tab" data-tab="phones"   onclick="switchTab(this)"><span class="nav-ico">📱</span>SĐT khách</div></li>
+  </ul>
+
+  <div class="sb-section">Website</div>
+  <ul class="sb-nav">
+    <li><div class="nav-tab" data-tab="website" onclick="switchTab(this)"><span class="nav-ico">🌐</span>SEO &amp; Website</div></li>
+  </ul>
+
+  <div class="sb-footer">
+    <strong id="sync-time">Đang tải...</strong><br>Cập nhật lần cuối
+  </div>
 </nav>
 
 <!-- ── MAIN ───────────────────────────────────────────── -->
-<main class="main">
+<div class="main">
+  <div class="header">
+    <button id="mob-tog" onclick="toggleSidebar()">☰</button>
+    <h1 id="topbar-title">Tổng quan</h1>
+    <div class="header-right">
+      <div class="notif-bell" id="notif-bell" onclick="switchTab(document.querySelector('[data-tab=messages]'))" title="Tin nhắn chưa đọc">
+        🔔
+        <span class="notif-badge" id="notif-badge">0</span>
+      </div>
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Đổi giao diện sáng/tối">🌙</button>
+      <button class="btn btn-sync" id="btn-sync" onclick="triggerSync()">⟳ Đồng bộ ngay</button>
+    </div>
+  </div>
+
+<div id="content">
 
 <!-- Loading overlay -->
 <div id="app-loading" class="loading">
@@ -380,8 +358,8 @@ tr:last-child td { border-bottom: none; }
 <div id="tab-overview" class="tab-panel">
 
   <!-- Date Range Filter -->
-  <div class="filter-bar-light" style="background:#fff;border-radius:10px;padding:13px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <span style="font-size:12px;font-weight:700;color:#374151;white-space:nowrap">Khoảng thời gian:</span>
+  <div class="filter-bar-light" style="background:var(--surface);border-radius:10px;padding:13px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap">Khoảng thời gian:</span>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="date-btn" onclick="setPreset(this,'today')">Hôm nay</button>
       <button class="date-btn" onclick="setPreset(this,'yesterday')">Hôm qua</button>
@@ -393,30 +371,30 @@ tr:last-child td { border-bottom: none; }
       <button class="date-btn active" onclick="setPreset(this,'all')">Tất cả</button>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <input type="date" id="date-from" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:#0f172a;background:#fff;outline:none">
-      <span style="color:#374151;font-size:12px">→</span>
-      <input type="date" id="date-to" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:#0f172a;background:#fff;outline:none">
+      <input type="date" id="date-from" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text);background:var(--surface);outline:none">
+      <span style="color:var(--text);font-size:12px">→</span>
+      <input type="date" id="date-to" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text);background:var(--surface);outline:none">
       <button onclick="applyCustomDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
     </div>
     <span id="date-range-info" class="badge-pill"></span>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
       <span id="export-status" style="font-size:11px;color:var(--muted)"></span>
-      <button onclick="exportOverviewHTML()" style="padding:5px 12px;background:#fff;color:#374151;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">📄 Xuất HTML</button>
-      <button onclick="exportOverviewPPTX()" style="padding:5px 12px;background:#fff;color:#374151;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">📊 Xuất PPTX</button>
+      <button onclick="exportOverviewHTML()" style="padding:5px 12px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">📄 Xuất HTML</button>
+      <button onclick="exportOverviewPPTX()" style="padding:5px 12px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">📊 Xuất PPTX</button>
     </div>
   </div>
 
   <!-- Account Filter (ẩn nếu chỉ có 1 tài khoản) -->
-  <div id="account-filter-row" class="filter-bar-light" style="background:#fff;border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:10px;display:none;align-items:center;gap:12px;flex-wrap:wrap">
-    <span style="font-size:12px;font-weight:700;color:#374151;white-space:nowrap">Tài khoản:</span>
+  <div id="account-filter-row" class="filter-bar-light" style="background:var(--surface);border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:10px;display:none;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap">Tài khoản:</span>
     <div id="account-filter-btns" style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="date-btn active" onclick="setAccountFilter(this,-1)">Tất cả</button>
     </div>
   </div>
 
   <!-- Page Filter -->
-  <div class="filter-bar-light" style="background:#fff;border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <span style="font-size:12px;font-weight:700;color:#374151;white-space:nowrap">Trang:</span>
+  <div class="filter-bar-light" style="background:var(--surface);border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap">Trang:</span>
     <div id="page-filter-btns" style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="date-btn active" onclick="setPageFilter(this,-1)">Tất cả</button>
     </div>
@@ -542,7 +520,7 @@ tr:last-child td { border-bottom: none; }
     <div class="card-title">Chi tiết Quảng cáo theo ngày</div>
 
     <!-- Date range + Account filter (lấy live từ API) -->
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f1f5f9">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">
       <span style="font-size:12px;font-weight:700;color:var(--muted)">Khoảng:</span>
       <div id="ads-date-btns" style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="date-btn" onclick="setAdsRange(this,1,0)">Hôm nay</button>
@@ -550,7 +528,7 @@ tr:last-child td { border-bottom: none; }
         <button class="date-btn" onclick="setAdsRange(this,7)">7 ngày</button>
         <button class="date-btn active" onclick="setAdsRange(this,30)">30 ngày</button>
         <button class="date-btn" onclick="setAdsRange(this,90)">90 ngày</button>
-        <div style="width:1px;height:20px;background:#e2e8f0;margin:0 2px"></div>
+        <div style="width:1px;height:20px;background:var(--border);margin:0 2px"></div>
         <button class="date-btn" onclick="setAdsPreset(this,'thisMonth')">Tháng này</button>
         <button class="date-btn" onclick="setAdsPreset(this,'lastMonth')">1 tháng qua</button>
         <button class="date-btn" onclick="setAdsPreset(this,'last3Months')">3 tháng qua</button>
@@ -558,11 +536,11 @@ tr:last-child td { border-bottom: none; }
         <button class="date-btn" onclick="setAdsPreset(this,'ytd')">Từ đầu năm</button>
         <button class="date-btn" onclick="setAdsPreset(this,'all')">Tất cả</button>
       </div>
-      <input type="date" id="ads-from" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
+      <input type="date" id="ads-from" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--text)">
       <span style="color:var(--muted)">→</span>
-      <input type="date" id="ads-to" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
+      <input type="date" id="ads-to" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--text)">
       <button onclick="applyAdsDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
-      <div style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></div>
+      <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
       <span style="font-size:12px;font-weight:700;color:var(--muted)">Tài khoản:</span>
       <div id="ads-account-btns" style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="date-btn active" onclick="setAdsAccount(this,'')">Tất cả</button>
@@ -589,13 +567,13 @@ tr:last-child td { border-bottom: none; }
 ════════════════════════════════════════════════════════ -->
 <div id="tab-page" class="tab-panel">
   <!-- Page filter -->
-  <div class="filter-bar-light" style="background:#fff;border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <span style="font-size:12px;font-weight:700;color:#374151;white-space:nowrap">Trang:</span>
+  <div class="filter-bar-light" style="background:var(--surface);border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap">Trang:</span>
     <div id="page-tab-filter-btns" style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="date-btn active" onclick="setTrangPage(this,-1)">Tất cả</button>
     </div>
-    <div style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></div>
-    <span style="font-size:12px;font-weight:700;color:#374151;white-space:nowrap">Khoảng:</span>
+    <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
+    <span style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap">Khoảng:</span>
     <div id="page-date-btns" style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="date-btn" onclick="setPagePreset(this,'today')">Hôm nay</button>
       <button class="date-btn" onclick="setPagePreset(this,'yesterday')">Hôm qua</button>
@@ -606,20 +584,20 @@ tr:last-child td { border-bottom: none; }
       <button class="date-btn" onclick="setPagePreset(this,'ytd')">Từ đầu năm</button>
       <button class="date-btn active" onclick="setPagePreset(this,'all')">Tất cả</button>
     </div>
-    <input type="date" id="page-from" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
-    <span style="color:#94a3b8">→</span>
-    <input type="date" id="page-to" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
+    <input type="date" id="page-from" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--text)">
+    <span style="color:var(--text3)">→</span>
+    <input type="date" id="page-to" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--text)">
     <button onclick="applyPageDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
   </div>
 
   <!-- Chế độ so sánh Kỳ A/B -->
-  <div class="filter-bar-light" style="background:#fff;border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:700;color:#374151">
+  <div class="filter-bar-light" style="background:var(--surface);border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:700;color:var(--text)">
       <input type="checkbox" id="page-compare-toggle" onchange="togglePageCompare(this)" style="width:16px;height:16px;cursor:pointer">
       ⚖️ Chế độ so sánh
     </label>
     <div id="page-compare-controls" style="display:none;align-items:center;gap:10px;flex-wrap:wrap">
-      <div style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></div>
+      <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
       <span style="font-size:12px;font-weight:700;color:var(--muted)">🔁 Tự so sánh với:</span>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="date-btn" onclick="setPageCompareQuick(this,'7d')">7 ngày trước</button>
@@ -629,9 +607,9 @@ tr:last-child td { border-bottom: none; }
       </div>
       <span style="font-size:12px;color:var(--muted)">hoặc</span>
       <span style="font-size:12px;font-weight:700;color:var(--muted)">Kỳ B:</span>
-      <input type="date" id="page-compare-from" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
-      <span style="color:#94a3b8">→</span>
-      <input type="date" id="page-compare-to" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
+      <input type="date" id="page-compare-from" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--text)">
+      <span style="color:var(--text3)">→</span>
+      <input type="date" id="page-compare-to" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--text)">
       <button onclick="applyPageCompareDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
     </div>
   </div>
@@ -711,8 +689,8 @@ tr:last-child td { border-bottom: none; }
   <div class="card" style="margin-bottom:18px">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <span style="font-size:12px;font-weight:700;color:var(--muted)">Trang:</span>
-      <select id="posts-page-sel" onchange="onPostsPageChange()" style="font-size:13px;border:1px solid #e2e8f0;border-radius:6px;padding:5px 10px;min-width:220px"></select>
-      <div style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></div>
+      <select id="posts-page-sel" onchange="onPostsPageChange()" style="font-size:13px;border:1px solid var(--border);border-radius:6px;padding:5px 10px;min-width:220px"></select>
+      <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
       <span style="font-size:12px;font-weight:700;color:var(--muted)">Khoảng:</span>
       <div id="posts-date-btns" style="display:flex;gap:6px">
         <button class="date-btn" onclick="setPostsRange(this,1,0)">Hôm nay</button>
@@ -721,9 +699,9 @@ tr:last-child td { border-bottom: none; }
         <button class="date-btn active" onclick="setPostsRange(this,30)">30 ngày</button>
         <button class="date-btn" onclick="setPostsRange(this,90)">90 ngày</button>
       </div>
-      <input type="date" id="posts-from" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
+      <input type="date" id="posts-from" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--text)">
       <span style="color:var(--muted)">→</span>
-      <input type="date" id="posts-to" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
+      <input type="date" id="posts-to" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--text)">
       <button onclick="applyPostsDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
     </div>
   </div>
@@ -762,8 +740,8 @@ tr:last-child td { border-bottom: none; }
 <div id="tab-messages" class="tab-panel">
 
   <!-- Date filter -->
-  <div class="filter-bar-light" style="background:#fff;border-radius:10px;padding:12px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-    <span style="font-size:12px;font-weight:700;color:#374151;white-space:nowrap">Khoảng:</span>
+  <div class="filter-bar-light" style="background:var(--surface);border-radius:10px;padding:12px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap">Khoảng:</span>
     <div id="msg-date-btns" style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="date-btn" onclick="setMsgRange(this,1,0)">Hôm nay</button>
       <button class="date-btn" onclick="setMsgRange(this,1,1)">Hôm qua</button>
@@ -771,11 +749,11 @@ tr:last-child td { border-bottom: none; }
       <button class="date-btn active" onclick="setMsgRange(this,30)">30 ngày</button>
       <button class="date-btn" onclick="setMsgRange(this,90)">90 ngày</button>
     </div>
-    <input type="date" id="msg-from" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:#fff;color:#0f172a">
-    <span style="color:#374151">→</span>
-    <input type="date" id="msg-to" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:#fff;color:#0f172a">
+    <input type="date" id="msg-from" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface);color:var(--text)">
+    <span style="color:var(--text)">→</span>
+    <input type="date" id="msg-to" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface);color:var(--text)">
     <button onclick="applyMsgDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
-    <button onclick="openTokenConfig()" style="margin-left:auto;padding:5px 12px;background:#f8fafc;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;color:#374151;font-weight:500">
+    <button onclick="openTokenConfig()" style="margin-left:auto;padding:5px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;color:var(--text);font-weight:500">
       ⚙️ Token nhắn tin
     </button>
   </div>
@@ -791,7 +769,7 @@ tr:last-child td { border-bottom: none; }
     </div>
     <div class="tbl-wrap">
       <table>
-        <thead><tr style="background:#f8fafc">
+        <thead><tr style="background:var(--surface2)">
           <th style="text-align:left">Tài khoản</th>
           <th>Người liên hệ nhắn tin</th>
         </tr></thead>
@@ -810,7 +788,7 @@ tr:last-child td { border-bottom: none; }
     </div>
     <div class="tbl-wrap">
       <table>
-        <thead><tr style="background:#f8fafc">
+        <thead><tr style="background:var(--surface2)">
           <th style="text-align:left">Trang</th>
           <th>Tổng HT</th>
           <th>Số tiền đã chi</th>
@@ -849,7 +827,7 @@ tr:last-child td { border-bottom: none; }
         <option value="">Tất cả trang</option>
       </select>
       <button id="msg-phone-btn" onclick="toggleMsgPhoneFilter(this)"
-        style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:#fff;cursor:pointer;white-space:nowrap">
+        style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);cursor:pointer;white-space:nowrap">
         📞 Có SĐT
       </button>
     </div>
@@ -873,7 +851,7 @@ tr:last-child td { border-bottom: none; }
     </div>
     <div class="tbl-wrap">
       <table>
-        <thead><tr style="background:#f8fafc">
+        <thead><tr style="background:var(--surface2)">
           <th style="text-align:left">#</th>
           <th style="text-align:left">Tên tài khoản</th>
           <th style="text-align:left">Số điện thoại</th>
@@ -917,16 +895,16 @@ tr:last-child td { border-bottom: none; }
   <div class="card" style="margin-bottom:18px">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <span style="font-size:13px;font-weight:800;color:var(--text)">🌐 Website</span>
-      <div style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></div>
+      <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
       <span style="font-size:12px;font-weight:700;color:var(--muted)">Khoảng:</span>
       <div id="web-date-btns" style="display:flex;gap:6px">
         <button class="date-btn" onclick="setWebRange(this,7)">7 ngày</button>
         <button class="date-btn active" onclick="setWebRange(this,30)">30 ngày</button>
         <button class="date-btn" onclick="setWebRange(this,90)">90 ngày</button>
       </div>
-      <input type="date" id="web-from" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
+      <input type="date" id="web-from" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--text)">
       <span style="color:var(--muted)">→</span>
-      <input type="date" id="web-to" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
+      <input type="date" id="web-to" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--text)">
       <button onclick="applyWebDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
     </div>
   </div>
@@ -945,7 +923,7 @@ tr:last-child td { border-bottom: none; }
       <div class="card-title">Top từ khoá</div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr style="background:#f8fafc">
+          <thead><tr style="background:var(--surface2)">
             <th style="text-align:left">Từ khoá</th><th>Clicks</th><th>Hiển thị</th><th>CTR</th><th>Vị trí TB</th>
           </tr></thead>
           <tbody id="gsc-queries"></tbody>
@@ -956,7 +934,7 @@ tr:last-child td { border-bottom: none; }
       <div class="card-title">Top trang</div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr style="background:#f8fafc">
+          <thead><tr style="background:var(--surface2)">
             <th style="text-align:left">Trang</th><th>Clicks</th><th>Hiển thị</th><th>CTR</th><th>Vị trí TB</th>
           </tr></thead>
           <tbody id="gsc-pages"></tbody>
@@ -979,7 +957,7 @@ tr:last-child td { border-bottom: none; }
       <div class="card-title">Nguồn truy cập</div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr style="background:#f8fafc">
+          <thead><tr style="background:var(--surface2)">
             <th style="text-align:left">Kênh</th><th>Sessions</th><th>Users</th>
           </tr></thead>
           <tbody id="ga4-channels"></tbody>
@@ -990,7 +968,7 @@ tr:last-child td { border-bottom: none; }
       <div class="card-title">Top trang xem nhiều</div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr style="background:#f8fafc">
+          <thead><tr style="background:var(--surface2)">
             <th style="text-align:left">Trang</th><th>Pageviews</th><th>Users</th>
           </tr></thead>
           <tbody id="ga4-pages"></tbody>
@@ -1001,34 +979,34 @@ tr:last-child td { border-bottom: none; }
 </div>
 
 <div id="tab-content-plan" class="tab-panel">
-  <div class="filter-bar-light" style="background:#fff;border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <span style="font-size:12px;font-weight:700;color:#374151">Khoảng:</span>
+  <div class="filter-bar-light" style="background:var(--surface);border-radius:10px;padding:10px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:var(--text)">Khoảng:</span>
     <div id="cp-date-btns" style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="date-btn" onclick="setCpPreset(this,'thisMonth')">Tháng này</button>
       <button class="date-btn active" onclick="setCpPreset(this,'lastMonth')">Tháng trước</button>
       <button class="date-btn" onclick="setCpPreset(this,'all')">Tất cả</button>
     </div>
-    <input type="date" id="cp-from" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
-    <span style="color:#94a3b8">→</span>
-    <input type="date" id="cp-to" style="font-size:12px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;background:#fff;color:#0f172a">
+    <input type="date" id="cp-from" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--text)">
+    <span style="color:var(--text3)">→</span>
+    <input type="date" id="cp-to" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--text)">
     <button onclick="applyCpDate()" style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Áp dụng</button>
     <button onclick="openContentPlanForm()" style="margin-left:auto;padding:6px 16px;background:#059669;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">+ Thêm bài mới</button>
   </div>
 
   <div id="cp-config-err" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 16px;margin-bottom:14px;font-size:12px;color:#dc2626;font-weight:600"></div>
 
-  <div id="cp-person-banner" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 16px;margin-bottom:14px;font-size:12px;color:#1e3a5f;align-items:center;gap:8px">
+  <div id="cp-person-banner" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 16px;margin-bottom:14px;font-size:12px;color:var(--text);align-items:center;gap:8px">
     <span>👤 Đang xem với tư cách: <strong id="cp-person-name"></strong></span>
     <span onclick="showCpPersonPicker()" style="margin-left:auto;cursor:pointer;color:var(--primary);font-weight:700">Đổi người</span>
   </div>
 
   <div id="cp-person-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(15,23,42,.5);align-items:center;justify-content:center" onclick="if (event.target === this) closeCpPersonPicker()">
-    <div style="background:#fff;border-radius:12px;padding:24px;width:340px;max-width:90vw">
+    <div style="background:var(--surface);border-radius:12px;padding:24px;width:340px;max-width:90vw">
       <div style="display:flex;align-items:center;margin-bottom:12px">
-        <span style="font-size:15px;font-weight:800;color:#0f172a">Bạn là ai?</span>
-        <span onclick="closeCpPersonPicker()" style="margin-left:auto;cursor:pointer;font-size:20px;color:#94a3b8">✕</span>
+        <span style="font-size:15px;font-weight:800;color:var(--text)">Bạn là ai?</span>
+        <span onclick="closeCpPersonPicker()" style="margin-left:auto;cursor:pointer;font-size:20px;color:var(--text3)">✕</span>
       </div>
-      <div id="cp-person-msg" style="font-size:12px;color:#64748b;margin-bottom:12px">Dùng để lọc "Việc của tôi" — chỉ lưu trên trình duyệt này, không cần đăng nhập.</div>
+      <div id="cp-person-msg" style="font-size:12px;color:var(--text2);margin-bottom:12px">Dùng để lọc "Việc của tôi" — chỉ lưu trên trình duyệt này, không cần đăng nhập.</div>
       <div id="cp-person-picker-fields">
         <select id="cp-person-select" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;margin-bottom:14px">
           <option value="">— Chọn tên —</option>
@@ -1036,7 +1014,7 @@ tr:last-child td { border-bottom: none; }
         <button onclick="confirmCpPerson()" style="width:100%;padding:9px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer">Xác nhận</button>
       </div>
       <div style="text-align:center;margin-top:10px">
-        <span onclick="closeCpPersonPicker()" style="font-size:12px;color:#64748b;cursor:pointer;text-decoration:underline">Bỏ qua</span>
+        <span onclick="closeCpPersonPicker()" style="font-size:12px;color:var(--text2);cursor:pointer;text-decoration:underline">Bỏ qua</span>
       </div>
     </div>
   </div>
@@ -1059,7 +1037,7 @@ tr:last-child td { border-bottom: none; }
     <div class="card-title" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <span>🔄 Việc của tôi</span>
       <span class="badge-pill" id="wf-count"></span>
-      <button id="wf-toggle-btn" onclick="toggleWfOnlyMine()" style="margin-left:auto;padding:5px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Xem tất cả</button>
+      <button id="wf-toggle-btn" onclick="toggleWfOnlyMine()" style="margin-left:auto;padding:5px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Xem tất cả</button>
     </div>
     <div class="tbl-wrap">
       <table>
@@ -1073,32 +1051,32 @@ tr:last-child td { border-bottom: none; }
   </div>
 
   <div id="cp-form-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(15,23,42,.5);align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:12px;padding:24px;width:520px;max-width:92vw;max-height:86vh;overflow-y:auto">
+    <div style="background:var(--surface);border-radius:12px;padding:24px;width:520px;max-width:92vw;max-height:86vh;overflow-y:auto">
       <div style="display:flex;align-items:center;margin-bottom:16px">
-        <span style="font-size:16px;font-weight:800;color:#0f172a">+ Thêm bài mới</span>
-        <span onclick="closeContentPlanForm()" style="margin-left:auto;cursor:pointer;font-size:20px;color:#94a3b8">✕</span>
+        <span style="font-size:16px;font-weight:800;color:var(--text)">+ Thêm bài mới</span>
+        <span onclick="closeContentPlanForm()" style="margin-left:auto;cursor:pointer;font-size:20px;color:var(--text3)">✕</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:12px">
-        <label style="font-size:12px;font-weight:700;color:#374151">Ngày đăng
+        <label style="font-size:12px;font-weight:700;color:var(--text)">Ngày đăng
           <input type="date" id="cp-f-pubdate" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box">
         </label>
-        <label style="font-size:12px;font-weight:700;color:#374151">Page
+        <label style="font-size:12px;font-weight:700;color:var(--text)">Page
           <input type="text" id="cp-f-page" placeholder="vd: Fujiwa Speed" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box">
         </label>
-        <label style="font-size:12px;font-weight:700;color:#374151">Format
+        <label style="font-size:12px;font-weight:700;color:var(--text)">Format
           <select id="cp-f-format" onchange="onCpFormatChange()" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box">
             <option value="">— Chọn Format —</option>
           </select>
         </label>
-        <label style="font-size:12px;font-weight:700;color:#374151">Pillar
+        <label style="font-size:12px;font-weight:700;color:var(--text)">Pillar
           <select id="cp-f-pillar" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box">
             <option value="">— Không chọn —</option>
           </select>
         </label>
-        <label style="font-size:12px;font-weight:700;color:#374151">Mô tả
+        <label style="font-size:12px;font-weight:700;color:var(--text)">Mô tả
           <textarea id="cp-f-desc" rows="2" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;resize:vertical"></textarea>
         </label>
-        <label style="font-size:12px;font-weight:700;color:#374151">Người phụ trách chính
+        <label style="font-size:12px;font-weight:700;color:var(--text)">Người phụ trách chính
           <input type="text" id="cp-f-owner" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box">
         </label>
         <div id="cp-f-stages"></div>
@@ -1109,7 +1087,9 @@ tr:last-child td { border-bottom: none; }
   </div>
 </div>
 
-</main>
+</div><!-- /#content -->
+</div><!-- /.main -->
+</div><!-- /#app -->
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -1240,22 +1220,22 @@ function onLoad(data) {
   if (totalRows === 0) {
     // Chưa có data — hướng dẫn sync lần đầu
     document.getElementById('kpi-grid').innerHTML = `
-      <div style="grid-column:1/-1;background:#fff;border-radius:12px;padding:48px 24px;
+      <div style="grid-column:1/-1;background:var(--surface);border-radius:12px;padding:48px 24px;
                   text-align:center;border:2px dashed #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.06)">
         <div style="font-size:56px;margin-bottom:20px">⚡</div>
-        <div style="font-size:20px;font-weight:700;color:#1e3a5f;margin-bottom:10px">
+        <div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:10px">
           Chưa có dữ liệu
         </div>
-        <div style="font-size:14px;color:#64748b;margin-bottom:28px;line-height:1.7;max-width:460px;margin-left:auto;margin-right:auto">
+        <div style="font-size:14px;color:var(--text2);margin-bottom:28px;line-height:1.7;max-width:460px;margin-left:auto;margin-right:auto">
           Các sheet chưa có dữ liệu.<br>
           Bạn cần chạy <strong>Đồng bộ</strong> để kéo dữ liệu từ Facebook API.<br>
-          <span style="font-size:12px;color:#94a3b8">Lần đầu mất khoảng 30–60 giây.</span>
+          <span style="font-size:12px;color:var(--text3)">Lần đầu mất khoảng 30–60 giây.</span>
         </div>
         <button onclick="triggerSync()" style="padding:13px 36px;background:#f59e0b;color:#fff;
           border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">
           ⟳ Đồng bộ ngay
         </button>
-        <div style="margin-top:24px;font-size:12px;color:#94a3b8">
+        <div style="margin-top:24px;font-size:12px;color:var(--text3)">
           Hoặc chạy <code>syncAllFull()</code> trong Google Apps Script Editor
         </div>
       </div>`;
@@ -1288,11 +1268,11 @@ function onErr(e) {
       <div style="font-size:17px;font-weight:700;color:#ef4444;margin-bottom:10px">
         Lỗi tải dữ liệu
       </div>
-      <div style="font-size:13px;color:#64748b;background:#fee2e2;border-radius:8px;
+      <div style="font-size:13px;color:var(--text2);background:#fee2e2;border-radius:8px;
                   padding:12px 16px;margin-bottom:20px;word-break:break-all;text-align:left">
         ${msg}
       </div>
-      <div style="font-size:12px;color:#64748b;margin-bottom:16px">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:16px">
         Kiểm tra: token còn hiệu lực, file meta.gs đã được lưu, web app đã deploy lại.
       </div>
       <button onclick="fetchData()" style="padding:10px 24px;border-radius:6px;border:none;
@@ -1306,11 +1286,34 @@ function onErr(e) {
 // TAB SWITCHING
 // ══════════════════════════════════════════════════════════
 let _postsInited = false;
+// Mở/đóng sidebar trên màn hình hẹp (<1024px)
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar'), bk = document.getElementById('mob-back');
+  if (!sb) return;
+  const open = !sb.classList.contains('open');
+  sb.classList.toggle('open', open);
+  if (bk) bk.classList.toggle('show', open);
+}
+
 function switchTab(el) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('tab-' + el.dataset.tab).classList.add('active');
+  // Tiêu đề topbar lấy từ chữ trong mục sidebar, bỏ phần icon (span.nav-ico)
+  const title = document.getElementById('topbar-title');
+  if (title) {
+    const label = [...el.childNodes]
+      .filter(n => !(n.nodeType === 1 && n.classList.contains('nav-ico')))
+      .map(n => n.textContent).join('').trim();
+    title.textContent = label;
+  }
+  // Cuộn nội dung về đầu khi đổi tab
+  const ct = document.getElementById('content');
+  if (ct) ct.scrollTop = 0;
+  // Màn hình hẹp: chọn xong thì đóng sidebar lại
+  const sb = document.getElementById('sidebar');
+  if (sb && sb.classList.contains('open')) toggleSidebar();
   // Lazy-load posts live khi mở tab Bài đăng (tránh gọi FA đồng thời lúc load → throttle dedup tin nhắn)
   if (el.dataset.tab === 'posts'  && !_postsInited) { _postsInited = true; initPostsControls(); }
   if (el.dataset.tab === 'website' && !_webInited)  { _webInited   = true; initWebsite(); }
@@ -1787,8 +1790,8 @@ function _renderPageCompareTable(pages, byPageA, byPageB, paidFollowsA, paidFoll
       _metricRow('Tương tác (R+C+S)',               p.rcsA,                   p.rcsB,                   false),
       _metricRow('Tương tác / bài',                 p.nRcsA,                  p.nRcsB,                  true),
     ].join('');
-    return `<div style="margin-bottom:16px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">
-      <div style="display:flex;align-items:center;gap:8px;padding:9px 14px;background:${m.bg};border-bottom:1px solid #e2e8f0">
+    return `<div style="margin-bottom:16px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:8px;padding:9px 14px;background:${m.bg};border-bottom:1px solid var(--border)">
         <span style="width:4px;height:16px;background:${m.color};border-radius:2px;display:inline-block"></span>
         <span style="font-weight:700;font-size:13px">${p.pn}</span>
         <span style="margin-left:auto;font-size:12px;font-weight:700;color:${m.color}">${m.dot} ${m.label}</span>
@@ -1813,7 +1816,7 @@ function _renderPageCompareTable(pages, byPageA, byPageB, paidFollowsA, paidFoll
       <span>⚖️ So sánh 2 kỳ — Organic</span>
       <span style="font-size:12px;font-weight:600;color:var(--muted)">Kỳ A: ${G_PAGE_DATE.from} → ${G_PAGE_DATE.to} &nbsp;·&nbsp; Kỳ B: ${G_PAGE_COMPARE.bFrom} → ${G_PAGE_COMPARE.bTo}</span>
     </div>
-    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #f1f5f9">
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border)">
       ${showDonut ? `<div style="width:150px;height:150px;flex-shrink:0"><canvas id="chart-page-score-donut"></canvas></div>` : ''}
       <div style="flex:1;min-width:220px">
         <div style="font-weight:700;font-size:13px;margin-bottom:6px">📊 Đánh giá tổng thể — chuẩn hoá theo số bài đăng</div>
@@ -2095,17 +2098,17 @@ function renderCampBreakdown(rows, h) {
     <tr>
       <td style="max-width:260px;white-space:normal;line-height:1.4">
         <div style="display:flex;align-items:center;gap:8px">
-          ${idx < 3 ? `<span style="background:${rankBg};color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${idx+1}</span>` : `<span style="width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#94a3b8;flex-shrink:0">${idx+1}</span>`}
+          ${idx < 3 ? `<span style="background:${rankBg};color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${idx+1}</span>` : `<span style="width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text3);flex-shrink:0">${idx+1}</span>`}
           <span style="font-weight:600">${name}</span>
         </div>
       </td>
       <td style="min-width:240px">
         <div style="display:flex;align-items:center;gap:8px">
-          <div style="flex:1;background:#e2e8f0;border-radius:4px;height:8px;min-width:80px">
+          <div style="flex:1;background:var(--border);border-radius:4px;height:8px;min-width:80px">
             <div style="width:${Math.min(pct,100).toFixed(1)}%;background:#2563eb;height:8px;border-radius:4px"></div>
           </div>
           <span style="font-weight:700;min-width:72px;text-align:right">${fmtNum(d.spend)}</span>
-          <span style="font-size:11px;color:#64748b;min-width:40px;text-align:right">${pct.toFixed(1)}%</span>
+          <span style="font-size:11px;color:var(--text2);min-width:40px;text-align:right">${pct.toFixed(1)}%</span>
         </div>
       </td>
       <td style="text-align:right">${fmtNum(d.reach)}</td>
@@ -2274,11 +2277,11 @@ function renderPageBreakdown(rows, h) {
       </td>
       <td>
         <div style="display:flex;align-items:center;gap:8px">
-          <div style="flex:1;background:#e2e8f0;border-radius:4px;height:8px;min-width:80px">
+          <div style="flex:1;background:var(--border);border-radius:4px;height:8px;min-width:80px">
             <div style="width:${Math.min(pct,100).toFixed(1)}%;background:${pgColor};height:8px;border-radius:4px"></div>
           </div>
           <span style="font-weight:700;min-width:72px;text-align:right">${fmtNum(d.spend)}</span>
-          <span style="font-size:11px;color:#64748b;min-width:40px;text-align:right">${pct.toFixed(1)}%</span>
+          <span style="font-size:11px;color:var(--text2);min-width:40px;text-align:right">${pct.toFixed(1)}%</span>
         </div>
       </td>
       <td style="text-align:right">${fmtNum(d.reach)}</td>
@@ -2612,11 +2615,11 @@ function renderPage() {
   // ══ ORGANIC SECTION ════════════════════════════════════
   if (!prows.length) {
     document.getElementById('page-kpi-grid').innerHTML =
-      `<div style="grid-column:1/-1;text-align:center;padding:30px 24px;background:#fff;
+      `<div style="grid-column:1/-1;text-align:center;padding:30px 24px;background:var(--surface);
         border-radius:10px;border:2px dashed #e2e8f0">
         <div style="font-size:36px;margin-bottom:10px">📄</div>
-        <div style="font-weight:700;color:#1e3a5f;margin-bottom:6px">Chưa có dữ liệu Page Insights</div>
-        <div style="font-size:12px;color:#64748b">Nhấn <strong>Đồng bộ ngay</strong> để tải từ Facebook.</div>
+        <div style="font-weight:700;color:var(--text);margin-bottom:6px">Chưa có dữ liệu Page Insights</div>
+        <div style="font-size:12px;color:var(--text2)">Nhấn <strong>Đồng bộ ngay</strong> để tải từ Facebook.</div>
       </div>`;
   } else {
     // Aggregate by date (tổng hợp nhiều trang khi chọn "Tất cả")
@@ -2706,7 +2709,7 @@ function renderPage() {
   // ══ PAID SECTION ═══════════════════════════════════════
   if (!arows.length) {
     document.getElementById('page-paid-kpi').innerHTML =
-      `<div style="grid-column:1/-1;padding:20px;text-align:center;background:#fff;border-radius:10px;color:#64748b">
+      `<div style="grid-column:1/-1;padding:20px;text-align:center;background:var(--surface);border-radius:10px;color:var(--text2)">
         ${G_TRANG_PAGE
           ? `Không có dữ liệu paid cho trang "<b>${G_TRANG_PAGE}</b>"`
           : 'Chưa có dữ liệu Ads. Nhấn <b>Đồng bộ ngay</b>.'}
@@ -2887,8 +2890,8 @@ function renderPostsSummary(h, rows) {
   if (badge) badge.textContent = rows.length + ' bài';
 
   const tile = (label, val, color) =>
-    `<div style="flex:1;min-width:120px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px">
-       <div style="font-size:11px;color:#374151;font-weight:600;margin-bottom:4px">${label}</div>
+    `<div style="flex:1;min-width:120px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+       <div style="font-size:11px;color:var(--text);font-weight:600;margin-bottom:4px">${label}</div>
        <div style="font-size:22px;font-weight:800;color:${color}">${fmtNum(val)}</div>
      </div>`;
   const box = document.getElementById('posts-summary');
@@ -3064,7 +3067,7 @@ function onCpFormatChange() {
     const options = ['<option value="">— Chưa gán —</option>']
       .concat(roster.filter(p => p.role === stage.role)
         .map(p => `<option value="${p.name}" ${p.name === preselect ? 'selected' : ''}>${p.name}</option>`));
-    return `<label style="font-size:12px;font-weight:700;color:#374151">${stage.stage} (${stage.role})
+    return `<label style="font-size:12px;font-weight:700;color:var(--text)">${stage.stage} (${stage.role})
       <select data-stage="${stage.stage}" class="cp-f-stage-assignee" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box">
         ${options.join('')}
       </select>
@@ -3287,8 +3290,8 @@ function renderGsc(res) {
   if (badge) badge.textContent = (res.range?res.range.from+' → '+res.range.to:'') + ' · ' + daily.length + ' ngày (GSC thường trễ ~2-3 ngày)';
 
   const tile=(label,val,color)=>
-    `<div style="flex:1;min-width:120px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px">
-       <div style="font-size:11px;color:#374151;font-weight:600;margin-bottom:4px">${label}</div>
+    `<div style="flex:1;min-width:120px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+       <div style="font-size:11px;color:var(--text);font-weight:600;margin-bottom:4px">${label}</div>
        <div style="font-size:22px;font-weight:800;color:${color}">${val}</div></div>`;
   const box=document.getElementById('gsc-summary');
   if (box) box.innerHTML =
@@ -3333,8 +3336,8 @@ function renderGa4(res) {
   if (badge) badge.textContent = (res.range?res.range.from+' → '+res.range.to:'') + ' · ' + daily.length + ' ngày';
 
   const tile=(label,val,color)=>
-    `<div style="flex:1;min-width:120px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px">
-       <div style="font-size:11px;color:#374151;font-weight:600;margin-bottom:4px">${label}</div>
+    `<div style="flex:1;min-width:120px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+       <div style="font-size:11px;color:var(--text);font-weight:600;margin-bottom:4px">${label}</div>
        <div style="font-size:22px;font-weight:800;color:${color}">${val}</div></div>`;
   const box=document.getElementById('ga4-summary');
   if (box) box.innerHTML =
@@ -3413,7 +3416,7 @@ function renderPhones() {
        <td style="font-weight:700;color:#2563eb">${p.phone}</td>
        <td style="color:var(--muted)">${p.page}</td>
        <td style="text-align:center">${p.date||'—'}</td>
-     </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:16px">Chưa có SĐT. Chạy Đồng bộ để quét lại.</td></tr>';
+     </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:16px">Chưa có SĐT. Chạy Đồng bộ để quét lại.</td></tr>';
 }
 
 function exportPhonesCSV() {
@@ -3482,7 +3485,7 @@ function renderAdsConvByAccount() {
   const byAcct = (G_ADS_CONV_LIVE && G_ADS_CONV_LIVE.byAccount) || {};
   const names  = Object.keys(byAcct);
   if (!names.length) {
-    tbody.innerHTML = `<tr><td colspan="2" style="text-align:center;color:#94a3b8;padding:12px">Đang tải / chưa có dữ liệu…</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="2" style="text-align:center;color:var(--text3);padding:12px">Đang tải / chưa có dữ liệu…</td></tr>`;
     return;
   }
   let total = 0;
@@ -3491,8 +3494,8 @@ function renderAdsConvByAccount() {
     return `<tr><td style="text-align:left;font-weight:500">${n}</td>
       <td style="text-align:center;font-weight:700;color:#2563eb">${v.toLocaleString('vi-VN')}</td></tr>`;
   }).join('');
-  tbody.innerHTML = rowsHtml + `<tr style="background:#f8fafc;font-weight:700">
-      <td style="text-align:left;color:#0f172a">Tổng cộng (2 tài khoản)</td>
+  tbody.innerHTML = rowsHtml + `<tr style="background:var(--surface2);font-weight:700">
+      <td style="text-align:left;color:var(--text)">Tổng cộng (2 tài khoản)</td>
       <td style="text-align:center;color:#1e40af">${total.toLocaleString('vi-VN')}</td></tr>`;
   if (badge) badge.textContent = G_MSG_DATE.from + ' → ' + G_MSG_DATE.to;
 }
@@ -3730,7 +3733,7 @@ function renderMessages() {
       const _lblArg = String(label).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       const nameCell = bold
         ? label
-        : `<span onclick="hidePageRow('${_lblArg}')" title="Ẩn hàng này" style="cursor:pointer;color:#cbd5e1;margin-right:6px;font-weight:700">✕</span>${label}`;
+        : `<span onclick="hidePageRow('${_lblArg}')" title="Ẩn hàng này" style="cursor:pointer;color:var(--text3);margin-right:6px;font-weight:700">✕</span>${label}`;
       const costPerMsg = (s.inPeriod > 0 && totalSpend > 0)
         ? Math.round(totalSpend / s.inPeriod).toLocaleString('vi-VN')
         : '—';
@@ -3751,16 +3754,16 @@ function renderMessages() {
         newRateStr   = o.c > 0 ? Math.round(o.n/o.c*100) + '%' : '—';
         d3RateStr    = o.c > 0 ? Math.round(o.d/o.c*100) + '%' : '—';
       }
-      return `<tr style="${bold?'background:#f8fafc':''}">
-        <td style="font-weight:600;${w}${bold?';color:#0f172a':''}">${nameCell}</td>
-        <td style="text-align:center;${w}${bold?';color:#0f172a':''}">${s.total}</td>
+      return `<tr style="${bold?'background:var(--surface2)':''}">
+        <td style="font-weight:600;${w}${bold?';color:var(--text)':''}">${nameCell}</td>
+        <td style="text-align:center;${w}${bold?';color:var(--text)':''}">${s.total}</td>
         <td style="text-align:center;font-weight:700;color:${costColor}">${spendStr}</td>
         <td style="text-align:center;font-weight:700;color:#0d9488">${mcStr}</td>
         <td style="text-align:center;font-weight:600;color:#dc2626">${mcCostStr}</td>
         <td style="text-align:center;font-weight:700;color:#0284c7">${mcNewStr}</td>
         <td style="text-align:center;font-weight:600;color:#dc2626">${mcNewCostStr}</td>
         <td style="text-align:center;font-weight:600;color:#0284c7">${newRateStr}</td>
-        <td style="text-align:center;font-weight:700;color:#64748b">${mcOldStr}</td>
+        <td style="text-align:center;font-weight:700;color:var(--text2)">${mcOldStr}</td>
         <td style="text-align:center;font-weight:700;color:#0891b2">${mcD3Str}</td>
         <td style="text-align:center;font-weight:600;color:#dc2626">${mcD3CostStr}</td>
         <td style="text-align:center;font-weight:600;color:#0891b2">${d3RateStr}</td>
@@ -3778,7 +3781,7 @@ function renderMessages() {
   const showAllEl = document.getElementById('msg-show-all');
   if (showAllEl) {
     showAllEl.innerHTML = G_MSG_HIDDEN.size
-      ? `<button onclick="showAllPageRows()" style="padding:3px 10px;background:#f1f5f9;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;color:#475569">↺ Hiện tất cả (${G_MSG_HIDDEN.size} ẩn)</button>`
+      ? `<button onclick="showAllPageRows()" style="padding:3px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;color:var(--text2)">↺ Hiện tất cả (${G_MSG_HIDDEN.size} ẩn)</button>`
       : '';
   }
 
@@ -3829,7 +3832,7 @@ function renderMsgList(rows) {
   
   el.innerHTML = sortedPages.map(page => {
     const pageHeader = sortedPages.length > 1
-      ? `<div style="padding:10px 14px;background:#f8fafc;border-bottom:1px solid var(--border);border-top:1px solid var(--border);font-weight:700;color:var(--primary);font-size:13px;display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+      ? `<div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);border-top:1px solid var(--border);font-weight:700;color:var(--primary);font-size:13px;display:flex;justify-content:space-between;align-items:center;margin-top:10px">
            <div style="display:flex;align-items:center;gap:8px">
              <span style="font-size:16px">📄</span> 
              <span>${page}</span>
@@ -3852,7 +3855,7 @@ function renderMsgList(rows) {
         <div class="msg-head">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span class="msg-from">${r[ci('from')]||'Người dùng'}</span>
-            ${sortedPages.length === 1 && page ? `<span style="font-size:11px;color:#64748b;background:#f1f5f9;padding:2px 8px;border-radius:10px">${page}</span>` : ''}
+            ${sortedPages.length === 1 && page ? `<span style="font-size:11px;color:var(--text2);background:var(--surface2);padding:2px 8px;border-radius:10px">${page}</span>` : ''}
             ${unread > 0 ? `<span class="unread-dot">${unread} mới</span>` : ''}
             ${phone ? `<span style="font-size:11px;background:#f3e8ff;color:#7c3aed;padding:2px 8px;border-radius:10px;font-weight:600">📞 SĐT</span>` : ''}
           </div>
@@ -4070,7 +4073,7 @@ function openConv(i) {
 
   if (!c.convId) {
     document.getElementById('conv-body').innerHTML =
-      '<div style="text-align:center;color:#94a3b8;padding:30px">Không có ID hội thoại.</div>';
+      '<div style="text-align:center;color:var(--text3);padding:30px">Không có ID hội thoại.</div>';
     return;
   }
   if (!c.pageId) {
@@ -4080,7 +4083,7 @@ function openConv(i) {
   }
 
   document.getElementById('conv-body').innerHTML =
-    '<div style="text-align:center;color:#94a3b8;padding:30px"><div class="spinner" style="margin:0 auto 10px"></div>Đang tải...</div>';
+    '<div style="text-align:center;color:var(--text3);padding:30px"><div class="spinner" style="margin:0 auto 10px"></div>Đang tải...</div>';
 
   google.script.run
     .withSuccessHandler(onConvLoaded)
@@ -4101,7 +4104,7 @@ function onConvLoaded(data) {
 
   const el = document.getElementById('conv-body');
   if (!msgs.length) {
-    el.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:30px">Chưa có tin nhắn.</div>';
+    el.innerHTML = '<div style="text-align:center;color:var(--text3);padding:30px">Chưa có tin nhắn.</div>';
     return;
   }
 
@@ -4195,7 +4198,7 @@ function closeTokenConfig() {
 
 function loadTokenStatus() {
   const list = document.getElementById('token-page-list');
-  list.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b"><div class="spinner" style="margin:0 auto 8px"></div>Đang tải...</div>';
+  list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text2)"><div class="spinner" style="margin:0 auto 8px"></div>Đang tải...</div>';
   google.script.run
     .withSuccessHandler(renderTokenList)
     .withFailureHandler(e => {
@@ -4207,14 +4210,14 @@ function loadTokenStatus() {
 function renderTokenList(pages) {
   const list = document.getElementById('token-page-list');
   if (!pages || !pages.length) {
-    list.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b">Chưa có trang nào. Hãy đồng bộ Ad Creatives trước.</div>';
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text2)">Chưa có trang nào. Hãy đồng bộ Ad Creatives trước.</div>';
     return;
   }
   list.innerHTML = pages.map(p => `
     <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <span style="font-weight:700;font-size:13px;color:#0f172a">${p.name}</span>
-        <span style="font-size:11px;color:#64748b">ID: ${p.id}</span>
+        <span style="font-weight:700;font-size:13px;color:var(--text)">${p.name}</span>
+        <span style="font-size:11px;color:var(--text2)">ID: ${p.id}</span>
         <span id="tok-status-${p.id}" style="margin-left:auto;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;${
           p.hasToken
             ? 'background:#dcfce7;color:#16a34a'
@@ -4224,7 +4227,7 @@ function renderTokenList(pages) {
       <div style="display:flex;gap:8px">
         <input id="tok-inp-${p.id}" type="password"
           placeholder="${p.hasToken ? 'Nhập token mới để cập nhật...' : 'Dán Page Access Token vào đây...'}"
-          style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:monospace;background:#fff;color:#0f172a">
+          style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:monospace;background:var(--surface);color:var(--text)">
         <button onclick="savePageToken('${p.id}','${p.name}')"
           style="padding:7px 14px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
           Lưu
@@ -4286,14 +4289,14 @@ document.addEventListener('keydown', e => {
 
 <!-- ══ TOKEN CONFIG MODAL ══════════════════════════════════ -->
 <div id="token-modal" style="display:none;position:fixed;inset:0;z-index:2000;align-items:center;justify-content:center;background:rgba(0,0,0,.45)">
-  <div style="background:#fff;border-radius:14px;width:min(600px,95vw);max-height:85vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+  <div style="background:var(--surface);border-radius:14px;width:min(600px,95vw);max-height:85vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <!-- Header -->
     <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
       <div style="flex:1">
-        <div style="font-weight:700;font-size:15px;color:#0f172a">⚙️ Token Nhắn tin</div>
-        <div style="font-size:12px;color:#64748b;margin-top:2px">Cấu hình Page Access Token có quyền <code>pages_messaging</code> cho từng trang</div>
+        <div style="font-weight:700;font-size:15px;color:var(--text)">⚙️ Token Nhắn tin</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px">Cấu hình Page Access Token có quyền <code>pages_messaging</code> cho từng trang</div>
       </div>
-      <button onclick="closeTokenConfig()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#64748b;padding:4px">✕</button>
+      <button onclick="closeTokenConfig()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text2);padding:4px">✕</button>
     </div>
     <!-- Hướng dẫn -->
     <div style="padding:12px 22px;background:#f0f9ff;border-bottom:1px solid #bae6fd;font-size:12px;color:#0369a1;line-height:1.7">
@@ -4304,10 +4307,10 @@ document.addEventListener('keydown', e => {
     </div>
     <!-- Danh sách trang -->
     <div id="token-page-list" style="flex:1;overflow-y:auto;padding:16px 22px;display:flex;flex-direction:column;gap:14px">
-      <div style="text-align:center;padding:20px;color:#64748b">Đang tải...</div>
+      <div style="text-align:center;padding:20px;color:var(--text2)">Đang tải...</div>
     </div>
     <!-- Footer -->
-    <div style="padding:12px 22px;border-top:1px solid var(--border);font-size:12px;color:#64748b;text-align:right">
+    <div style="padding:12px 22px;border-top:1px solid var(--border);font-size:12px;color:var(--text2);text-align:right">
       Token được lưu trong Script Properties của GAS, không xuất hiện trong code
     </div>
   </div>
@@ -4338,13 +4341,13 @@ document.addEventListener('keydown', e => {
 
 <!-- Modal: Doanh thu theo nguồn (pie chart) -->
 <div id="gmv-source-modal" style="display:none;position:fixed;inset:0;z-index:2000;align-items:center;justify-content:center;background:rgba(0,0,0,.45)">
-  <div style="background:#fff;border-radius:14px;width:min(480px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.3)">
-    <div style="padding:18px 22px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:12px">
+  <div style="background:var(--surface);border-radius:14px;width:min(480px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
       <div style="flex:1">
-        <div style="font-weight:700;font-size:15px;color:#111">📊 Doanh thu theo nguồn</div>
-        <div id="gmv-source-badge" style="font-size:12px;color:#64748b;margin-top:2px"></div>
+        <div style="font-weight:700;font-size:15px;color:var(--text)">📊 Doanh thu theo nguồn</div>
+        <div id="gmv-source-badge" style="font-size:12px;color:var(--text2);margin-top:2px"></div>
       </div>
-      <button onclick="closeGmvSourceModal()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#64748b;padding:4px">✕</button>
+      <button onclick="closeGmvSourceModal()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text2);padding:4px">✕</button>
     </div>
     <div style="padding:20px 22px">
       <div style="height:280px"><canvas id="chart-gmv-source-pie"></canvas></div>
@@ -4371,31 +4374,68 @@ document.addEventListener('keydown', e => {
 // ══════════════════════════════════════════════════════════
 
 // ── DARK/LIGHT MODE ────────────────────────────────────────
+// Mặc định: tự đổi theo giờ mặt trời mọc/lặn tại TP.HCM (kiểm tra mỗi phút).
+// Bấm nút 🌙/☀️ để ép cứng 1 chế độ — khi đó tắt hẳn chế độ tự động,
+// bấm nút "🕒 Tự động" trong tooltip (bấm giữ) hoặc xoá localStorage để bật lại.
+
+// Tính giờ mặt trời mọc/lặn (thuật toán NOAA rút gọn) cho 1 toạ độ bất kỳ
+function _sunTimes(date, lat, lng) {
+  const rad = Math.PI / 180, dayMs = 86400000, J1970 = 2440588, J2000 = 2451545;
+  const toJulian = d => d.valueOf() / dayMs - 0.5 + J1970;
+  const fromJulian = j => new Date((j + 0.5 - J1970) * dayMs);
+  const lw = rad * -lng, phi = rad * lat;
+  const d = toJulian(date) - J2000;
+  const n = Math.round(d - 0.0009 - lw / (2 * Math.PI));
+  const ds = 0.0009 + lw / (2 * Math.PI) + n;
+  const M = rad * (357.5291 + 0.98560028 * ds);
+  const C = rad * (1.9148 * Math.sin(M) + 0.02 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M));
+  const L = M + C + rad * 102.9372 + Math.PI;
+  const dec = Math.asin(Math.sin(L) * Math.sin(rad * 23.4397));
+  const Jtransit = J2000 + ds + 0.0053 * Math.sin(M) - 0.0069 * Math.sin(2 * L);
+  const h0 = rad * -0.833;
+  const cosH = (Math.sin(h0) - Math.sin(phi) * Math.sin(dec)) / (Math.cos(phi) * Math.cos(dec));
+  const H = Math.acos(Math.min(1, Math.max(-1, cosH)));
+  return { sunrise: fromJulian(Jtransit - H / (2 * Math.PI)), sunset: fromJulian(Jtransit + H / (2 * Math.PI)) };
+}
+
+let _themeIsDark = null;
+function _applyTheme(dark, initial) {
+  if (dark === _themeIsDark) return;
+  _themeIsDark = dark;
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = dark ? '☀️' : '🌙';
+  if (!initial && typeof updateChartTheme === 'function') updateChartTheme();
+}
+
+function _applySunTheme(initial) {
+  if (localStorage.getItem('dashboard-theme')) return; // người dùng đã ép cứng
+  const now = new Date();
+  const t = _sunTimes(now, 10.7769, 106.7009); // TP. Hồ Chí Minh
+  _applyTheme(now < t.sunrise || now >= t.sunset, initial);
+}
+_applySunTheme(true);
+setInterval(() => _applySunTheme(false), 60000);
+
 ;(function initTheme() {
   const saved = localStorage.getItem('dashboard-theme');
-  if (saved === 'light') {
-    document.documentElement.setAttribute('data-theme', 'light');
-    const btn = document.getElementById('theme-toggle');
-    if (btn) btn.textContent = '☀️';
-  }
+  if (saved) _applyTheme(saved === 'dark', true);
 })();
+
 function toggleTheme() {
-  const html = document.documentElement;
-  const isLight = html.getAttribute('data-theme') === 'light';
-  html.setAttribute('data-theme', isLight ? 'dark' : 'light');
-  localStorage.setItem('dashboard-theme', isLight ? 'dark' : 'light');
-  document.getElementById('theme-toggle').textContent = isLight ? '🌙' : '☀️';
-  updateChartTheme();
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  localStorage.setItem('dashboard-theme', isDark ? 'light' : 'dark');
+  _applyTheme(!isDark, false);
 }
 
 function getChartThemeColors() {
-  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   return {
-    textColor: isLight ? '#1e293b' : '#f8fafc',
-    gridColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.05)',
-    tooltipBg: isLight ? 'rgba(255,255,255,0.95)' : 'rgba(15,23,42,0.9)',
-    tooltipText: isLight ? '#475569' : '#e2e8f0',
-    axisText: isLight ? '#64748b' : '#94a3b8'
+    textColor:   isDark ? '#e8eaed' : '#202124',
+    gridColor:   isDark ? 'rgba(232,234,237,0.10)' : 'rgba(60,64,67,0.10)',
+    tooltipBg:   isDark ? 'rgba(41,42,45,0.95)' : 'rgba(255,255,255,0.97)',
+    tooltipText: isDark ? '#9aa0a6' : '#5f6368',
+    axisText:    isDark ? '#9aa0a6' : '#5f6368'
   };
 }
 
@@ -4525,6 +4565,23 @@ document.addEventListener('DOMContentLoaded', function() {
   if (typeof filterMsg === 'function')   debounceInput('msg-q', filterMsg);
   if (typeof filterCr === 'function')    debounceInput('cr-q', filterCr);
   if (typeof filterPosts === 'function') debounceInput('posts-q', filterPosts);
+});
+
+// ── RIPPLE khi bấm nút ──────────────────────────────────────
+// Gắn ở cấp document nên áp dụng được cho cả nút do JS sinh ra sau này.
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.btn, .date-btn, .export-btn');
+  if (!btn) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const r = btn.getBoundingClientRect();
+  const size = Math.max(r.width, r.height);
+  const sp = document.createElement('span');
+  sp.className = 'ripple';
+  sp.style.width = sp.style.height = size + 'px';
+  sp.style.left = (e.clientX - r.left - size / 2) + 'px';
+  sp.style.top  = (e.clientY - r.top  - size / 2) + 'px';
+  btn.appendChild(sp);
+  setTimeout(() => sp.remove(), 600);
 });
 </script>
 
