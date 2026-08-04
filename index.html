@@ -158,16 +158,17 @@ html[data-theme="dark"] .ripple{background:rgba(255,255,255,.22)}
 @media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr}}
 
 /* ══ CARD ════════════════════════════════════════════════ */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:18px;transform-origin:center center;transition:border-color .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s cubic-bezier(.2,.8,.2,1),transform .28s cubic-bezier(.2,.8,.2,1)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:18px;transform-origin:center center;box-shadow:var(--shadow-sm);transition:border-color .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s cubic-bezier(.2,.8,.2,1),transform .28s cubic-bezier(.2,.8,.2,1)}
 .card:hover{border-color:var(--border2);box-shadow:var(--shadow);transform:scale(1.008)}
+html[data-theme="dark"] .card{border-color:transparent}
 .card-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;letter-spacing:.1px}
 
 /* ══ KPI ═════════════════════════════════════════════════ */
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:22px}
-.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:19px 21px;position:relative;overflow:hidden;transform-origin:center center;color:var(--accent);transition:transform .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s cubic-bezier(.2,.8,.2,1)}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:19px 56px 19px 21px;position:relative;overflow:hidden;transform-origin:center center;box-shadow:var(--shadow-sm);color:var(--accent);transition:transform .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s cubic-bezier(.2,.8,.2,1)}
 .kpi-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:currentColor;opacity:.9;border-radius:4px 0 0 4px}
-.kpi-card::after{content:'';position:absolute;top:-28px;right:-28px;width:96px;height:96px;border-radius:50%;background:currentColor;opacity:.045}
 .kpi-card:hover{box-shadow:var(--shadow);transform:scale(1.02)}
+html[data-theme="dark"] .kpi-card{border-color:transparent}
 .kpi-card.gold{color:var(--gold)}.kpi-card.green{color:var(--green)}.kpi-card.red{color:var(--red)}
 .kpi-card.purple{color:var(--purple)}.kpi-card.blue{color:var(--blue)}.kpi-card.teal{color:var(--cyan)}
 .kpi-card>*{color:initial}
