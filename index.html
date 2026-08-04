@@ -169,9 +169,11 @@ html[data-theme="dark"] .card{border-color:transparent}
 .kpi-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:currentColor;opacity:.9;border-radius:4px 0 0 4px}
 .kpi-card:hover{box-shadow:var(--shadow);transform:scale(1.02)}
 html[data-theme="dark"] .kpi-card{border-color:transparent}
+.kpi-ico{position:absolute;top:16px;right:16px;width:34px;height:34px;border-radius:50%;background:color-mix(in srgb, currentColor 16%, transparent);display:flex;align-items:center;justify-content:center;font-size:15px}
 .kpi-card.gold{color:var(--gold)}.kpi-card.green{color:var(--green)}.kpi-card.red{color:var(--red)}
 .kpi-card.purple{color:var(--purple)}.kpi-card.blue{color:var(--blue)}.kpi-card.teal{color:var(--cyan)}
 .kpi-card>*{color:initial}
+.kpi-card .kpi-ico{color:inherit}
 .kpi-label{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.7px;text-transform:uppercase;margin-bottom:8px;font-family:var(--font-head)}
 .kpi-value{font-size:31px;font-weight:500;color:var(--text);line-height:1.15;letter-spacing:-.3px}
 .kpi-sub{font-size:12px;font-style:italic;color:var(--text3);margin-top:7px}
@@ -2039,16 +2041,17 @@ function renderOverview() {
 
   // KPI cards
   document.getElementById('kpi-grid').innerHTML = [
-    { l:'Tổng chi phí',      v: spend,   fmt:'num', s: dayLabel,           c:'' },
-    { l:'ROAS trung bình',   v: avgROAS, fmt:'x',   s:'Doanh thu/Chi phí', c:'green' },
-    { l:'Tổng tiếp cận',     v: reach,   fmt:'num', s:'Unique users',      c:'purple' },
-    { l:'Tổng hiển thị',     v: impr,    fmt:'num', s:'Impressions',       c:'' },
-    { l:'Mua hàng',          v: purch,   fmt:'num', s:'Purchases',         c:'gold' },
-    { l:'Thêm giỏ hàng',     v: cart,    fmt:'num', s:'Add to Cart',       c:'gold' },
-    { l:'Link Clicks',       v: lclicks, fmt:'num', s:'Lượt click link',   c:'' },
-    { l:'CTR trung bình',    v: avgCTR,  fmt:'%',   s:'Click-through rate',c: avgCTR>=1?'green':'red' },
+    { l:'Tổng chi phí',      v: spend,   fmt:'num', s: dayLabel,           c:'',       icon:'💰' },
+    { l:'ROAS trung bình',   v: avgROAS, fmt:'x',   s:'Doanh thu/Chi phí', c:'green',  icon:'📈' },
+    { l:'Tổng tiếp cận',     v: reach,   fmt:'num', s:'Unique users',      c:'purple', icon:'👥' },
+    { l:'Tổng hiển thị',     v: impr,    fmt:'num', s:'Impressions',       c:'',       icon:'👁️' },
+    { l:'Mua hàng',          v: purch,   fmt:'num', s:'Purchases',         c:'gold',   icon:'🛒' },
+    { l:'Thêm giỏ hàng',     v: cart,    fmt:'num', s:'Add to Cart',       c:'gold',   icon:'🛍️' },
+    { l:'Link Clicks',       v: lclicks, fmt:'num', s:'Lượt click link',   c:'',       icon:'🔗' },
+    { l:'CTR trung bình',    v: avgCTR,  fmt:'%',   s:'Click-through rate',c: avgCTR>=1?'green':'red', icon:'🖱️' },
   ].map(k => `
     <div class="kpi-card ${k.c}">
+      <div class="kpi-ico">${k.icon}</div>
       <div class="kpi-label">${k.l}</div>
       <div class="kpi-value kpi-num" data-val="${k.v}" data-fmt="${k.fmt}">0</div>
       <div class="kpi-sub">${k.s}</div>
@@ -2722,14 +2725,14 @@ function renderPage() {
     const totalVid    = pfcol('page_video_views').reduce((a,b)=>a+b,0);
 
     document.getElementById('page-kpi-grid').innerHTML = [
-      { l:'Follow mới',         v: '+'+fmtNum(totalNew),                     s:'30 ngày',             c:'green'  },
-      { l:'Bỏ Follow',          v: '-'+fmtNum(totalLost),                    s:'30 ngày',             c:'red'    },
-      { l:'Thay đổi net',       v: (netFol>=0?'+':'')+fmtNum(netFol),       s:'30 ngày',             c: netFol>=0?'green':'red' },
-      { l:'Lượt xem trang',     v: fmtNum(totalViews),                       s:'Page views',          c:''       },
-      { l:'Tương tác bài viết', v: fmtNum(totalEng),                         s:'Post engagements',    c:'gold'   },
-      { l:'Hành động trang',    v: fmtNum(totalAct),                         s:'Page actions',        c:''       },
-      { l:'Video views',        v: fmtNum(totalVid),                         s:'30 ngày',             c:'purple' },
-    ].map(k=>`<div class="kpi-card ${k.c}"><div class="kpi-label">${k.l}</div><div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
+      { l:'Follow mới',         v: '+'+fmtNum(totalNew),                     s:'30 ngày',             c:'green',  icon:'⬆️' },
+      { l:'Bỏ Follow',          v: '-'+fmtNum(totalLost),                    s:'30 ngày',             c:'red',    icon:'⬇️' },
+      { l:'Thay đổi net',       v: (netFol>=0?'+':'')+fmtNum(netFol),       s:'30 ngày',             c: netFol>=0?'green':'red', icon:'🔀' },
+      { l:'Lượt xem trang',     v: fmtNum(totalViews),                       s:'Page views',          c:'',       icon:'👁️' },
+      { l:'Tương tác bài viết', v: fmtNum(totalEng),                         s:'Post engagements',    c:'gold',   icon:'💬' },
+      { l:'Hành động trang',    v: fmtNum(totalAct),                         s:'Page actions',        c:'',       icon:'⚡' },
+      { l:'Video views',        v: fmtNum(totalVid),                         s:'30 ngày',             c:'purple', icon:'▶️' },
+    ].map(k=>`<div class="kpi-card ${k.c}"><div class="kpi-ico">${k.icon}</div><div class="kpi-label">${k.l}</div><div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
 
     // Chart 1: Fan growth (bar)
     const fanCanvas = document.getElementById('chart-fans');
@@ -2839,13 +2842,13 @@ function renderPage() {
   const cpm = tImpr>0    ? (tSpend/tImpr)*1000 : 0;
 
   document.getElementById('page-paid-kpi').innerHTML = [
-    { l:'Chi phí',            v: fmtNum(tSpend)+'đ',   s:'Paid spend',           c:''       },
-    { l:'Tiếp cận',           v: fmtNum(tReach),        s:'Paid reach',           c:'blue'   },
-    { l:'Hiển thị',           v: fmtNum(tImpr),         s:'Impressions',          c:''       },
-    { l:'Kết quả',            v: fmtNum(tResults),      s:'Paid results',         c:'green'  },
-    { l:'CPR',                v: fmtNum(cpr)+'đ',       s:'Chi phí/kết quả',      c:'gold'   },
-    { l:'CPM',                v: fmtNum(cpm)+'đ',       s:'Chi phí/1000 hiển thị',c:''       },
-  ].map(k=>`<div class="kpi-card ${k.c}"><div class="kpi-label">${k.l}</div><div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
+    { l:'Chi phí',            v: fmtNum(tSpend)+'đ',   s:'Paid spend',           c:'',      icon:'💰' },
+    { l:'Tiếp cận',           v: fmtNum(tReach),        s:'Paid reach',           c:'blue',  icon:'👥' },
+    { l:'Hiển thị',           v: fmtNum(tImpr),         s:'Impressions',          c:'',      icon:'👁️' },
+    { l:'Kết quả',            v: fmtNum(tResults),      s:'Paid results',         c:'green', icon:'✅' },
+    { l:'CPR',                v: fmtNum(cpr)+'đ',       s:'Chi phí/kết quả',      c:'gold',  icon:'🎯' },
+    { l:'CPM',                v: fmtNum(cpm)+'đ',       s:'Chi phí/1000 hiển thị',c:'',      icon:'📐' },
+  ].map(k=>`<div class="kpi-card ${k.c}"><div class="kpi-ico">${k.icon}</div><div class="kpi-label">${k.l}</div><div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
 
   // Paid Chart 1: Spend
   mkLine('chart-page-spend', dates_a, [
