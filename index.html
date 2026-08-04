@@ -2208,7 +2208,7 @@ function renderCampBreakdown(rows, h) {
 // ══════════════════════════════════════════════════════════
 // 1c. PAGE BREAKDOWN (derived from campaign name prefix)
 // ══════════════════════════════════════════════════════════
-const PAGE_COLORS = ['#2563eb','#10b981','#f59e0b','#8b5cf6','#ef4444','#06b6d4','#ec4899','#84cc16'];
+const PAGE_COLORS = ['#38bdf8','#34d399','#fbbf24','#a78bfa','#f87171','#5eead4','#f472b6','#a3e635'];
 
 // ── PAGE LOOKUP từ Ad Creatives ──────────────────────────
 // Tự động lấy tên Page từ dữ liệu creatives (không cần config thủ công)
@@ -4513,11 +4513,11 @@ function toggleTheme() {
 function getChartThemeColors() {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   return {
-    textColor:   isDark ? '#e8eaed' : '#202124',
-    gridColor:   isDark ? 'rgba(232,234,237,0.10)' : 'rgba(60,64,67,0.10)',
-    tooltipBg:   isDark ? 'rgba(41,42,45,0.95)' : 'rgba(255,255,255,0.97)',
-    tooltipText: isDark ? '#9aa0a6' : '#5f6368',
-    axisText:    isDark ? '#9aa0a6' : '#5f6368'
+    textColor:   isDark ? '#eef2f7' : '#202124',
+    gridColor:   isDark ? 'rgba(238,242,247,0.08)' : 'rgba(60,64,67,0.10)',
+    tooltipBg:   isDark ? 'rgba(23,27,38,0.95)' : 'rgba(255,255,255,0.97)',
+    tooltipText: isDark ? '#9aa7bb' : '#5f6368',
+    axisText:    isDark ? '#9aa7bb' : '#5f6368'
   };
 }
 
