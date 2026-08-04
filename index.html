@@ -17,30 +17,31 @@
    --muted/--primary/--card là bí danh cũ, giữ lại để HTML/JS sẵn có không vỡ.
 ══════════════════════════════════════════════════════════ */
 :root{
-  --bg:#f8f9fa; --surface:#ffffff; --surface2:#f1f3f4;
+  --bg:#f3f6fb; --surface:#ffffff; --surface2:#f1f3f4;
   --border:#e8eaed; --border2:#dadce0;
   --sidebar:#ffffff; --sidebar-w:252px; --sidebar-w-collapsed:76px;
-  --sidebar-grad:linear-gradient(165deg,#3b8bf0 0%,#1a73e8 45%,#0f4fb0 100%);
-  --accent:#1a73e8; --accent-soft:#e8f0fe; --accent-text:#1967d2;
-  --blue:#1a73e8; --gold:#f9ab00; --green:#1e8e3e; --red:#d93025; --purple:#a142f4; --cyan:#12a4af;
+  --sidebar-grad:linear-gradient(165deg,#38bdf8 0%,#0ea5e9 45%,#0369a1 100%);
+  --accent:#0ea5e9; --accent-soft:#e0f2fe; --accent-text:#0284c7;
+  --blue:#0ea5e9; --gold:#f59e0b; --green:#10b981; --red:#ef4444; --purple:#8b5cf6; --cyan:#06b6d4;
   --text:#202124; --text2:#5f6368; --text3:#80868b;
-  --muted:#5f6368; --primary:#1a73e8; --card:#ffffff;
-  --radius:12px; --radius-sm:8px;
+  --muted:#5f6368; --primary:#0ea5e9; --card:#ffffff;
+  --radius:18px; --radius-sm:12px;
   --shadow:0 1px 2px 0 rgba(60,64,67,.30),0 2px 6px 2px rgba(60,64,67,.15);
   --shadow-sm:0 1px 2px 0 rgba(60,64,67,.30),0 1px 3px 1px rgba(60,64,67,.15);
   --transition:.2s ease;
   --font-head:'Google Sans','Roboto',Arial,sans-serif;
 }
 html[data-theme="dark"]{
-  --bg:#202124; --surface:#292a2d; --surface2:#35363a;
-  --border:#3c4043; --border2:#5f6368;
-  --sidebar:#292a2d;
-  --accent:#8ab4f8; --accent-soft:rgba(138,180,248,.16); --accent-text:#8ab4f8;
-  --blue:#8ab4f8; --gold:#fdd663; --green:#81c995; --red:#f28b82; --purple:#d7aefb; --cyan:#78d9ec;
-  --text:#e8eaed; --text2:#9aa0a6; --text3:#80868b;
-  --muted:#9aa0a6; --primary:#8ab4f8; --card:#292a2d;
-  --shadow:0 1px 2px 0 rgba(0,0,0,.55),0 2px 6px 2px rgba(0,0,0,.35);
-  --shadow-sm:0 1px 2px 0 rgba(0,0,0,.55),0 1px 3px 1px rgba(0,0,0,.35);
+  --bg:#0d1017; --surface:#171b26; --surface2:#1f2532;
+  --border:#262c3b; --border2:#333a4d;
+  --sidebar:#171b26;
+  --sidebar-grad:linear-gradient(165deg,#22315a 0%,#101a33 55%,#0a1224 100%);
+  --accent:#38bdf8; --accent-soft:rgba(56,189,248,.16); --accent-text:#7dd3fc;
+  --blue:#38bdf8; --gold:#fbbf24; --green:#34d399; --red:#f87171; --purple:#a78bfa; --cyan:#5eead4;
+  --text:#eef2f7; --text2:#9aa7bb; --text3:#6b7688;
+  --muted:#9aa7bb; --primary:#38bdf8; --card:#171b26;
+  --shadow:0 16px 34px -14px rgba(15,79,176,.45),0 2px 8px rgba(0,0,0,.35);
+  --shadow-sm:0 8px 18px -10px rgba(15,79,176,.4),0 1px 3px rgba(0,0,0,.35);
 }
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
